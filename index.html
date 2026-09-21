@@ -548,6 +548,22 @@
   }
   .nc-ghost:hover{border-color:var(--accent);color:var(--accent-strong);}
   .nc-status{font-size:12px;color:var(--accent-strong);}
+  .nc-status.is-error{color:var(--live);}
+  .gh-panel{
+    border:1px solid var(--border);border-radius:11px;
+    padding:13px 15px;margin-bottom:16px;background:var(--surface);
+  }
+  .gh-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .gh-state{font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;color:var(--text-dim);margin-right:auto;}
+  .gh-state.is-on{color:var(--wave);}
+  .gh-setup{margin-top:14px;}
+  .news-row .nr-del{
+    background:none;border:1px solid var(--border);border-radius:8px;
+    color:var(--text-dim);cursor:pointer;font-size:11px;padding:4px 9px;margin-top:9px;
+    font-family:var(--font-mono);
+  }
+  .news-row .nr-del:hover{border-color:var(--live);color:var(--live);}
+  body:not(.is-admin) .nr-del{display:none;}
   .nc-out{
     width:100%;margin-top:14px;padding:13px;border-radius:10px;
     border:1px solid var(--border);background:var(--surface);color:var(--text);
@@ -607,7 +623,7 @@
   }
   .news-row:last-child{border-bottom:none;}
   .news-when{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding-top:3px;white-space:nowrap;}
-  .news-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px;}
+  .news-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
   .news-tag{
     font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;
     color:var(--text-dim);border:1px solid var(--border);border-radius:999px;padding:2px 8px;
@@ -1162,7 +1178,31 @@
       <div class="news-composer admin-only" id="newsComposer">
         <button type="button" class="nc-toggle" id="ncToggle">+ Добавить новость</button>
         <div class="nc-body" id="ncBody" hidden>
-          <p class="nc-hint">Заполните поля — я соберу готовый блок для файла <code>news/news.json</code>, останется только вставить его на GitHub.</p>
+          <div class="gh-panel" id="ghPanel">
+            <div class="gh-row">
+              <span class="gh-state" id="ghState">Публикация не подключена</span>
+              <button type="button" class="nc-ghost" id="ghSetupBtn">Подключить GitHub</button>
+              <button type="button" class="nc-ghost" id="ghForgetBtn" hidden>Отключить</button>
+            </div>
+            <div class="gh-setup" id="ghSetup" hidden>
+              <p class="nc-hint">
+                Нужен персональный токен GitHub с правом записи <b>только в этот репозиторий</b>.
+                Он сохранится в этом браузере и никуда больше не отправляется.
+                Как его создать — написано под формой.
+              </p>
+              <div class="nc-grid">
+                <label class="nc-field"><span>Владелец (owner)</span><input type="text" id="ghOwner" placeholder="valentinpaukov-ops"></label>
+                <label class="nc-field"><span>Репозиторий</span><input type="text" id="ghRepo" placeholder="Voice_Ai"></label>
+                <label class="nc-field"><span>Ветка</span><input type="text" id="ghBranch" placeholder="main" value="main"></label>
+                <label class="nc-field"><span>Токен (ghp_… или github_pat_…)</span><input type="password" id="ghToken" autocomplete="off" placeholder="вставьте токен"></label>
+              </div>
+              <div class="nc-actions">
+                <button type="button" class="btn-add" id="ghSaveBtn">Проверить и сохранить</button>
+                <span class="nc-status" id="ghSetupStatus"></span>
+              </div>
+            </div>
+          </div>
+          <p class="nc-hint">Заполните поля — новость уйдёт прямо в <code>news/news.json</code>. Если публикация не подключена, форма соберёт готовый блок для вставки вручную.</p>
           <div class="nc-grid">
             <label class="nc-field nc-wide"><span>Заголовок</span><input type="text" id="ncTitle" placeholder="Запущен новый модуль аналитики"></label>
             <label class="nc-field"><span>Дата</span><input type="date" id="ncDate"></label>
@@ -1174,7 +1214,8 @@
             <label class="nc-field"><span>Ссылка на источник</span><input type="url" id="ncSourceUrl" placeholder="https://..."></label>
           </div>
           <div class="nc-actions">
-            <button type="button" class="btn-add" id="ncBuild">Собрать JSON</button>
+            <button type="button" class="btn-add" id="ncPublish" hidden>Опубликовать новость</button>
+            <button type="button" class="nc-ghost" id="ncBuild">Собрать JSON вручную</button>
             <button type="button" class="nc-ghost" id="ncCopy" hidden>Скопировать</button>
             <span class="nc-status" id="ncStatus"></span>
           </div>
@@ -1992,6 +2033,7 @@
           '<h3>' + escapeHtml(n.title) + '</h3>' +
           (n.text ? '<p>' + escapeHtml(n.text) + '</p>' : '') +
           (meta.length ? '<div class="news-meta">' + meta.join("") + '</div>' : '') +
+          '<button type="button" class="nr-del" data-del="' + escapeHtml(n.id) + '">удалить</button>' +
         '</div>' +
       '</div>'
     );
@@ -2540,6 +2582,148 @@
   initSearch(document.getElementById("searchInputMobile"), document.getElementById("searchResultsMobile"));
   handleRoute();
 
+  /* ================= Публикация в репозиторий =================
+     Страница пишет в news/news.json через GitHub API. Токен вводит
+     редактор, он лежит в localStorage этого браузера и НИКОГДА не
+     попадает в код страницы — иначе право записи получил бы каждый,
+     кто откроет исходник. */
+  var GH = (function(){
+    var TOKEN_KEY = "voiceai_gh_token", CFG_KEY = "voiceai_gh_cfg";
+
+    function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+    function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+    function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+    // по адресу вида valentinpaukov-ops.github.io/Voice_Ai/ угадываем репозиторий
+    function guess(){
+      var m = /^([^.]+)\.github\.io$/i.exec(location.hostname);
+      if(!m) return {owner:"", repo:"", branch:"main"};
+      var seg = location.pathname.split("/").filter(Boolean);
+      return {owner:m[1], repo:(seg.length ? seg[0] : m[1]+".github.io"), branch:"main"};
+    }
+    function cfg(){
+      var saved = null;
+      try{ saved = JSON.parse(lsGet(CFG_KEY) || "null"); }catch(e){}
+      var g = guess();
+      return {
+        owner: (saved && saved.owner) || g.owner,
+        repo:  (saved && saved.repo)  || g.repo,
+        branch:(saved && saved.branch)|| g.branch || "main"
+      };
+    }
+    function saveCfg(c){ lsSet(CFG_KEY, JSON.stringify(c)); }
+    function token(){ return lsGet(TOKEN_KEY) || ""; }
+    function setToken(t){ if(t){ lsSet(TOKEN_KEY, t); } else { lsDel(TOKEN_KEY); } }
+    function connected(){ return !!token(); }
+
+    function headers(){
+      return {
+        "Authorization": "Bearer " + token(),
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+      };
+    }
+    function apiUrl(path){
+      var c = cfg();
+      return "https://api.github.com/repos/" + encodeURIComponent(c.owner) + "/" +
+             encodeURIComponent(c.repo) + "/contents/" + path;
+    }
+
+    // base64 с корректной кириллицей — btoa сам по себе на неё ломается
+    function toB64(str){
+      var bytes = new TextEncoder().encode(str), bin = "";
+      for(var i=0;i<bytes.length;i++){ bin += String.fromCharCode(bytes[i]); }
+      return btoa(bin);
+    }
+    function fromB64(b64){
+      var bin = atob(String(b64).replace(/\s/g, ""));
+      var bytes = new Uint8Array(bin.length);
+      for(var i=0;i<bin.length;i++){ bytes[i] = bin.charCodeAt(i); }
+      return new TextDecoder().decode(bytes);
+    }
+
+    function errorText(res, data){
+      if(res.status === 401) return "Токен не принят — проверьте, что скопировали его целиком.";
+      if(res.status === 403) return "Доступ запрещён: у токена нет права записи в этот репозиторий.";
+      if(res.status === 404) return "Репозиторий или файл не найден — проверьте владельца, имя репозитория и ветку.";
+      if(res.status === 409) return "Файл изменился только что — повторите публикацию.";
+      return "GitHub ответил ошибкой " + res.status + (data && data.message ? ": " + data.message : "");
+    }
+
+    function getFile(path){
+      var c = cfg();
+      return fetch(apiUrl(path) + "?ref=" + encodeURIComponent(c.branch) + "&t=" + Date.now(), {
+        headers: headers(), cache: "no-store"
+      }).then(function(res){
+        return res.json().catch(function(){ return null; }).then(function(data){
+          if(!res.ok) throw new Error(errorText(res, data));
+          return { text: fromB64(data.content), sha: data.sha };
+        });
+      });
+    }
+
+    function putFile(path, text, sha, message){
+      var c = cfg();
+      return fetch(apiUrl(path), {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({
+          message: message,
+          content: toB64(text),
+          sha: sha,
+          branch: c.branch
+        })
+      }).then(function(res){
+        return res.json().catch(function(){ return null; }).then(function(data){
+          if(!res.ok) throw new Error(errorText(res, data));
+          return data;
+        });
+      });
+    }
+
+    // проверка: токен рабочий и репозиторий доступен на запись
+    function check(){
+      var c = cfg();
+      return fetch("https://api.github.com/repos/" + encodeURIComponent(c.owner) + "/" + encodeURIComponent(c.repo), {
+        headers: headers()
+      }).then(function(res){
+        return res.json().catch(function(){ return null; }).then(function(data){
+          if(!res.ok) throw new Error(errorText(res, data));
+          if(data && data.permissions && !data.permissions.push){
+            throw new Error("Токен читает репозиторий, но не может в него писать.");
+          }
+          return data;
+        });
+      });
+    }
+
+    /* Читает news.json, применяет к списку функцию mutate и сохраняет обратно.
+       При гонке (файл поменялся между чтением и записью) пробует ещё раз. */
+    function editNews(mutate, message, attempt){
+      attempt = attempt || 0;
+      return getFile("news/news.json").then(function(file){
+        var doc;
+        try{ doc = JSON.parse(file.text); }
+        catch(e){ throw new Error("news/news.json повреждён — исправьте его на GitHub вручную."); }
+        var list = Array.isArray(doc) ? doc : (doc.news || []);
+        var next = mutate(list.slice());
+        var outDoc = Array.isArray(doc) ? next : (function(){ doc.news = next; return doc; })();
+        var text = JSON.stringify(outDoc, null, 2) + "\n";
+        return putFile("news/news.json", text, file.sha, message).then(function(){ return next; });
+      })["catch"](function(err){
+        if(attempt < 1 && /изменился только что/.test(err.message)){
+          return editNews(mutate, message, attempt + 1);
+        }
+        throw err;
+      });
+    }
+
+    return {
+      cfg: cfg, saveCfg: saveCfg, token: token, setToken: setToken,
+      connected: connected, check: check, editNews: editNews
+    };
+  })();
+
   /* ================= Форма добавления новости =================
      Собирает корректный JSON-блок, чтобы не искать пропущенную запятую
      вручную. Ничего никуда не отправляет — результат копируется и
@@ -2554,11 +2738,142 @@
     if(!toggle) return;
 
     function val(id){ return (document.getElementById(id).value || "").trim(); }
-    function say(msg){
+    function say(msg, isError){
       status.textContent = msg;
+      status.classList.toggle("is-error", !!isError);
       clearTimeout(say._t);
-      say._t = setTimeout(function(){ status.textContent = ""; }, 4000);
+      say._t = setTimeout(function(){ status.textContent = ""; status.classList.remove("is-error"); }, 6000);
     }
+
+    /* ---- панель подключения GitHub ---- */
+    var ghState = document.getElementById("ghState"),
+        ghSetup = document.getElementById("ghSetup"),
+        ghSetupBtn = document.getElementById("ghSetupBtn"),
+        ghForgetBtn = document.getElementById("ghForgetBtn"),
+        ghSaveBtn = document.getElementById("ghSaveBtn"),
+        ghSetupStatus = document.getElementById("ghSetupStatus"),
+        publishBtn = document.getElementById("ncPublish");
+
+    function setStatus(el, msg, isError){
+      el.textContent = msg;
+      el.classList.toggle("is-error", !!isError);
+    }
+
+    function refreshGhUi(){
+      var c = GH.cfg();
+      var on = GH.connected();
+      ghState.textContent = on
+        ? "Публикация подключена: " + c.owner + "/" + c.repo + " (" + c.branch + ")"
+        : "Публикация не подключена — новость придётся вставлять вручную";
+      ghState.classList.toggle("is-on", on);
+      ghSetupBtn.hidden = on;
+      ghForgetBtn.hidden = !on;
+      publishBtn.hidden = !on;
+      document.getElementById("ncBuild").textContent = on ? "Собрать JSON вручную" : "Собрать JSON";
+    }
+
+    ghSetupBtn.addEventListener("click", function(){
+      var c = GH.cfg();
+      document.getElementById("ghOwner").value = c.owner;
+      document.getElementById("ghRepo").value = c.repo;
+      document.getElementById("ghBranch").value = c.branch;
+      ghSetup.hidden = !ghSetup.hidden;
+    });
+
+    ghForgetBtn.addEventListener("click", function(){
+      GH.setToken("");
+      refreshGhUi();
+      setStatus(ghSetupStatus, "Токен удалён из этого браузера");
+    });
+
+    ghSaveBtn.addEventListener("click", function(){
+      var tok = document.getElementById("ghToken").value.trim();
+      if(!tok){ setStatus(ghSetupStatus, "Вставьте токен", true); return; }
+      GH.saveCfg({
+        owner: document.getElementById("ghOwner").value.trim(),
+        repo: document.getElementById("ghRepo").value.trim(),
+        branch: document.getElementById("ghBranch").value.trim() || "main"
+      });
+      GH.setToken(tok);
+      setStatus(ghSetupStatus, "Проверяю…");
+      GH.check().then(function(){
+        document.getElementById("ghToken").value = "";
+        ghSetup.hidden = true;
+        refreshGhUi();
+        setStatus(ghSetupStatus, "");
+        say("Готово — теперь новости публикуются одной кнопкой");
+      })["catch"](function(err){
+        GH.setToken("");
+        refreshGhUi();
+        setStatus(ghSetupStatus, err.message, true);
+      });
+    });
+
+    /* ---- собственно публикация ---- */
+    function collect(){
+      var title = val("ncTitle");
+      if(!title) return null;
+      var tags = val("ncTags").split(",").map(function(t){ return t.trim(); }).filter(Boolean);
+      var item = {
+        id: "n" + Date.now(),
+        date: val("ncDate"),
+        time: val("ncTime"),
+        title: title,
+        text: val("ncText"),
+        author: val("ncAuthor"),
+        tags: tags
+      };
+      if(val("ncSourceName")) item.sourceName = val("ncSourceName");
+      if(val("ncSourceUrl")) item.sourceUrl = val("ncSourceUrl");
+      return item;
+    }
+
+    function clearForm(){
+      ["ncTitle","ncText","ncAuthor","ncTags","ncSourceName","ncSourceUrl"].forEach(function(id){
+        document.getElementById(id).value = "";
+      });
+    }
+
+    publishBtn.addEventListener("click", function(){
+      var item = collect();
+      if(!item){ say("Нужен хотя бы заголовок", true); return; }
+      publishBtn.disabled = true;
+      say("Публикую…");
+      GH.editNews(function(list){
+        list.unshift(item);
+        return list;
+      }, "Новость: " + item.title).then(function(list){
+        publishBtn.disabled = false;
+        clearForm();
+        applyNews({news:list});          // показываем сразу, не дожидаясь пересборки сайта
+        say("Опубликовано. На сайте появится через минуту");
+      })["catch"](function(err){
+        publishBtn.disabled = false;
+        say(err.message, true);
+      });
+    });
+
+    /* ---- удаление новости из режима редактора ---- */
+    document.addEventListener("click", function(e){
+      var btn = e.target.closest ? e.target.closest(".nr-del") : null;
+      if(!btn) return;
+      var id = btn.getAttribute("data-del");
+      var row = btn.closest(".news-row");
+      var title = row ? row.querySelector("h3").textContent : "";
+      if(!window.confirm("Удалить новость «" + title + "»?")) return;
+      if(!GH.connected()){ window.alert("Сначала подключите публикацию на GitHub."); return; }
+      btn.disabled = true;
+      GH.editNews(function(list){
+        return list.filter(function(n){ return String(n.id) !== String(id); });
+      }, "Удалена новость: " + title).then(function(list){
+        applyNews({news:list});
+      })["catch"](function(err){
+        btn.disabled = false;
+        window.alert(err.message);
+      });
+    });
+
+    refreshGhUi();
 
     toggle.addEventListener("click", function(){
       body.hidden = !body.hidden;
