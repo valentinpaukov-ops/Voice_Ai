@@ -1,1 +1,50 @@
+name: Обновить манифест эфира
+
+# Запускается сам, когда в папку audio/ добавили или удалили файлы.
+# Сам манифест исключён из триггера, чтобы коммит воркфлоу не запускал его снова.
+on:
+  push:
+    paths:
+      - 'audio/**'
+      - '!audio/manifest.json'
+      - 'tools/build_manifest.py'
+      - '.github/workflows/build-manifest.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-manifest
+  cancel-in-progress: false
+
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Забрать репозиторий
+        uses: actions/checkout@v4
+
+      - name: Поставить Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Библиотека для чтения тегов и длительности
+        run: pip install --quiet mutagen
+
+      - name: Пересобрать audio/manifest.json
+        run: python tools/build_manifest.py
+
+      - name: Зафиксировать изменения
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add audio/manifest.json
+          if git diff --staged --quiet; then
+            echo "Манифест не изменился — коммит не нужен."
+          else
+            git commit -m "Обновлён манифест эфира"
+            git push
+          fi
 
