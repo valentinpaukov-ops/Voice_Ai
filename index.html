@@ -563,13 +563,50 @@
   .gh-state{font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;color:var(--text-dim);margin-right:auto;}
   .gh-state.is-on{color:var(--wave);}
   .gh-setup{margin-top:14px;}
-  .news-row .nr-del{
+  .gh-help{margin-top:14px;border-top:1px solid var(--border);padding-top:12px;}
+  .gh-help summary{
+    cursor:pointer;font-family:var(--font-mono);font-size:11px;
+    text-transform:uppercase;letter-spacing:.05em;color:var(--accent-strong);
+  }
+  .gh-help ol{margin:12px 0 0 18px;display:flex;flex-direction:column;gap:7px;}
+  .gh-help li{font-size:13px;color:var(--text-dim);line-height:1.5;}
+  .gh-help li b{color:var(--text);}
+  .gh-help a{color:var(--accent-strong);}
+  .gh-help p{margin-top:11px;font-size:12px;color:var(--text-dim);line-height:1.5;}
+  .nr-admin{display:flex;gap:7px;margin-top:10px;}
+  .nr-btn{
     background:none;border:1px solid var(--border);border-radius:8px;
-    color:var(--text-dim);cursor:pointer;font-size:11px;padding:4px 9px;margin-top:9px;
+    color:var(--text-dim);cursor:pointer;font-size:11px;padding:4px 10px;
     font-family:var(--font-mono);
   }
-  .news-row .nr-del:hover{border-color:var(--live);color:var(--live);}
-  body:not(.is-admin) .nr-del{display:none;}
+  .nr-edit:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .nr-del:hover{border-color:var(--live);color:var(--live);}
+  body:not(.is-admin) .nr-admin{display:none;}
+
+  /* банк тегов — подставляем уже использованные */
+  .nc-tagbank{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .nc-tagbank button{
+    background:none;border:1px solid var(--border);border-radius:999px;
+    color:var(--text-dim);cursor:pointer;padding:3px 10px;
+    font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+  }
+  .nc-tagbank button:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .nc-tagbank button.is-on{background:color-mix(in srgb, var(--accent) 18%, transparent);border-color:var(--accent);color:var(--accent-strong);}
+
+  /* загрузка аудио прямо с сайта */
+  .au-drop{
+    border:1px dashed var(--border);border-radius:11px;
+    padding:18px;text-align:center;color:var(--text-dim);cursor:pointer;
+    font-size:13px;transition:border-color .15s ease,color .15s ease;
+  }
+  .au-drop:hover, .au-drop.is-over{border-color:var(--accent);color:var(--accent-strong);}
+  .au-picked{
+    margin-top:10px;font-family:var(--font-mono);font-size:12px;color:var(--accent-strong);
+  }
+  .au-bar{height:3px;border-radius:2px;background:var(--surface-2);overflow:hidden;margin-top:12px;display:none;}
+  .au-bar.is-on{display:block;}
+  .au-bar i{display:block;height:100%;width:30%;background:var(--accent);animation:auMove 1.1s ease-in-out infinite;}
+  @keyframes auMove{0%{margin-left:-30%;}100%{margin-left:100%;}}
   .nc-out{
     width:100%;margin-top:14px;padding:13px;border-radius:10px;
     border:1px solid var(--border);background:var(--surface);color:var(--text);
@@ -1177,6 +1214,28 @@
       <div class="queue-list" id="queueList"></div>
       <p class="queue-hint" id="queueHint" hidden></p>
       <p class="queue-note" id="queueNote"></p>
+
+      <div class="news-composer admin-only" id="audioComposer">
+        <button type="button" class="nc-toggle" id="auToggle">+ Загрузить запись в эфир</button>
+        <div class="nc-body" id="auBody" hidden>
+          <p class="nc-hint" id="auHint">Файл уйдёт прямо в папку <code>audio</code> репозитория и появится в эфире у всех. Через сайт можно грузить файлы до 100 МБ — это больше, чем позволяет загрузка через сам GitHub.</p>
+          <div class="au-drop" id="auDrop">
+            Нажмите или перетащите сюда аудиофайл
+            <input type="file" id="auFile" accept="audio/*" hidden>
+          </div>
+          <div class="au-picked" id="auPicked" hidden></div>
+          <div class="nc-grid" style="margin-top:14px;">
+            <label class="nc-field nc-wide"><span>Название в эфире</span><input type="text" id="auTitle" placeholder="Итоги недели: продукт и релизы"></label>
+            <label class="nc-field"><span>Ведущий или команда</span><input type="text" id="auHost" placeholder="Анна Волкова, продуктовая команда"></label>
+            <label class="nc-field"><span>Рубрика</span><input type="text" id="auTag" placeholder="Дайджест"></label>
+          </div>
+          <div class="nc-actions">
+            <button type="button" class="btn-add" id="auUpload">Опубликовать в эфир</button>
+            <span class="nc-status" id="auStatus"></span>
+          </div>
+          <div class="au-bar" id="auBar"><i></i></div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1216,6 +1275,19 @@
                 <button type="button" class="btn-add" id="ghSaveBtn">Проверить и сохранить</button>
                 <span class="nc-status" id="ghSetupStatus"></span>
               </div>
+              <details class="gh-help">
+                <summary>Где взять токен — по шагам</summary>
+                <ol>
+                  <li>Откройте <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a> — это создание точечного токена (Fine-grained).</li>
+                  <li><b>Token name</b> — любое понятное имя, например «Voice Ai — публикация новостей».</li>
+                  <li><b>Expiration</b> — срок действия. Когда он истечёт, токен перестанет работать и понадобится новый.</li>
+                  <li><b>Repository access</b> — выберите <b>Only select repositories</b> и отметьте только репозиторий сайта.</li>
+                  <li><b>Permissions → Repository permissions</b> — найдите строку <b>Contents</b> и поставьте ей <b>Read and write</b>. Больше ничего включать не нужно.</li>
+                  <li>Внизу <b>Generate token</b>, скопируйте показанную строку — GitHub покажет её только один раз.</li>
+                  <li>Вставьте её в поле «Токен» выше и нажмите «Проверить и сохранить».</li>
+                </ol>
+                <p>Токен даёт право менять файлы только в этом репозитории. Он хранится в этом браузере, в код сайта не попадает и посетителям не виден.</p>
+              </details>
             </div>
           </div>
           <p class="nc-hint">Заполните поля — новость уйдёт прямо в <code>news/news.json</code>. Если публикация не подключена, форма соберёт готовый блок для вставки вручную.</p>
@@ -1225,7 +1297,11 @@
             <label class="nc-field"><span>Время</span><input type="time" id="ncTime" value="10:00"></label>
             <label class="nc-field nc-wide"><span>Описание</span><textarea id="ncText" rows="3" placeholder="Что произошло и почему это важно команде"></textarea></label>
             <label class="nc-field"><span>Автор</span><input type="text" id="ncAuthor" placeholder="Анна Волкова"></label>
-            <label class="nc-field"><span>Теги через запятую</span><input type="text" id="ncTags" placeholder="Продукт, Релизы"></label>
+            <label class="nc-field nc-wide">
+              <span>Теги через запятую</span>
+              <input type="text" id="ncTags" placeholder="Продукт, Релизы">
+              <div class="nc-tagbank" id="ncTagBank"></div>
+            </label>
             <label class="nc-field"><span>Название источника</span><input type="text" id="ncSourceName" placeholder="База знаний"></label>
             <label class="nc-field"><span>Ссылка на источник</span><input type="url" id="ncSourceUrl" placeholder="https://..."></label>
             <label class="nc-check nc-wide">
@@ -1235,6 +1311,7 @@
           </div>
           <div class="nc-actions">
             <button type="button" class="btn-add" id="ncPublish" hidden>Опубликовать новость</button>
+            <button type="button" class="nc-ghost" id="ncCancelEdit" hidden>Отменить правку</button>
             <button type="button" class="nc-ghost" id="ncBuild">Собрать JSON вручную</button>
             <button type="button" class="nc-ghost" id="ncCopy" hidden>Скопировать</button>
             <span class="nc-status" id="ncStatus"></span>
@@ -2054,7 +2131,10 @@
           '<h3>' + escapeHtml(n.title) + '</h3>' +
           (n.text ? '<p>' + escapeHtml(n.text) + '</p>' : '') +
           (meta.length ? '<div class="news-meta">' + meta.join("") + '</div>' : '') +
-          '<button type="button" class="nr-del" data-del="' + escapeHtml(n.id) + '">удалить</button>' +
+          '<span class="nr-admin">' +
+            '<button type="button" class="nr-btn nr-edit" data-edit="' + escapeHtml(n.id) + '">изменить</button>' +
+            '<button type="button" class="nr-btn nr-del" data-del="' + escapeHtml(n.id) + '">удалить</button>' +
+          '</span>' +
         '</div>' +
       '</div>'
     );
@@ -2079,8 +2159,8 @@
   }
 
   function renderHomePreviews(){
-    // на главной — четыре свежие новости, остальные на странице «Новости»
-    document.getElementById("homeNews").innerHTML = newsItems.slice(0,4).map(newsRowHtml).join("");
+    // на главной — три свежие новости, остальные на странице «Новости»
+    document.getElementById("homeNews").innerHTML = newsItems.slice(0,3).map(newsRowHtml).join("");
     document.getElementById("homePodcasts").innerHTML = podcastItems.slice(0,3).map(mediaCardHtml).join("");
     document.getElementById("homeShows").innerHTML = showItems.slice(0,3).map(mediaCardHtml).join("");
     document.getElementById("homeGuides").innerHTML = guideItems.slice(0,3).map(function(g){ return listRowHtml(g, g.readTime); }).join("");
@@ -2683,17 +2763,19 @@
       });
     }
 
-    function putFile(path, text, sha, message){
+    // text — обычный текст, либо base64 передаётся напрямую (для файлов)
+    function putFile(path, text, sha, message, rawB64){
       var c = cfg();
+      var payload = {
+        message: message,
+        content: (rawB64 != null ? rawB64 : toB64(text)),
+        branch: c.branch
+      };
+      if(sha) payload.sha = sha;
       return fetch(apiUrl(path), {
         method: "PUT",
         headers: headers(),
-        body: JSON.stringify({
-          message: message,
-          content: toB64(text),
-          sha: sha,
-          branch: c.branch
-        })
+        body: JSON.stringify(payload)
       }).then(function(res){
         return res.json().catch(function(){ return null; }).then(function(data){
           if(!res.ok) throw new Error(errorText(res, data));
@@ -2718,22 +2800,40 @@
       });
     }
 
-    /* Читает news.json, применяет к списку функцию mutate и сохраняет обратно.
-       При гонке (файл поменялся между чтением и записью) пробует ещё раз. */
-    function editNews(mutate, message, attempt){
+    /* Читает JSON-файл, применяет к списку функцию mutate и сохраняет обратно.
+       key — имя поля со списком ("news" или "tracks"). При гонке (файл
+       поменялся между чтением и записью) пробует ещё раз. */
+    function editJson(path, key, mutate, message, attempt){
       attempt = attempt || 0;
-      return getFile("news/news.json").then(function(file){
+      return getFile(path).then(function(file){
         var doc;
         try{ doc = JSON.parse(file.text); }
-        catch(e){ throw new Error("news/news.json повреждён — исправьте его на GitHub вручную."); }
-        var list = Array.isArray(doc) ? doc : (doc.news || []);
+        catch(e){ throw new Error(path + " повреждён — исправьте его на GitHub вручную."); }
+        var list = Array.isArray(doc) ? doc : (doc[key] || []);
         var next = mutate(list.slice());
-        var outDoc = Array.isArray(doc) ? next : (function(){ doc.news = next; return doc; })();
+        var outDoc;
+        if(Array.isArray(doc)){ outDoc = next; }
+        else { doc[key] = next; doc.updated = new Date().toISOString().replace(/\.\d+Z$/, "Z"); outDoc = doc; }
         var text = JSON.stringify(outDoc, null, 2) + "\n";
-        return putFile("news/news.json", text, file.sha, message).then(function(){ return next; });
+        return putFile(path, text, file.sha, message).then(function(){ return next; });
       })["catch"](function(err){
-        if(attempt < 1 && /изменился только что/.test(err.message)){
-          return editNews(mutate, message, attempt + 1);
+        if(attempt < 2 && /изменился только что/.test(err.message)){
+          return editJson(path, key, mutate, message, attempt + 1);
+        }
+        throw err;
+      });
+    }
+    function editNews(mutate, message){ return editJson("news/news.json", "news", mutate, message); }
+
+    /* Загрузка файла (аудио). Через API лимит на файл — 100 МБ,
+       это заметно больше 25 МБ веб-интерфейса GitHub. */
+    function uploadFile(path, base64, message){
+      return putFile(path, null, null, message, base64)["catch"](function(err){
+        // файл с таким именем уже есть — перезаписываем поверх
+        if(/422|уже/.test(err.message)){
+          return getFile(path).then(function(f){
+            return putFile(path, null, f.sha, message, base64);
+          });
         }
         throw err;
       });
@@ -2741,7 +2841,8 @@
 
     return {
       cfg: cfg, saveCfg: saveCfg, token: token, setToken: setToken,
-      connected: connected, check: check, editNews: editNews
+      connected: connected, check: check,
+      editNews: editNews, editJson: editJson, uploadFile: uploadFile
     };
   })();
 
@@ -2830,6 +2931,84 @@
       });
     });
 
+    /* ---- банк тегов: подставляем те, что уже использовались ---- */
+    var tagBank = document.getElementById("ncTagBank"),
+        tagsInput = document.getElementById("ncTags");
+
+    function currentTags(){
+      return tagsInput.value.split(",").map(function(t){ return t.trim(); }).filter(Boolean);
+    }
+    function knownTags(){
+      var seen = [];
+      newsItems.forEach(function(n){
+        (n.tags || []).forEach(function(t){ if(t && seen.indexOf(t) === -1) seen.push(t); });
+      });
+      return seen.sort(function(a,b){ return a.localeCompare(b, "ru"); });
+    }
+    function renderTagBank(){
+      var have = currentTags();
+      tagBank.innerHTML = knownTags().map(function(t){
+        var on = have.indexOf(t) !== -1;
+        return '<button type="button" class="' + (on ? "is-on" : "") + '" data-tag="' +
+               escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
+      }).join("");
+    }
+    tagBank.addEventListener("click", function(e){
+      var btn = e.target.closest ? e.target.closest("button[data-tag]") : null;
+      if(!btn) return;
+      var t = btn.getAttribute("data-tag");
+      var have = currentTags();
+      var i = have.indexOf(t);
+      if(i === -1){ have.push(t); } else { have.splice(i, 1); }
+      tagsInput.value = have.join(", ");
+      renderTagBank();
+    });
+    tagsInput.addEventListener("input", renderTagBank);
+    document.addEventListener("voiceai:news-updated", renderTagBank);   // новости подгрузились
+    renderTagBank();
+
+    /* ---- режим правки существующей новости ---- */
+    var editingId = null;
+    var cancelEditBtn = document.getElementById("ncCancelEdit");
+
+    function setEditing(item){
+      editingId = item ? item.id : null;
+      cancelEditBtn.hidden = !item;
+      publishBtn.textContent = item ? "Сохранить изменения" : "Опубликовать новость";
+      toggle.textContent = item ? "− Правка новости" : (body.hidden ? "+ Добавить новость" : "− Свернуть");
+    }
+    function fillForm(n){
+      document.getElementById("ncTitle").value = n.title || "";
+      document.getElementById("ncText").value = n.text || "";
+      document.getElementById("ncDate").value = n.date || "";
+      document.getElementById("ncTime").value = n.time || "";
+      document.getElementById("ncAuthor").value = n.author || "";
+      tagsInput.value = (n.tags || []).join(", ");
+      document.getElementById("ncSourceName").value = n.sourceName || "";
+      document.getElementById("ncSourceUrl").value = n.sourceUrl || "";
+      document.getElementById("ncImportant").checked = !!n.important;
+      renderTagBank();
+    }
+    cancelEditBtn.addEventListener("click", function(){
+      setEditing(null);
+      clearForm();
+      say("Правка отменена");
+    });
+
+    document.addEventListener("click", function(e){
+      var btn = e.target.closest ? e.target.closest(".nr-edit") : null;
+      if(!btn) return;
+      var id = btn.getAttribute("data-edit");
+      var item = null;
+      for(var i=0;i<newsItems.length;i++){ if(String(newsItems[i].id) === String(id)){ item = newsItems[i]; break; } }
+      if(!item) return;
+      body.hidden = false;
+      fillForm(item);
+      setEditing(item);
+      document.getElementById("newsComposer").scrollIntoView({behavior:"smooth", block:"center"});
+      say("Правим «" + item.title + "»");
+    });
+
     /* ---- собственно публикация ---- */
     function collect(){
       var title = val("ncTitle");
@@ -2860,16 +3039,26 @@
     publishBtn.addEventListener("click", function(){
       var item = collect();
       if(!item){ say("Нужен хотя бы заголовок", true); return; }
+      var isEdit = !!editingId;
+      if(isEdit){ item.id = editingId; }
       publishBtn.disabled = true;
-      say("Публикую…");
+      say(isEdit ? "Сохраняю…" : "Публикую…");
+
       GH.editNews(function(list){
+        if(isEdit){
+          return list.map(function(n){
+            return String(n.id) === String(editingId) ? item : n;
+          });
+        }
         list.unshift(item);
         return list;
-      }, "Новость: " + item.title).then(function(list){
+      }, (isEdit ? "Правка новости: " : "Новость: ") + item.title).then(function(list){
         publishBtn.disabled = false;
         clearForm();
+        setEditing(null);
         applyNews({news:list});          // показываем сразу, не дожидаясь пересборки сайта
-        say("Опубликовано. На сайте появится через минуту");
+        renderTagBank();
+        say(isEdit ? "Изменения сохранены" : "Опубликовано. На сайте появится через минуту");
       })["catch"](function(err){
         publishBtn.disabled = false;
         say(err.message, true);
@@ -2946,6 +3135,145 @@
         return;
       }
       say(ok ? "Скопировано" : "Выделите текст и скопируйте вручную");
+    });
+  })();
+
+  /* ================= Загрузка записи в эфир =================
+     Файл уходит прямо в папку audio репозитория через GitHub API.
+     Лимит API — 100 МБ на файл, против 25 МБ у веб-интерфейса GitHub. */
+  (function(){
+    var toggle = document.getElementById("auToggle"),
+        body = document.getElementById("auBody"),
+        drop = document.getElementById("auDrop"),
+        fileInp = document.getElementById("auFile"),
+        picked = document.getElementById("auPicked"),
+        uploadBtn = document.getElementById("auUpload"),
+        statusEl = document.getElementById("auStatus"),
+        bar = document.getElementById("auBar"),
+        hint = document.getElementById("auHint");
+    if(!toggle) return;
+
+    var chosen = null;
+    var MAX = 95 * 1024 * 1024;   // выше этого GitHub API не принимает
+
+    function say(msg, isError){
+      statusEl.textContent = msg;
+      statusEl.classList.toggle("is-error", !!isError);
+    }
+    function human(bytes){
+      return bytes > 1e6 ? (bytes/1e6).toFixed(1) + " МБ" : Math.round(bytes/1e3) + " КБ";
+    }
+    // имя файла: кириллицу оставляем, опасные символы убираем
+    function safeName(name){
+      return name.replace(/[\\/:*?"<>|#%]+/g, "").replace(/\s+/g, " ").trim();
+    }
+    function datePrefix(){
+      var d = new Date();
+      return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2) + "_";
+    }
+
+    toggle.addEventListener("click", function(){
+      body.hidden = !body.hidden;
+      toggle.textContent = body.hidden ? "+ Загрузить запись в эфир" : "− Свернуть";
+      if(!body.hidden && !GH.connected()){
+        say("Сначала подключите GitHub в форме новостей", true);
+      }
+    });
+
+    function choose(file){
+      if(!file) return;
+      if(file.size > MAX){
+        chosen = null; picked.hidden = true;
+        say("Файл " + human(file.size) + " — это больше 95 МБ, GitHub такой не примет. Сожмите запись.", true);
+        return;
+      }
+      chosen = file;
+      picked.hidden = false;
+      picked.textContent = safeName(file.name) + " · " + human(file.size);
+      say(file.size > 50e6 ? "Файл крупный, загрузка займёт время" : "");
+      if(!document.getElementById("auTitle").value){
+        document.getElementById("auTitle").value =
+          safeName(file.name).replace(/\.[^.]+$/, "").replace(/^[\d\-_. ]+/, "").replace(/[_-]+/g, " ").trim();
+      }
+    }
+
+    drop.addEventListener("click", function(){ fileInp.click(); });
+    fileInp.addEventListener("change", function(){ choose(this.files && this.files[0]); });
+    ["dragenter","dragover"].forEach(function(ev){
+      drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.add("is-over"); });
+    });
+    ["dragleave","drop"].forEach(function(ev){
+      drop.addEventListener(ev, function(e){ e.preventDefault(); drop.classList.remove("is-over"); });
+    });
+    drop.addEventListener("drop", function(e){
+      if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){
+        choose(e.dataTransfer.files[0]);
+      }
+    });
+
+    // base64 кусками — иначе на большом файле падает стек
+    function fileToBase64(file){
+      return new Promise(function(resolve, reject){
+        var reader = new FileReader();
+        reader.onerror = function(){ reject(new Error("Не удалось прочитать файл")); };
+        reader.onload = function(){
+          try{
+            var bytes = new Uint8Array(reader.result), bin = "", CHUNK = 0x8000;
+            for(var i=0;i<bytes.length;i+=CHUNK){
+              bin += String.fromCharCode.apply(null, bytes.subarray(i, i+CHUNK));
+            }
+            resolve(btoa(bin));
+          }catch(err){ reject(err); }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    uploadBtn.addEventListener("click", function(){
+      if(!GH.connected()){ say("Сначала подключите GitHub в форме новостей", true); return; }
+      if(!chosen){ say("Выберите файл", true); return; }
+      var title = document.getElementById("auTitle").value.trim();
+      if(!title){ say("Впишите название записи", true); return; }
+
+      var fileName = datePrefix() + safeName(chosen.name);
+      var path = "audio/" + fileName;
+
+      uploadBtn.disabled = true;
+      bar.classList.add("is-on");
+      say("Читаю файл…");
+
+      fileToBase64(chosen).then(function(b64){
+        say("Загружаю " + human(chosen.size) + "…");
+        return GH.uploadFile(path, b64, "Запись в эфир: " + title);
+      }).then(function(){
+        say("Добавляю в список эфира…");
+        return GH.editJson("audio/manifest.json", "tracks", function(list){
+          var entry = {
+            file: fileName,
+            title: title,
+            host: document.getElementById("auHost").value.trim() || "Voice Ai",
+            tag: document.getElementById("auTag").value.trim() || "Эфир",
+            size: chosen.size
+          };
+          var i = -1;
+          for(var k=0;k<list.length;k++){ if(list[k] && list[k].file === fileName){ i = k; break; } }
+          if(i >= 0){ list[i] = entry; } else { list.push(entry); }
+          return list;
+        }, "Запись в списке эфира: " + title);
+      }).then(function(){
+        uploadBtn.disabled = false;
+        bar.classList.remove("is-on");
+        chosen = null;
+        picked.hidden = true;
+        fileInp.value = "";
+        ["auTitle","auHost","auTag"].forEach(function(id){ document.getElementById(id).value = ""; });
+        say("Готово — запись в эфире. Обновите страницу через минуту.");
+        hint.textContent = "Последняя загрузка: " + fileName;
+      })["catch"](function(err){
+        uploadBtn.disabled = false;
+        bar.classList.remove("is-on");
+        say(err.message, true);
+      });
     });
   })();
 
@@ -3147,6 +3475,8 @@
     LIB_CONFIG.news.data = newsItems;   // страница «Новости» берёт данные отсюда
     renderHomePreviews();
     if(location.hash === "#/news"){ renderLibraryFilters("news"); renderLibraryList("news"); }
+    // форма новостей пересоберёт банк тегов, услышав это событие
+    try{ document.dispatchEvent(new CustomEvent("voiceai:news-updated")); }catch(e){}
     return true;
   }
   function loadNews(){
