@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-21T21:38:05Z",
+  "updated": "2026-09-21T21:45:41Z",
   "tracks": [
     {
       "file": "2026-09-21_Итоги недели.MP3",
@@ -8,6 +8,14 @@
       "tag": "Дайджест",
       "duration": 57.2,
       "size": 914544
+    },
+    {
+      "file": "FURA.MP3",
+      "title": "FURA",
+      "host": "Voice Ai",
+      "tag": "Эфир",
+      "duration": 99.3,
+      "size": 1588712
     }
   ]
 }
