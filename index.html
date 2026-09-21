@@ -1163,7 +1163,7 @@
           <span class="tag" id="heroTag">Дайджест</span>
           <span id="heroHost">Анна Волкова, продуктовая команда</span>
         </div>
-        <p class="show-desc">Что запустили, что чиним и куда катится роадмап — короткий дайджест недели для всей команды TedoTechnologies. Слушайте в дороге, за кофе или во время code review.</p>
+        <p class="show-desc" id="heroDesc"></p>
         <div class="hero-controls">
           <div class="hero-nav-group">
             <button class="skip-btn" id="heroPrev" type="button" aria-label="Предыдущий материал в эфире" title="Предыдущий материал">
@@ -1228,6 +1228,10 @@
             <label class="nc-field nc-wide"><span>Название в эфире</span><input type="text" id="auTitle" placeholder="Итоги недели: продукт и релизы"></label>
             <label class="nc-field"><span>Ведущий или команда</span><input type="text" id="auHost" placeholder="Анна Волкова, продуктовая команда"></label>
             <label class="nc-field"><span>Рубрика</span><input type="text" id="auTag" placeholder="Дайджест"></label>
+            <label class="nc-field nc-wide">
+              <span>Описание выпуска — показывается в шапке эфира</span>
+              <textarea id="auDesc" rows="2" placeholder="О чём этот выпуск и кому он будет полезен"></textarea>
+            </label>
           </div>
           <div class="nc-actions">
             <button type="button" class="btn-add" id="auUpload">Опубликовать в эфир</button>
@@ -1611,6 +1615,7 @@
   var heroTitle=document.getElementById("heroTitle"),
       heroTag=document.getElementById("heroTag"),
       heroHost=document.getElementById("heroHost"),
+      heroDesc=document.getElementById("heroDesc"),
       dialTime=document.getElementById("dialTime"),
       dialTotal=document.getElementById("dialTotal"),
       dial=document.getElementById("dial"),
@@ -1866,8 +1871,15 @@
     }
   }
 
+  /* Текст под заголовком, когда у записи нет своего описания. */
+  var DEFAULT_DESC = "Первая уникальная платформа «Технологии Доверия», где контент об ИИ создан " +
+                     "с помощью нейросетей. ИИ-эфиры с познавательными подкастами, последние новости " +
+                     "и разборы технологий, уникальные гайды и обучающие материалы. Всё это для тех, " +
+                     "кто хочет понимать и использовать искусственный интеллект на практике.";
+
   function renderNowPlaying(){
     var tr = getTrack(state.currentId);
+    heroDesc.textContent = (tr && tr.desc) ? tr.desc : DEFAULT_DESC;
     if(tr){
       heroTitle.textContent = tr.title;
       heroTag.textContent = tr.tag + (tr.demo ? (tr.src ? " · демо-джингл" : " · без звука") : "");
@@ -2375,7 +2387,7 @@
   function buildSearchIndex(){
     var idx = [];
     tracks.forEach(function(t){
-      idx.push({type:"track", typeLabel:"Эфир", title:t.title, snippet:t.host, tag:t.tag, extra:"", hash:"#air", id:t.id});
+      idx.push({type:"track", typeLabel:"Эфир", title:t.title, snippet:t.desc || t.host, tag:t.tag, extra:t.desc || "", hash:"#air", id:t.id});
     });
     newsItems.forEach(function(n){
       idx.push({type:"news", typeLabel:"Новости", title:n.title, snippet:n.text || n.snippet,
@@ -3255,6 +3267,8 @@
             tag: document.getElementById("auTag").value.trim() || "Эфир",
             size: chosen.size
           };
+          var d = document.getElementById("auDesc").value.trim();
+          if(d) entry.desc = d;
           var i = -1;
           for(var k=0;k<list.length;k++){ if(list[k] && list[k].file === fileName){ i = k; break; } }
           if(i >= 0){ list[i] = entry; } else { list.push(entry); }
@@ -3266,7 +3280,7 @@
         chosen = null;
         picked.hidden = true;
         fileInp.value = "";
-        ["auTitle","auHost","auTag"].forEach(function(id){ document.getElementById(id).value = ""; });
+        ["auTitle","auHost","auTag","auDesc"].forEach(function(id){ document.getElementById(id).value = ""; });
         say("Готово — запись в эфире. Обновите страницу через минуту.");
         hint.textContent = "Последняя загрузка: " + fileName;
       })["catch"](function(err){
@@ -3449,6 +3463,7 @@
         title: t.title || t.file,
         host: t.host || "Voice Ai",
         tag: t.tag || "Эфир",
+        desc: t.desc || "",
         dur: (typeof t.duration === "number" && t.duration > 0) ? t.duration : null,
         src: encodeURI(src),
         demo: false
