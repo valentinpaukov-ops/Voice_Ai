@@ -541,6 +541,12 @@
     font-family:var(--font-body);font-size:14px;outline:none;resize:vertical;
   }
   .nc-field input:focus, .nc-field textarea:focus{border-color:var(--accent);}
+  .nc-check{
+    display:flex;align-items:center;gap:9px;cursor:pointer;
+    font-size:13px;color:var(--text-dim);padding:4px 0;
+  }
+  .nc-check input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none;}
+  .nc-check span{user-select:none;}
   .nc-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;}
   .nc-ghost{
     background:none;border:1px solid var(--border);border-radius:999px;
@@ -614,12 +620,22 @@
   }
   /* ---------- Новостная строка ---------- */
   .news-row{
+    position:relative;
     display:grid;
     grid-template-columns:130px 1fr;
     gap:18px;
     padding:18px 0;
     border-bottom:1px solid var(--border);
     align-items:start;
+  }
+  /* важная новость — оранжевая полоса слева */
+  .news-row.is-important{padding-left:18px;}
+  .news-row.is-important::before{
+    content:"";
+    position:absolute;
+    left:0;top:16px;bottom:16px;
+    width:3px;border-radius:2px;
+    background:var(--accent);
   }
   .news-row:last-child{border-bottom:none;}
   .news-when{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding-top:3px;white-space:nowrap;}
@@ -1212,6 +1228,10 @@
             <label class="nc-field"><span>Теги через запятую</span><input type="text" id="ncTags" placeholder="Продукт, Релизы"></label>
             <label class="nc-field"><span>Название источника</span><input type="text" id="ncSourceName" placeholder="База знаний"></label>
             <label class="nc-field"><span>Ссылка на источник</span><input type="url" id="ncSourceUrl" placeholder="https://..."></label>
+            <label class="nc-check nc-wide">
+              <input type="checkbox" id="ncImportant">
+              <span>Важная новость — отметить оранжевой полосой слева</span>
+            </label>
           </div>
           <div class="nc-actions">
             <button type="button" class="btn-add" id="ncPublish" hidden>Опубликовать новость</button>
@@ -1439,6 +1459,7 @@
       tags: tags,
       sourceName: n.sourceName || "",
       sourceUrl: n.sourceUrl || "",
+      important: !!n.important,    // оранжевая полоса слева
       tag: tags[0] || "Новости",   // для поиска и совместимости
       snippet: body
     };
@@ -2026,7 +2047,7 @@
     }
 
     return (
-      '<div class="news-row" data-id="' + escapeHtml(n.id) + '">' +
+      '<div class="news-row' + (n.important ? ' is-important' : '') + '" data-id="' + escapeHtml(n.id) + '">' +
         '<div class="news-when tabular">' + escapeHtml(newsWhen(n)) + '</div>' +
         '<div class="news-body">' +
           (tagsHtml ? '<div class="news-tags">' + tagsHtml + '</div>' : '') +
@@ -2825,6 +2846,7 @@
       };
       if(val("ncSourceName")) item.sourceName = val("ncSourceName");
       if(val("ncSourceUrl")) item.sourceUrl = val("ncSourceUrl");
+      if(document.getElementById("ncImportant").checked) item.important = true;
       return item;
     }
 
@@ -2832,6 +2854,7 @@
       ["ncTitle","ncText","ncAuthor","ncTags","ncSourceName","ncSourceUrl"].forEach(function(id){
         document.getElementById(id).value = "";
       });
+      document.getElementById("ncImportant").checked = false;
     }
 
     publishBtn.addEventListener("click", function(){
@@ -2901,6 +2924,7 @@
       };
       if(val("ncSourceName")) item.sourceName = val("ncSourceName");
       if(val("ncSourceUrl")) item.sourceUrl = val("ncSourceUrl");
+      if(document.getElementById("ncImportant").checked) item.important = true;
 
       // отступ в 4 пробела — чтобы блок ровно лёг внутрь массива "news"
       var block = JSON.stringify(item, null, 2).split("\n").map(function(line, i){
