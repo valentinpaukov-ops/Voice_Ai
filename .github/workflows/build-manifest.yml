@@ -1,41 +1,99 @@
-name: Обновить манифест эфира
-
-# Запускается сам, когда в папку audio/ добавили или удалили файлы.
-# Сам манифест исключён из триггера, чтобы коммит воркфлоу не запускал его снова.
-on:
-  push:
-    paths:
-      - 'audio/**'
-      - '!audio/manifest.json'
-      - 'tools/build_manifest.py'
-      - '.github/workflows/build-manifest.yml'
-  workflow_dispatch:
-
-permissions:
-  contents: write
-
-concurrency:
-  group: build-manifest
-  cancel-in-progress: false
-
-jobs:
-  manifest:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Забрать репозиторий
-        uses: actions/checkout@v4
-
-      - name: Поставить Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Библиотека для чтения тегов и длительности
-        run: pip install --quiet mutagen
-
-      - name: Пересобрать audio/manifest.json
-        run: python tools/build_manifest.py
-
+ 
+          AUDIO_DIR = "audio"
+          MANIFEST = os.path.join(AUDIO_DIR, "manifest.json")
+          AUDIO_EXT = {".mp3", ".m4a", ".aac", ".wav", ".ogg", ".oga",
+                       ".opus", ".flac", ".webm", ".mp4"}
+          PREFIX_RE = re.compile(r"^(\d{4}[-.]\d{2}[-.]\d{2}|\d{1,4})[ _.\-]+")
+          DATE_RE = re.compile(r"^(\d{4})[-.](\d{2})[-.](\d{2})")
+ 
+          def title_from_filename(stem):
+              name = PREFIX_RE.sub("", stem).replace("_", " ").replace("-", " ")
+              name = re.sub(r"\s+", " ", name).strip() or stem
+              return name[:1].upper() + name[1:]
+ 
+          def read_tags(path):
+              try:
+                  from mutagen import File as MF
+                  a = MF(path, easy=True)
+              except Exception:
+                  return None, None, None
+              if a is None:
+                  return None, None, None
+              dur = None
+              try:
+                  L = getattr(getattr(a, "info", None), "length", None)
+                  if L and L > 0:
+                      dur = round(float(L), 1)
+              except Exception:
+                  pass
+              def first(k):
+                  try:
+                      v = a.get(k)
+                  except Exception:
+                      return None
+                  if isinstance(v, list) and v:
+                      v = v[0]
+                  return v.strip() if isinstance(v, str) and v.strip() else None
+              return first("title"), (first("artist") or first("albumartist")), dur
+ 
+          os.makedirs(AUDIO_DIR, exist_ok=True)
+          files = sorted(f for f in os.listdir(AUDIO_DIR)
+                         if os.path.splitext(f)[1].lower() in AUDIO_EXT
+                         and os.path.isfile(os.path.join(AUDIO_DIR, f)))
+ 
+          existing = {}
+          if os.path.exists(MANIFEST):
+              try:
+                  with open(MANIFEST, encoding="utf-8") as fh:
+                      for t in (json.load(fh).get("tracks") or []):
+                          if isinstance(t, dict) and t.get("file"):
+                              existing[t["file"]] = t
+              except Exception as e:
+                  print("манифест не прочитан (%s) — собираю заново" % e)
+ 
+          tracks, added, kept = [], 0, 0
+          for fn in files:
+              path = os.path.join(AUDIO_DIR, fn)
+              stem = os.path.splitext(fn)[0]
+              prev = existing.get(fn)
+              if prev:
+                  e = dict(prev); e["file"] = fn
+                  if not e.get("duration"):
+                      _, _, d = read_tags(path)
+                      if d: e["duration"] = d
+                  kept += 1
+              else:
+                  tt, ta, d = read_tags(path)
+                  e = {"file": fn,
+                       "title": tt or title_from_filename(stem),
+                       "host": ta or "Voice Ai",
+                       "tag": "Эфир"}
+                  m = DATE_RE.match(stem)
+                  if m: e["date"] = "%s-%s-%s" % m.groups()
+                  if d: e["duration"] = d
+                  added += 1
+                  print("  + %s -> %s" % (fn, e["title"]))
+              e["size"] = os.path.getsize(path)
+              tracks.append(e)
+ 
+          for f in existing:
+              if f not in set(files):
+                  print("  - %s (файла больше нет)" % f)
+ 
+          with open(MANIFEST, "w", encoding="utf-8") as fh:
+              json.dump({"updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                         "tracks": tracks}, fh, ensure_ascii=False, indent=2)
+              fh.write("\n")
+ 
+          mb = sum(t.get("size", 0) for t in tracks) / 1e6
+          print("Готово: %d записей (новых %d, сохранено %d), %.1f МБ" % (len(tracks), added, kept, mb))
+          if mb > 700:
+              print("ВНИМАНИЕ: приближаемся к лимиту GitHub Pages в 1 ГБ")
+          PYTHON
+ 
+      - name: Показать получившийся список
+        run: cat audio/manifest.json
+ 
       - name: Зафиксировать изменения
         run: |
           git config user.name "github-actions[bot]"
