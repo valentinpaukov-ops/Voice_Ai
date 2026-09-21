@@ -514,6 +514,50 @@
      Обычный слушатель видит эфир только для прослушивания: без кнопки
      загрузки, без перетаскивания и удаления записей из очереди.
      Режим включается адресом ?admin=1 и запоминается в этом браузере. */
+  /* ---------- Форма добавления новости (только для редактора) ---------- */
+  .news-composer{margin-top:22px;}
+  .nc-toggle{
+    background:none;border:1px dashed var(--border);border-radius:10px;
+    color:var(--text-dim);cursor:pointer;padding:11px 18px;
+    font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .nc-toggle:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .nc-body{
+    margin-top:14px;padding:20px;
+    background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;
+  }
+  .nc-hint{font-size:13px;color:var(--text-dim);margin-bottom:16px;}
+  .nc-hint code{font-family:var(--font-mono);font-size:12px;color:var(--accent-strong);}
+  .nc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .nc-field{display:flex;flex-direction:column;gap:5px;min-width:0;}
+  .nc-field.nc-wide{grid-column:1 / -1;}
+  .nc-field span{
+    font-family:var(--font-mono);font-size:10px;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--text-dim);
+  }
+  .nc-field input, .nc-field textarea{
+    width:100%;padding:9px 11px;border-radius:9px;
+    border:1px solid var(--border);background:var(--surface);color:var(--text);
+    font-family:var(--font-body);font-size:14px;outline:none;resize:vertical;
+  }
+  .nc-field input:focus, .nc-field textarea:focus{border-color:var(--accent);}
+  .nc-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;}
+  .nc-ghost{
+    background:none;border:1px solid var(--border);border-radius:999px;
+    color:var(--text);cursor:pointer;padding:9px 16px;font-size:13px;
+  }
+  .nc-ghost:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .nc-status{font-size:12px;color:var(--accent-strong);}
+  .nc-out{
+    width:100%;margin-top:14px;padding:13px;border-radius:10px;
+    border:1px solid var(--border);background:var(--surface);color:var(--text);
+    font-family:var(--font-mono);font-size:12px;line-height:1.55;resize:vertical;
+  }
+  body:not(.is-admin) .admin-only{display:none;}
+  @media (max-width:700px){
+    .nc-grid{grid-template-columns:1fr;}
+  }
+
   body:not(.is-admin) #addBtn,
   body:not(.is-admin) .q-grip,
   body:not(.is-admin) .q-actions{display:none;}
@@ -552,6 +596,45 @@
     border-bottom:1px solid var(--border);
     align-items:start;
   }
+  /* ---------- Новостная строка ---------- */
+  .news-row{
+    display:grid;
+    grid-template-columns:130px 1fr;
+    gap:18px;
+    padding:18px 0;
+    border-bottom:1px solid var(--border);
+    align-items:start;
+  }
+  .news-row:last-child{border-bottom:none;}
+  .news-when{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding-top:3px;white-space:nowrap;}
+  .news-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:7px;}
+  .news-tag{
+    font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--text-dim);border:1px solid var(--border);border-radius:999px;padding:2px 8px;
+  }
+  .news-body h3{
+    font-family:var(--font-body);text-transform:none;font-weight:700;
+    font-size:17px;line-height:1.3;margin-bottom:6px;
+  }
+  .news-body p{font-size:14px;color:var(--text-dim);line-height:1.55;}
+  .news-meta{
+    display:flex;gap:14px;flex-wrap:wrap;align-items:center;
+    margin-top:9px;font-size:12px;color:var(--text-dim);
+  }
+  .news-author{display:inline-flex;align-items:center;gap:5px;}
+  .news-source{
+    display:inline-flex;align-items:center;gap:4px;
+    color:var(--accent-strong);text-decoration:none;
+    border-bottom:1px solid transparent;
+  }
+  .news-source:hover{border-bottom-color:var(--accent);}
+  .news-source svg{width:11px;height:11px;}
+  .news-row.flash{animation:flashHighlight 1.8s ease;}
+  @media (max-width:700px){
+    .news-row{grid-template-columns:1fr;gap:7px;}
+    .news-when{padding-top:0;}
+  }
+
   .list-row.flash{animation:flashHighlight 1.8s ease;}
   /* общий вариант — чтобы подсвечивать любой блок, найденный через поиск */
   .flash{animation:flashHighlight 1.8s ease;}
@@ -1074,7 +1157,30 @@
         </div>
         <a class="see-all" href="#/news">Все новости →</a>
       </div>
-      <div class="list-rows" id="homeNews"></div>
+      <div class="news-list" id="homeNews"></div>
+
+      <div class="news-composer admin-only" id="newsComposer">
+        <button type="button" class="nc-toggle" id="ncToggle">+ Добавить новость</button>
+        <div class="nc-body" id="ncBody" hidden>
+          <p class="nc-hint">Заполните поля — я соберу готовый блок для файла <code>news/news.json</code>, останется только вставить его на GitHub.</p>
+          <div class="nc-grid">
+            <label class="nc-field nc-wide"><span>Заголовок</span><input type="text" id="ncTitle" placeholder="Запущен новый модуль аналитики"></label>
+            <label class="nc-field"><span>Дата</span><input type="date" id="ncDate"></label>
+            <label class="nc-field"><span>Время</span><input type="time" id="ncTime" value="10:00"></label>
+            <label class="nc-field nc-wide"><span>Описание</span><textarea id="ncText" rows="3" placeholder="Что произошло и почему это важно команде"></textarea></label>
+            <label class="nc-field"><span>Автор</span><input type="text" id="ncAuthor" placeholder="Анна Волкова"></label>
+            <label class="nc-field"><span>Теги через запятую</span><input type="text" id="ncTags" placeholder="Продукт, Релизы"></label>
+            <label class="nc-field"><span>Название источника</span><input type="text" id="ncSourceName" placeholder="База знаний"></label>
+            <label class="nc-field"><span>Ссылка на источник</span><input type="url" id="ncSourceUrl" placeholder="https://..."></label>
+          </div>
+          <div class="nc-actions">
+            <button type="button" class="btn-add" id="ncBuild">Собрать JSON</button>
+            <button type="button" class="nc-ghost" id="ncCopy" hidden>Скопировать</button>
+            <span class="nc-status" id="ncStatus"></span>
+          </div>
+          <textarea class="nc-out" id="ncOut" rows="10" readonly hidden></textarea>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -1271,8 +1377,57 @@
     {id:"g5", tag:"HR", title:"Как оформить отпуск на HR-портале", meta:"HR-команда", readTime:"2 мин чтения", snippet:"Пошагово: заявка, согласование руководителя и что видно в календаре команды."}
   ];
 
+  /* ================= Новости =================
+     Формат записи в news/news.json:
+       id, date (ГГГГ-ММ-ДД), time (ЧЧ:ММ), title, text,
+       author, tags [...], sourceName, sourceUrl
+     Старый формат (tag, snippet, дата 21.09.2026) тоже понимается. */
+  function normalizeNews(n, i){
+    n = n || {};
+    var tags = [];
+    if(Array.isArray(n.tags)){ tags = n.tags.filter(Boolean); }
+    else if(n.tag){ tags = [n.tag]; }
+    var body = n.text || n.snippet || "";
+    return {
+      id: n.id || ("n" + (i + 1)),
+      date: n.date || "",
+      time: n.time || "",
+      title: n.title || "Без заголовка",
+      text: body,
+      author: n.author || "",
+      tags: tags,
+      sourceName: n.sourceName || "",
+      sourceUrl: n.sourceUrl || "",
+      tag: tags[0] || "Новости",   // для поиска и совместимости
+      snippet: body
+    };
+  }
+
+  // ключ сортировки: приводим любую дату к виду ГГГГ-ММ-ДДTЧЧ:ММ
+  function newsSortKey(n){
+    var d = String(n.date || "");
+    var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(d);
+    if(m){ d = m[3] + "-" + m[2] + "-" + m[1]; }
+    return d + "T" + (n.time || "00:00");
+  }
+  function sortNewsDesc(list){
+    return list.slice().sort(function(a, b){
+      var ka = newsSortKey(a), kb = newsSortKey(b);
+      return ka < kb ? 1 : (ka > kb ? -1 : 0);   // свежие сверху
+    });
+  }
+  // как дата показывается людям
+  function newsWhen(n){
+    var d = String(n.date || "");
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+    if(m){ d = m[3] + "." + m[2] + "." + m[1]; }
+    return d + (n.time ? " · " + n.time : "");
+  }
+
+  newsItems = sortNewsDesc(newsItems.map(normalizeNews));
+
   var LIB_CONFIG = {
-    news:     {title:"Новости компании", eyebrow:"Все материалы", data:newsItems,     kind:"list"},
+    news:     {title:"Новости компании", eyebrow:"Все материалы", data:newsItems,     kind:"news"},
     podcasts: {title:"Подкасты",         eyebrow:"Все материалы", data:podcastItems, kind:"media"},
     shows:    {title:"Шоу",              eyebrow:"Все материалы", data:showItems,    kind:"media"},
     guides:   {title:"Гайды",            eyebrow:"Все материалы", data:guideItems,   kind:"list"}
@@ -1811,6 +1966,37 @@
       '</div>'
     );
   }
+  function newsRowHtml(n){
+    var tagsHtml = n.tags.map(function(t){
+      return '<span class="news-tag">' + escapeHtml(t) + '</span>';
+    }).join("");
+
+    var meta = [];
+    if(n.author){
+      meta.push('<span class="news-author">' + escapeHtml(n.author) + '</span>');
+    }
+    if(n.sourceUrl){
+      meta.push('<a class="news-source" href="' + escapeHtml(n.sourceUrl) + '" target="_blank" rel="noopener noreferrer">' +
+        escapeHtml(n.sourceName || "Источник") +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7M9 7h8v8"/></svg>' +
+        '</a>');
+    } else if(n.sourceName){
+      meta.push('<span>' + escapeHtml(n.sourceName) + '</span>');
+    }
+
+    return (
+      '<div class="news-row" data-id="' + escapeHtml(n.id) + '">' +
+        '<div class="news-when tabular">' + escapeHtml(newsWhen(n)) + '</div>' +
+        '<div class="news-body">' +
+          (tagsHtml ? '<div class="news-tags">' + tagsHtml + '</div>' : '') +
+          '<h3>' + escapeHtml(n.title) + '</h3>' +
+          (n.text ? '<p>' + escapeHtml(n.text) + '</p>' : '') +
+          (meta.length ? '<div class="news-meta">' + meta.join("") + '</div>' : '') +
+        '</div>' +
+      '</div>'
+    );
+  }
+
   function mediaCardHtml(item){
     return (
       '<article class="media-card" data-id="'+escapeHtml(item.id)+'">'+
@@ -1830,7 +2016,8 @@
   }
 
   function renderHomePreviews(){
-    document.getElementById("homeNews").innerHTML = newsItems.slice(0,4).map(function(n){ return listRowHtml(n, n.date); }).join("");
+    // на главной — четыре свежие новости, остальные на странице «Новости»
+    document.getElementById("homeNews").innerHTML = newsItems.slice(0,4).map(newsRowHtml).join("");
     document.getElementById("homePodcasts").innerHTML = podcastItems.slice(0,3).map(mediaCardHtml).join("");
     document.getElementById("homeShows").innerHTML = showItems.slice(0,3).map(mediaCardHtml).join("");
     document.getElementById("homeGuides").innerHTML = guideItems.slice(0,3).map(function(g){ return listRowHtml(g, g.readTime); }).join("");
@@ -1848,7 +2035,10 @@
   function renderLibraryFilters(type){
     var cfg = LIB_CONFIG[type];
     var tags = [];
-    cfg.data.forEach(function(it){ if(tags.indexOf(it.tag)===-1){ tags.push(it.tag); } });
+    cfg.data.forEach(function(it){
+      var own = (it.tags && it.tags.length) ? it.tags : [it.tag];
+      own.forEach(function(t){ if(t && tags.indexOf(t)===-1){ tags.push(t); } });
+    });
     var all = ["Все"].concat(tags);
     var current = libFilterState[type];
     var html = all.map(function(t){
@@ -1868,13 +2058,19 @@
   function renderLibraryList(type, focusId){
     var cfg = LIB_CONFIG[type];
     var current = libFilterState[type];
-    var items = cfg.data.filter(function(it){ return current==="Все" || it.tag===current; });
+    var items = cfg.data.filter(function(it){
+      if(current==="Все") return true;
+      var own = (it.tags && it.tags.length) ? it.tags : [it.tag];
+      return own.indexOf(current) !== -1;
+    });
     var listEl = document.getElementById("libraryList");
     if(items.length===0){
       listEl.innerHTML = '<p class="lib-empty">По тегу «'+escapeHtml(current)+'» пока ничего нет.</p>';
       return;
     }
-    if(cfg.kind==="media"){
+    if(cfg.kind==="news"){
+      listEl.innerHTML = '<div class="news-list">'+items.map(newsRowHtml).join("")+'</div>';
+    } else if(cfg.kind==="media"){
       listEl.innerHTML = '<div class="media-grid">'+items.map(mediaCardHtml).join("")+'</div>';
     } else {
       listEl.innerHTML = '<div class="list-rows">'+items.map(function(it){ return listRowHtml(it, it.date || it.readTime); }).join("")+'</div>';
@@ -2038,7 +2234,12 @@
     tracks.forEach(function(t){
       idx.push({type:"track", typeLabel:"Эфир", title:t.title, snippet:t.host, tag:t.tag, extra:"", hash:"#air", id:t.id});
     });
-    newsItems.forEach(function(n){ idx.push({type:"news", typeLabel:"Новости", title:n.title, snippet:n.snippet, tag:n.tag, extra:n.date||"", hash:"#/news", id:n.id}); });
+    newsItems.forEach(function(n){
+      idx.push({type:"news", typeLabel:"Новости", title:n.title, snippet:n.text || n.snippet,
+                tag:(n.tags && n.tags.length ? n.tags.join(" ") : n.tag),
+                extra:[n.date, n.time, n.author, n.sourceName, (n.tags||[]).join(" ")].filter(Boolean).join(" "),
+                hash:"#/news", id:n.id});
+    });
     podcastItems.forEach(function(p){ idx.push({type:"podcast", typeLabel:"Подкасты", title:p.title, snippet:p.snippet, tag:p.tag, extra:p.meta||"", hash:"#/podcasts", id:p.id}); });
     showItems.forEach(function(s){ idx.push({type:"show", typeLabel:"Шоу", title:s.title, snippet:s.snippet, tag:s.tag, extra:s.meta||"", hash:"#/shows", id:s.id}); });
     guideItems.forEach(function(g){ idx.push({type:"guide", typeLabel:"Гайды", title:g.title, snippet:g.snippet, tag:g.tag, extra:(g.meta||"")+" "+(g.readTime||""), hash:"#/guides", id:g.id}); });
@@ -2339,6 +2540,76 @@
   initSearch(document.getElementById("searchInputMobile"), document.getElementById("searchResultsMobile"));
   handleRoute();
 
+  /* ================= Форма добавления новости =================
+     Собирает корректный JSON-блок, чтобы не искать пропущенную запятую
+     вручную. Ничего никуда не отправляет — результат копируется и
+     вставляется в news/news.json на GitHub. */
+  (function(){
+    var toggle = document.getElementById("ncToggle"),
+        body = document.getElementById("ncBody"),
+        build = document.getElementById("ncBuild"),
+        copyBtn = document.getElementById("ncCopy"),
+        out = document.getElementById("ncOut"),
+        status = document.getElementById("ncStatus");
+    if(!toggle) return;
+
+    function val(id){ return (document.getElementById(id).value || "").trim(); }
+    function say(msg){
+      status.textContent = msg;
+      clearTimeout(say._t);
+      say._t = setTimeout(function(){ status.textContent = ""; }, 4000);
+    }
+
+    toggle.addEventListener("click", function(){
+      body.hidden = !body.hidden;
+      toggle.textContent = body.hidden ? "+ Добавить новость" : "− Свернуть";
+      if(!body.hidden && !val("ncDate")){
+        var d = new Date();
+        document.getElementById("ncDate").value =
+          d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
+      }
+    });
+
+    build.addEventListener("click", function(){
+      var title = val("ncTitle");
+      if(!title){ say("Нужен хотя бы заголовок"); return; }
+
+      var tags = val("ncTags").split(",").map(function(t){ return t.trim(); }).filter(Boolean);
+      var item = {
+        id: "n" + Date.now(),
+        date: val("ncDate"),
+        time: val("ncTime"),
+        title: title,
+        text: val("ncText"),
+        author: val("ncAuthor"),
+        tags: tags
+      };
+      if(val("ncSourceName")) item.sourceName = val("ncSourceName");
+      if(val("ncSourceUrl")) item.sourceUrl = val("ncSourceUrl");
+
+      // отступ в 4 пробела — чтобы блок ровно лёг внутрь массива "news"
+      var block = JSON.stringify(item, null, 2).split("\n").map(function(line, i){
+        return i === 0 ? "    " + line : "    " + line;
+      }).join("\n");
+
+      out.value = block + ",";
+      out.hidden = false;
+      copyBtn.hidden = false;
+      say("Готово — скопируйте и вставьте первой записью в news.json");
+    });
+
+    copyBtn.addEventListener("click", function(){
+      out.select();
+      var ok = false;
+      try{ ok = document.execCommand("copy"); }catch(e){}
+      if(!ok && navigator.clipboard){
+        navigator.clipboard.writeText(out.value).then(function(){ say("Скопировано"); });
+        return;
+      }
+      say(ok ? "Скопировано" : "Выделите текст и скопируйте вручную");
+    });
+  })();
+
   /* ================= Переключатель темы =================
      По умолчанию тёмная — чтобы эфир выглядел одинаково у всех, а не
      зависел от настроек операционной системы у каждого слушателя.
@@ -2525,6 +2796,28 @@
   }
 
   function startAir(){ playCurrent(true); }
+
+  /* ============ Новости из файла news/news.json ============
+     Правится прямо на GitHub. Порядок в файле не важен — на сайте
+     новости всегда идут от свежих к старым по дате и времени. */
+  var NEWS_URL = "news/news.json";
+  function applyNews(data){
+    var list = data && (Array.isArray(data) ? data : data.news);
+    if(!Array.isArray(list) || !list.length) return false;
+    newsItems = sortNewsDesc(list.map(normalizeNews));
+    LIB_CONFIG.news.data = newsItems;   // страница «Новости» берёт данные отсюда
+    renderHomePreviews();
+    if(location.hash === "#/news"){ renderLibraryFilters("news"); renderLibraryList("news"); }
+    return true;
+  }
+  function loadNews(){
+    if(!window.fetch) return;
+    fetch(NEWS_URL, {cache:"no-store"})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){ applyNews(d); })
+      ["catch"](function(){ /* файла нет — показываем встроенные примеры */ });
+  }
+  loadNews();
 
   if(window.fetch){
     fetch(MANIFEST_URL, {cache:"no-store"})
