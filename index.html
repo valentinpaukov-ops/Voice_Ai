@@ -556,7 +556,19 @@
   }
   .air-back:hover{border-color:var(--accent);color:var(--accent-strong);}
 
-  .day-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .day-history{
+    margin-top:28px;padding-top:20px;
+    border-top:1px solid var(--border);
+  }
+  .day-history-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:14px;flex-wrap:wrap;margin-bottom:14px;
+  }
+  .day-history-head h3{
+    font-family:var(--font-mono);font-size:11px;font-weight:500;
+    text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);
+  }
+  .day-strip{display:flex;gap:8px;flex-wrap:wrap;}
   .day-chip{
     display:flex;flex-direction:column;align-items:center;gap:5px;
     min-width:56px;padding:9px 10px;
@@ -1039,6 +1051,33 @@
     color:var(--text-dim);text-decoration:none;display:inline-block;
   }
   .back-link:hover{color:var(--accent-strong);}
+  /* фильтры слева, порядок сортировки справа */
+  .lib-controls{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:18px;flex-wrap:wrap;margin:18px 0 26px;
+  }
+  .lib-controls .filter-row{margin:0;flex:1;min-width:0;}
+  .sort-wrap{display:inline-flex;align-items:center;gap:9px;flex:none;}
+  .sort-wrap > span{
+    font-family:var(--font-mono);font-size:10px;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--text-dim);
+  }
+  .sort-wrap select{
+    appearance:none;-webkit-appearance:none;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);border-radius:999px;
+    color:var(--text);cursor:pointer;
+    font-family:var(--font-body);font-size:13px;
+    padding:7px 30px 7px 14px;outline:none;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 10px center;background-size:13px;
+  }
+  .sort-wrap select:hover, .sort-wrap select:focus{border-color:var(--accent);}
+  @media (max-width:560px){
+    .lib-controls{align-items:stretch;}
+    .sort-wrap{justify-content:space-between;}
+  }
+
   .filter-row{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 26px;}
   .chip{
     font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
@@ -1325,10 +1364,17 @@
           <input type="file" id="fileInput" accept="audio/*" multiple hidden>
         </div>
       </div>
-      <div class="day-strip" id="dayStrip"></div>
       <div class="queue-list" id="queueList"></div>
       <p class="queue-hint" id="queueHint" hidden></p>
       <p class="queue-note" id="queueNote"></p>
+
+      <div class="day-history">
+        <div class="day-history-head">
+          <h3>История эфиров</h3>
+          <a class="see-all" href="#/archive">Весь архив →</a>
+        </div>
+        <div class="day-strip" id="dayStrip"></div>
+      </div>
 
       <div class="news-composer admin-only" id="audioComposer">
         <button type="button" class="nc-toggle" id="auToggle">+ Загрузить запись в эфир</button>
@@ -1528,7 +1574,18 @@
         <h2 id="libTitle">Новости</h2>
       </div>
     </div>
-    <div class="filter-row" id="libFilters"></div>
+    <div class="lib-controls">
+      <div class="filter-row" id="libFilters"></div>
+      <label class="sort-wrap">
+        <span>Порядок</span>
+        <select id="libSort">
+          <option value="date-desc">Новые → Старые</option>
+          <option value="date-asc">Старые → Новые</option>
+          <option value="az">А → Я</option>
+          <option value="za">Я → А</option>
+        </select>
+      </label>
+    </div>
     <div id="libraryList"></div>
   </div>
 </div>
@@ -1721,6 +1778,8 @@
     guides:   {title:"Гайды",            eyebrow:"Все материалы", data:guideItems,   kind:"list"}
   };
   var libFilterState = {news:"Все", podcasts:"Все", shows:"Все", guides:"Все"};
+  // порядок показа на страницах разделов, у каждого раздела свой
+  var libSortState = {news:"date-desc", podcasts:"date-desc", shows:"date-desc", guides:"date-desc"};
 
   /* ================= Queue / player ================= */
 
@@ -2355,6 +2414,30 @@
     });
   }
 
+  /* Сортировка списка раздела.
+     По дате: у новостей есть date и time, у подкастов, шоу и гайдов дат нет —
+     там «новые сверху» означает порядок, в котором их завела редакция
+     (сортировка устойчивая, поэтому исходный порядок сохраняется). */
+  function sortItems(items, mode){
+    var out = items.slice();
+    if(mode === "az" || mode === "za"){
+      out.sort(function(a, b){
+        return String(a.title || "").localeCompare(String(b.title || ""), "ru");
+      });
+      if(mode === "za") out.reverse();
+      return out;
+    }
+    var hasDates = out.some(function(i){ return !!i.date; });
+    if(hasDates){
+      out.sort(function(a, b){
+        var ka = newsSortKey(a), kb = newsSortKey(b);
+        return ka < kb ? 1 : (ka > kb ? -1 : 0);
+      });
+    }
+    if(mode === "date-asc") out.reverse();
+    return out;
+  }
+
   function renderLibraryList(type, focusId){
     var cfg = LIB_CONFIG[type];
     var current = libFilterState[type];
@@ -2363,6 +2446,7 @@
       var own = (it.tags && it.tags.length) ? it.tags : [it.tag];
       return own.indexOf(current) !== -1;
     });
+    items = sortItems(items, libSortState[type] || "date-desc");
     var listEl = document.getElementById("libraryList");
     if(items.length===0){
       listEl.innerHTML = '<p class="lib-empty">По тегу «'+escapeHtml(current)+'» пока ничего нет.</p>';
@@ -2395,6 +2479,14 @@
     document.getElementById("libEyebrow").textContent = LIB_CONFIG[type].eyebrow;
     document.getElementById("libTitle").textContent = LIB_CONFIG[type].title;
     if(!focusId){ libFilterState[type] = "Все"; window.scrollTo({top:0}); }
+    var sortEl = document.getElementById("libSort");
+    if(sortEl){
+      sortEl.value = libSortState[type] || "date-desc";
+      sortEl.onchange = function(){
+        libSortState[type] = sortEl.value;
+        renderLibraryList(type);
+      };
+    }
     renderLibraryFilters(type);
     renderLibraryList(type, focusId);
   }
