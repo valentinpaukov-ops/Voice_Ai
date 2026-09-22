@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T15:24:39Z",
+  "updated": "2026-09-22T16:19:04Z",
   "tracks": [
     {
       "file": "2026-09-22_01_Voice_Ai_intro.MP3",
@@ -46,6 +46,18 @@
       "host": "Voice Ai",
       "tag": "Эфир",
       "size": 2
+    },
+    {
+      "file": "Ti2_MASTER_RUS_2k_1302.mp3",
+      "title": "Ti2 MASTER RUS",
+      "host": "Voice Ai",
+      "tag": "Подкаст",
+      "size": 2916456,
+      "tags": [
+        "Voice Ai",
+        "Фирма"
+      ],
+      "desc": "Tedo Intelligence. Корпоративная платформа для работы с ИИ ассистентами. Выбирайте подходящего под свои запросы или пользуйтесь Тедорой"
     }
   ],
   "air": {
