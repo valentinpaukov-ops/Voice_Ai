@@ -1996,7 +1996,9 @@
       tagEl.className = "q-tag";
       tagEl.textContent = tr.broken
         ? tr.tag + " · файл не читается"
-        : tr.tag + (tr.demo ? (tr.src ? " · демо-джингл" : " · без звука") : "");
+        : tr.tag + (tr.demo ? (tr.src ? " · демо-джингл" : " · без звука") : "")
+                 // редактору подсказываем, что запись выпадет из архива
+                 + ((isAdmin && !tr.demo && !tr.day) ? " · без даты" : "");
 
       var durEl = document.createElement("span");
       durEl.className = "q-dur tabular";
@@ -3907,6 +3909,11 @@
 
   function setAirDay(day, autoplay){
     var list = tracksOfDay(day);
+    // Записи без даты (залиты мимо формы, без даты в имени) не должны
+    // потеряться — подмешиваем их в текущий эфир, иначе они не звучат нигде.
+    if(day === pickDefaultDay()){
+      list = list.concat(allTracks.filter(function(t){ return !t.day; }));
+    }
     if(!list.length) return false;
     airDay = day;
     tracks = list;
