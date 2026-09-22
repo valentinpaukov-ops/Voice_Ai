@@ -12,8 +12,7 @@
         "Фирма",
         "Новости"
       ],
-      "sourceName": "Voice Ai",
-      "important": true
+      "sourceName": "Voice Ai"
     },
     {
       "id": "n7",
@@ -105,5 +104,6 @@
         "Продукт"
       ]
     }
-  ]
+  ],
+  "updated": "2026-09-22T06:42:34Z"
 }
