@@ -1043,9 +1043,27 @@
     color:var(--text-dim);
     font-size:13px;
   }
-  footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  footer .wrap{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    flex-wrap:wrap;gap:16px;
+  }
+  .foot-left{text-align:left;}
+  .foot-right{text-align:right;}
+  .foot-line{display:block;line-height:1.6;}
+  @media (max-width:560px){
+    .foot-right{text-align:left;}     /* на телефоне обе колонки идут слева */
+  }
   .foot-mail{color:var(--accent-strong);text-decoration:none;border-bottom:1px solid transparent;}
   .foot-mail:hover{border-bottom-color:var(--accent);}
+
+  /* ссылки внутри описаний и текстов новостей */
+  .inline-link{
+    color:var(--accent-strong);
+    text-decoration:none;
+    border-bottom:1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    word-break:break-word;          /* длинный адрес не должен ломать вёрстку */
+  }
+  .inline-link:hover{border-bottom-color:var(--accent);}
 
   /* ---------- Library (section) pages ---------- */
   .lib-wrap{padding-block:40px 64px;}
@@ -1636,8 +1654,11 @@
 
 <footer>
   <div class="wrap">
-    <span>Voice_Ai. Корпоративное радио Технологии Доверия. 2026</span>
-    <span id="footerContact"></span>
+    <div class="foot-left">
+      <span class="foot-line">Voice_Ai.</span>
+      <span class="foot-line">Корпоративное радио «Технологии Доверия». 2026</span>
+    </div>
+    <div class="foot-right" id="footerContact"></div>
   </div>
 </footer>
 
@@ -1691,6 +1712,29 @@
       return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
     });
   }
+  /* Превращает ссылки и адреса почты внутри обычного текста в кликабельные.
+     Текст экранируется по кускам, поэтому вставить разметку через описание
+     невозможно, а распознаются только http(s), www и почта — никаких
+     javascript:-ссылок в результат не попадёт. */
+  var LINK_RE = /((?:https?:\/\/|www\.)[^\s<>"']+[^\s<>"'.,!?;:)\]}])|([\w.+-]+@[\w-]+\.[\w.-]*[\w-])/gi;
+
+  function linkify(text){
+    text = String(text == null ? "" : text);
+    var out = "", last = 0, m;
+    LINK_RE.lastIndex = 0;
+    while((m = LINK_RE.exec(text)) !== null){
+      out += escapeHtml(text.slice(last, m.index));
+      var token = m[0], href;
+      if(m[2]){ href = "mailto:" + token; }
+      else { href = /^www\./i.test(token) ? "https://" + token : token; }
+      out += '<a class="inline-link" href="' + escapeHtml(href) +
+             '" target="_blank" rel="noopener noreferrer">' + escapeHtml(token) + '</a>';
+      last = m.index + token.length;
+    }
+    out += escapeHtml(text.slice(last));
+    return out;
+  }
+
   function fmt(sec){
     if(sec==null || !isFinite(sec)) return "—:—";
     sec = Math.max(0, Math.round(sec));
@@ -2124,7 +2168,7 @@
 
   function renderNowPlaying(){
     var tr = getTrack(state.currentId);
-    heroDesc.textContent = (tr && tr.desc) ? tr.desc : DEFAULT_DESC;
+    heroDesc.innerHTML = linkify((tr && tr.desc) ? tr.desc : DEFAULT_DESC);
     if(tr){
       heroTitle.textContent = tr.title;
       heroTag.textContent = tr.tag + (tr.demo ? (tr.src ? " · демо-джингл" : " · без звука") : "");
@@ -2262,6 +2306,55 @@
     selectTrack(prev.id, true);
   }
 
+  /* ===== Сохранение порядка эфира =====
+     Порядок задаёт редактор, и он должен пережить обновление страницы.
+     Поэтому после перестановки пишем новый порядок в audio/manifest.json.
+     Записи других дней остаются на своих местах. */
+  var orderSaveTimer = null;
+
+  function syncAllTracksOrder(){
+    // приводим общий список к порядку текущей очереди
+    var pos = {};
+    tracks.forEach(function(t, i){ if(t.file) pos[t.file] = i; });
+    var inQueue = allTracks.filter(function(t){ return t.file && pos[t.file] !== undefined; });
+    inQueue.sort(function(a, b){ return pos[a.file] - pos[b.file]; });
+    var rest = allTracks.filter(function(t){ return !t.file || pos[t.file] === undefined; });
+    var out = [], qi = 0, ri = 0;
+    allTracks.forEach(function(t){
+      if(t.file && pos[t.file] !== undefined){ out.push(inQueue[qi++]); }
+      else { out.push(rest[ri++]); }
+    });
+    allTracks = out;
+  }
+
+  function persistQueueOrder(){
+    syncAllTracksOrder();
+    if(!isAdmin || !GH.connected()) return;      // слушателю сохранять нечего
+    var order = tracks.map(function(t){ return t.file; }).filter(Boolean);
+    if(!order.length) return;
+
+    clearTimeout(orderSaveTimer);
+    orderSaveTimer = setTimeout(function(){
+      GH.editJson("audio/manifest.json", "tracks", function(list){
+        var queue = order.slice();
+        var byFile = {};
+        list.forEach(function(it){ if(it && it.file) byFile[it.file] = it; });
+        // на местах записей текущего дня раскладываем их в новом порядке
+        return list.map(function(it){
+          if(it && it.file && order.indexOf(it.file) !== -1){
+            var f = queue.shift();
+            return byFile[f] || it;
+          }
+          return it;
+        });
+      }, "Изменён порядок эфира").then(function(){
+        showHint("Порядок эфира сохранён");
+      })["catch"](function(err){
+        showHint("Не удалось сохранить порядок: " + err.message);
+      });
+    }, 900);   // ждём, пока редактор закончит переставлять
+  }
+
   function moveTrack(id, dir){
     var idx = tracks.findIndex(function(t){ return t.id===id; });
     var newIdx = idx + dir;
@@ -2270,6 +2363,7 @@
     tracks[idx] = tracks[newIdx];
     tracks[newIdx] = tmp;
     renderQueue();
+    persistQueueOrder();
   }
 
   function reorderTrack(draggedId, targetId){
@@ -2280,6 +2374,7 @@
     var toIdx = targetId ? tracks.findIndex(function(t){ return t.id===targetId; }) : -1;
     if(toIdx<0){ tracks.push(item); } else { tracks.splice(toIdx,0,item); }
     renderQueue();
+    persistQueueOrder();
   }
 
   function removeTrack(id){
@@ -2358,7 +2453,7 @@
       '<div class="list-row" data-id="'+escapeHtml(item.id)+'">'+
         '<div class="list-date tabular">'+escapeHtml(dateOrRead)+'</div>'+
         '<div class="list-tag">'+escapeHtml(item.tag)+'</div>'+
-        '<div class="list-body"><h3>'+escapeHtml(item.title)+'</h3><p>'+escapeHtml(item.snippet)+'</p></div>'+
+        '<div class="list-body"><h3>'+escapeHtml(item.title)+'</h3><p>'+linkify(item.snippet)+'</p></div>'+
       '</div>'
     );
   }
@@ -2386,7 +2481,7 @@
         '<div class="news-body">' +
           (tagsHtml ? '<div class="news-tags">' + tagsHtml + '</div>' : '') +
           '<h3>' + escapeHtml(n.title) + '</h3>' +
-          (n.text ? '<p>' + escapeHtml(n.text) + '</p>' : '') +
+          (n.text ? '<p>' + linkify(n.text) + '</p>' : '') +
           (meta.length ? '<div class="news-meta">' + meta.join("") + '</div>' : '') +
           '<span class="nr-admin">' +
             '<button type="button" class="nr-btn nr-edit" data-edit="' + escapeHtml(n.id) + '">изменить</button>' +
@@ -2403,7 +2498,7 @@
         '<span class="swatch"></span>'+
         '<span class="media-tag">'+escapeHtml(item.tag)+'</span>'+
         '<h3>'+escapeHtml(item.title)+'</h3>'+
-        '<p>'+escapeHtml(item.snippet)+'</p>'+
+        '<p>'+linkify(item.snippet)+'</p>'+
         '<div class="media-meta">'+
           '<span class="m-name">'+escapeHtml(item.meta)+'</span>'+
           '<span class="tabular">'+escapeHtml(fmt(item.durSec))+'</span>'+
@@ -3845,9 +3940,11 @@
       return;
     }
     var subject = encodeURIComponent("Идея для эфира Voice_Ai");
-    el.innerHTML = 'Есть идеи и новости для эфира? ' +
-      '<a class="foot-mail" href="mailto:' + escapeHtml(EDITORIAL_EMAIL) + '?subject=' + subject + '">' +
-      escapeHtml(EDITORIAL_EMAIL) + '</a>';
+    el.innerHTML =
+      '<span class="foot-line">Есть идеи и новости для эфира?</span>' +
+      '<span class="foot-line"><a class="foot-mail" href="mailto:' +
+      escapeHtml(EDITORIAL_EMAIL) + '?subject=' + subject + '">' +
+      escapeHtml(EDITORIAL_EMAIL) + '</a></span>';
   })();
 
   /* ================= Режим редактора =================
@@ -4216,6 +4313,17 @@
       t.desc  = i.desc || "";
       t.date  = i.date || "";
       t.day   = parseTrackDate(t);
+    });
+
+    // порядок берём строго из манифеста — он и есть источник истины
+    var orderIdx = {};
+    (list || []).forEach(function(i, k){ if(i && i.file) orderIdx[i.file] = k; });
+    allTracks.sort(function(a, b){
+      var ia = orderIdx[a.file], ib = orderIdx[b.file];
+      if(ia === undefined && ib === undefined) return 0;
+      if(ia === undefined) return 1;
+      if(ib === undefined) return -1;
+      return ia - ib;
     });
 
     // пересобираем очередь текущего дня, сохраняя то, что играет
