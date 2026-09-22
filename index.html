@@ -3670,8 +3670,9 @@
         return GH.editJson("audio/manifest.json", "tracks", function(list){
           return list.filter(function(t){ return t && t.file !== file; });
         }, "Запись убрана из списка эфира: " + title);
-      }).then(function(){
-        say("Удалено. Обновите страницу через минуту.");
+      }).then(function(list){
+        refreshAirAfterEdit(list);
+        say("Удалено");
         if(editingFile === file){ setEditingTrack(null); clearAudioForm(); }
       })["catch"](function(err){ say(err.message, true); });
     });
@@ -3700,12 +3701,13 @@
             if(dt){ next.date = dt; } else { delete next.date; }
             return next;
           });
-        }, "Правка записи: " + t).then(function(){
+        }, "Правка записи: " + t).then(function(list){
           uploadBtn.disabled = false;
           bar.classList.remove("is-on");
           setEditingTrack(null);
           clearAudioForm();
-          say("Сохранено. Обновите страницу через минуту.");
+          refreshAirAfterEdit(list);     // показываем изменения сразу
+          say("Сохранено");
         })["catch"](function(err){
           uploadBtn.disabled = false;
           bar.classList.remove("is-on");
@@ -3747,14 +3749,15 @@
           if(i >= 0){ list[i] = entry; } else { list.push(entry); }
           return list;
         }, "Запись в списке эфира: " + title);
-      }).then(function(){
+      }).then(function(list){
         uploadBtn.disabled = false;
         bar.classList.remove("is-on");
         chosen = null;
         picked.hidden = true;
         fileInp.value = "";
         ["auTitle","auHost","auTag","auDesc","auDate"].forEach(function(id){ document.getElementById(id).value = ""; });
-        say("Готово — запись в эфире. Обновите страницу через минуту.");
+        refreshAirAfterEdit(list);     // запись появляется в очереди сразу
+        say("Готово — запись в эфире");
         hint.textContent = "Последняя загрузка: " + fileName;
       })["catch"](function(err){
         uploadBtn.disabled = false;
@@ -4122,6 +4125,62 @@
               '</button>';
     }
     strip.innerHTML = html;
+  }
+
+  /* После правки, загрузки или удаления записи обновляем всё на странице
+     сразу, не дожидаясь пересборки сайта и не прерывая воспроизведение. */
+  function refreshAirAfterEdit(list){
+    var byFile = {};
+    (list || []).forEach(function(i){ if(i && i.file) byFile[i.file] = i; });
+
+    // удалённые записи убираем из памяти
+    allTracks = allTracks.filter(function(t){ return !t.file || byFile[t.file]; });
+
+    // только что загруженные — добавляем
+    (list || []).forEach(function(i){
+      if(!i || !i.file) return;
+      var exists = allTracks.some(function(t){ return t.file === i.file; });
+      if(exists) return;
+      var src = /^https?:\/\//i.test(i.file) ? i.file : MANIFEST_URL.replace(/manifest\.json$/, "") + i.file;
+      var t = {
+        id: mkId(), file: i.file, date: i.date || "",
+        title: i.title || i.file, host: i.host || "Voice Ai",
+        tag: i.tag || "Эфир", desc: i.desc || "",
+        dur: (typeof i.duration === "number" && i.duration > 0) ? i.duration : null,
+        src: encodeURI(src), demo: false
+      };
+      t.day = parseTrackDate(t);
+      allTracks.push(t);
+    });
+    allTracks.forEach(function(t){
+      var i = byFile[t.file];
+      if(!i) return;
+      t.title = i.title || t.title;
+      t.host  = i.host || "";
+      t.tag   = i.tag || "Эфир";
+      t.desc  = i.desc || "";
+      t.date  = i.date || "";
+      t.day   = parseTrackDate(t);
+    });
+
+    // пересобираем очередь текущего дня, сохраняя то, что играет
+    var playingId = state.currentId;
+    var day = airDay || pickDefaultDay();
+    var next = tracksOfDay(day);
+    if(day === pickDefaultDay()){
+      next = next.concat(allTracks.filter(function(t){ return !t.day; }));
+    }
+    if(next.length){
+      tracks = next;
+      if(!getTrack(playingId)){ state.currentId = tracks[0].id; }
+    }
+
+    renderQueue();
+    renderNowPlaying();      // здесь же обновится описание в шапке плеера
+    renderDayStrip();
+    renderAirDayLabel();
+    var arch = document.getElementById("viewArchive");
+    if(arch && !arch.hidden){ renderCalendar(); renderArchiveDay(calPicked); }
   }
 
   function renderAirDayLabel(){
