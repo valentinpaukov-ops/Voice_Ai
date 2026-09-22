@@ -568,8 +568,39 @@
     font-family:var(--font-mono);font-size:11px;font-weight:500;
     text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim);
   }
-  .day-strip{display:flex;gap:8px;flex-wrap:wrap;}
+  .day-head-right{display:flex;align-items:center;gap:12px;}
+  .day-today-btn{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;
+    padding:4px 10px;border-radius:999px;cursor:pointer;
+    background:color-mix(in srgb, var(--accent) 14%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    color:var(--text);
+  }
+  .day-today-btn:hover{background:color-mix(in srgb, var(--accent) 24%, transparent);}
+
+  /* Карусель дней: полоса прокручивается, стрелки листают её по экрану. */
+  .day-nav{display:flex;align-items:center;gap:8px;}
+  .day-arrow{
+    flex:0 0 auto;width:28px;height:52px;border-radius:9px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--surface);border:1px solid var(--border);color:var(--text-dim);
+    font-size:17px;line-height:1;transition:border-color .15s ease, color .15s ease;
+  }
+  /* на телефоне полосу листают пальцем — стрелки только съедают ширину */
+  @media (max-width:560px){
+    .day-arrow{display:none;}
+  }
+  .day-arrow:hover:not(:disabled){border-color:var(--accent);color:var(--text);}
+  .day-arrow:disabled{opacity:.25;cursor:default;}
+  .day-strip{
+    display:flex;gap:8px;flex-wrap:nowrap;
+    overflow-x:auto;scroll-behavior:smooth;
+    scrollbar-width:none;-ms-overflow-style:none;
+    padding:2px 0;   /* чтобы рамка выделения не обрезалась */
+  }
+  .day-strip::-webkit-scrollbar{display:none;}
   .day-chip{
+    flex:0 0 auto;
     display:flex;flex-direction:column;align-items:center;gap:5px;
     min-width:56px;padding:9px 10px;
     background:var(--surface);border:1px solid var(--border);border-radius:11px;
@@ -577,8 +608,12 @@
   }
   .day-chip:hover{border-color:var(--accent);}
   .day-chip.is-current{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);}
+  .day-chip.is-today .dc-num{color:var(--accent);}
   .day-chip.is-empty{opacity:.4;cursor:default;}
   .day-chip.is-empty:hover{border-color:var(--border);}
+  /* «завтра и дальше» — пунктиром, чтобы пустое будущее не путали с пустым прошлым */
+  .day-chip.is-future{opacity:.5;border-style:dashed;}
+  .day-chip.is-future.is-empty{opacity:.32;}
   .dc-dow{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;}
   .dc-num{font-family:var(--font-mono);font-size:15px;color:var(--text);font-weight:600;}
   .dc-dots{display:flex;gap:3px;height:5px;}
@@ -721,8 +756,7 @@
     .nc-grid{grid-template-columns:1fr;}
   }
 
-  body:not(.is-admin) #addBtn,
-  body:not(.is-admin) .q-grip,
+    body:not(.is-admin) .q-grip,
   body:not(.is-admin) .q-actions{display:none;}
   body:not(.is-admin) .queue-item{cursor:pointer;}
   .admin-badge{
@@ -1384,11 +1418,6 @@
         <div class="queue-actions">
           <span class="eyebrow" id="queueCount">6 файлов в очереди</span>
           <span class="admin-badge">режим редактора</span>
-          <button class="btn-add" id="addBtn" type="button">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></svg>
-            Добавить записи
-          </button>
-          <input type="file" id="fileInput" accept="audio/*" multiple hidden>
         </div>
       </div>
       <div class="queue-list" id="queueList"></div>
@@ -1398,9 +1427,16 @@
       <div class="day-history">
         <div class="day-history-head">
           <h3>История эфиров</h3>
-          <a class="see-all" href="#/archive">Весь архив →</a>
+          <div class="day-head-right">
+            <button type="button" class="day-today-btn" id="dayToday" hidden>↺ Сегодня</button>
+            <a class="see-all" href="#/archive">Весь архив →</a>
+          </div>
         </div>
-        <div class="day-strip" id="dayStrip"></div>
+        <div class="day-nav">
+          <button type="button" class="day-arrow" id="dayPrev" aria-label="Предыдущие дни">‹</button>
+          <div class="day-strip" id="dayStrip"></div>
+          <button type="button" class="day-arrow" id="dayNext" aria-label="Следующие дни">›</button>
+        </div>
       </div>
 
       <div class="news-composer admin-only" id="audioComposer">
@@ -1898,8 +1934,6 @@
       queueListEl=document.getElementById("queueList"),
       queueCountEl=document.getElementById("queueCount"),
       queueHintEl=document.getElementById("queueHint"),
-      addBtn=document.getElementById("addBtn"),
-      fileInput=document.getElementById("fileInput"),
       volInput=document.getElementById("vol"),
       muteBtn=document.getElementById("muteBtn"),
       volIconOn=document.getElementById("volIconOn"),
@@ -3102,12 +3136,6 @@
   });
   applyVolume(volInput.value/100);
 
-  addBtn.addEventListener("click", function(){ fileInput.click(); });
-  fileInput.addEventListener("change", function(){
-    if(this.files && this.files.length){ addFiles(this.files); }
-    this.value = "";
-  });
-
   queueListEl.addEventListener("dragover", function(e){
     var types = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.types) || []);
     if(types.indexOf("Files") !== -1){
@@ -3131,7 +3159,11 @@
     queueListEl.classList.remove("drag-over");
     Array.prototype.forEach.call(queueListEl.querySelectorAll(".queue-item"), function(r){ r.classList.remove("drag-target"); });
     if(types.indexOf("Files") !== -1 && e.dataTransfer.files && e.dataTransfer.files.length){
-      addFiles(e.dataTransfer.files);
+      // файл, брошенный на очередь, отправляем в форму публикации:
+      // локальная «примерка» больше не нужна, публикуем по-настоящему
+      document.dispatchEvent(new CustomEvent("voiceai:stage-audio", {
+        detail:{ file: e.dataTransfer.files[0] }
+      }));
       return;
     }
     if(draggingId){
@@ -3720,6 +3752,18 @@
       }
     }
 
+    // файл бросили прямо на очередь эфира — открываем форму с ним
+    document.addEventListener("voiceai:stage-audio", function(e){
+      var f = e.detail && e.detail.file;
+      if(!f) return;
+      body.hidden = false;
+      toggle.textContent = "− Свернуть";
+      setEditingTrack(null);
+      choose(f);
+      document.getElementById("audioComposer").scrollIntoView({behavior:"smooth", block:"center"});
+      if(!GH.connected()){ say("Сначала подключите GitHub — в форме новостей", true); }
+    });
+
     drop.addEventListener("click", function(){ fileInp.click(); });
     fileInp.addEventListener("change", function(){ choose(this.files && this.files[0]); });
     ["dragenter","dragover"].forEach(function(ev){
@@ -3949,11 +3993,12 @@
 
   /* ================= Режим редактора =================
      ВАЖНО: это не защита, а удобство. Страница статическая, и спрятать в
-     ней что-то по-настоящему нельзя — кто угодно может открыть исходный код.
-     Но прятать тут и нечего: кнопка «Добавить записи» кладёт файлы только в
-     текущую вкладку браузера того, кто их выбрал. Эти файлы не попадают ни
-     на сайт, ни к другим слушателям и пропадают при обновлении страницы.
-     Эфир для всех меняется только через загрузку файлов в репозиторий. */
+     ней что-то по-настоящему нельзя — кто угодно может дописать ?admin=1
+     и увидеть формы. Но прятать тут и нечего: без токена GitHub формы
+     ничего не публикуют. Настоящий ключ от эфира — это токен, и он лежит
+     только в localStorage браузера редактора, а не в коде страницы.
+
+     Включается: ?admin=1 — и запоминается в этом браузере до ?admin=0. */
   var ADMIN_KEY = "voiceai_admin";
   function resolveAdmin(){
     var on = false;
@@ -3971,7 +4016,7 @@
   var isAdmin = resolveAdmin();
   document.body.classList.toggle("is-admin", isAdmin);
   document.getElementById("queueNote").textContent = isAdmin
-    ? "Режим редактора. Свои файлы можно перетащить прямо на список, порядок меняется мышью за значок ⠿ или стрелками ↑↓. Добавленное здесь слышно только вам и пропадёт при обновлении — чтобы запись попала в эфир для всех, загрузите её в папку audio репозитория."
+    ? "Режим редактора. Порядок эфира меняется мышью за значок ⠿ или стрелками ↑↓ и сохраняется для всех. Карандаш правит название и описание, крестик удаляет запись насовсем. Новый файл можно перетащить прямо на этот список — откроется форма публикации."
     : "Эфир собирается редакцией Voice Ai. Нажмите на любую запись, чтобы послушать её сразу.";
 
   /* ============ Продолжение эфира после обновления страницы ============ */
@@ -4263,32 +4308,169 @@
 
   var RU_DOW_SHORT = ["пн","вт","ср","чт","пт","сб","вс"];
 
-  /* последние 7 дней под очередью — быстрый переход к вчерашнему эфиру */
+  /* ===================== Карусель дней =====================
+     Полоса под очередью — это окно календаря, а не список публикаций.
+     Рисуем сплошной ряд дней: назад не меньше STRIP_PAST (и дальше, если
+     материал старше), вперёд не меньше STRIP_FUTURE — пустое «будущее»
+     показываем пунктиром. Полоса прокручивается мышью, пальцем и
+     стрелками; кнопка «Сегодня» возвращает окно к текущей дате. */
+  var STRIP_PAST = 30;     // сколько дней назад рисуем как минимум
+  var STRIP_FUTURE = 5;    // сколько дней вперёд показываем «впрок»
+  var STRIP_MAX_PAST = 730;
+
+  function keyOfDate(d){
+    return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) +
+           "-" + ("0"+d.getDate()).slice(-2);
+  }
+  function dateOfKey(key){
+    var p = String(key).split("-");
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  function daysApart(fromKey, toKey){
+    return Math.round((dateOfKey(toKey) - dateOfKey(fromKey)) / 86400000);
+  }
+  function newsDayKey(n){
+    var d = String((n && n.date) || "");
+    var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(d);
+    if(m) d = m[3]+"-"+m[2]+"-"+m[1];
+    return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : "";
+  }
+  /* самая ранняя и самая поздняя даты, за которые вообще что-то есть */
+  function contentRange(){
+    var min = null, max = null;
+    function take(k){
+      if(!k) return;
+      if(!min || k < min) min = k;
+      if(!max || k > max) max = k;
+    }
+    allTracks.forEach(function(t){ take(t.day); });
+    newsItems.forEach(function(n){ take(newsDayKey(n)); });
+    return {min:min, max:max};
+  }
+
   function renderDayStrip(){
     var strip = document.getElementById("dayStrip");
     if(!strip) return;
-    var html = "";
+    // при перерисовке (загрузили запись, поправили дату) не сбрасываем прокрутку
+    var keepScroll = strip.getAttribute("data-ready") === "1" ? strip.scrollLeft : null;
+
     var base = new Date();
-    for(var i = 6; i >= 0; i--){
-      var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i);
-      var key = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
+    var todayKey = keyOfDate(base);
+    var range = contentRange();
+    var back = STRIP_PAST, fwd = STRIP_FUTURE;
+    if(range.min){ back = Math.min(STRIP_MAX_PAST, Math.max(back, daysApart(range.min, todayKey))); }
+    if(range.max){ fwd = Math.max(fwd, daysApart(todayKey, range.max)); }
+
+    var html = "";
+    for(var i = -back; i <= fwd; i++){
+      var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
+      var key = keyOfDate(d);
       // день доступен, если за него есть хоть что-то: эфир или новости
       var hasAir = tracksOfDay(key).length > 0;
       var hasNews = newsOfDay(key).length > 0;
       var has = hasAir || hasNews;
       var dow = RU_DOW_SHORT[(d.getDay() + 6) % 7];
+      var title = (i > 0 && !has) ? humanDay(key) + ": впереди" : dayTitleAttr(key);
       html += '<button type="button" class="day-chip' +
               (key === airDay ? " is-current" : "") +
+              (i === 0 ? " is-today" : "") +
+              (i > 0 ? " is-future" : "") +
               (has ? "" : " is-empty") + '" data-day="' + key + '"' +
               ' data-kind="' + (hasAir ? "air" : "news") + '"' +
-              (has ? "" : " disabled") + ' title="' + escapeHtml(dayTitleAttr(key)) + '">' +
+              (has ? "" : " disabled") + ' title="' + escapeHtml(title) + '">' +
                 '<span class="dc-dow">' + dow + '</span>' +
                 '<span class="dc-num">' + d.getDate() + '</span>' +
                 '<span class="dc-dots">' + dayDotsHtml(key) + '</span>' +
               '</button>';
     }
     strip.innerHTML = html;
+    strip.setAttribute("data-ready", "1");
+
+    if(keepScroll !== null){
+      // innerHTML сбрасывает прокрутку в 0 — возвращаем её на место без анимации
+      strip.style.scrollBehavior = "auto";
+      strip.scrollLeft = keepScroll;
+      strip.style.scrollBehavior = "";
+    } else {
+      scrollStripToToday(false);
+    }
+    updateStripControls();
   }
+
+  /* Ставим сегодняшний день у правого края, оставляя справа пару дней «будущего». */
+  function scrollStripToToday(smooth){
+    var strip = document.getElementById("dayStrip");
+    if(!strip) return;
+    var chip = strip.querySelector(".day-chip.is-today");
+    if(!chip) return;
+    var left = chip.offsetLeft - strip.clientWidth + chip.offsetWidth * 2.6;
+    var max = Math.max(0, strip.scrollWidth - strip.clientWidth);
+    left = Math.max(0, Math.min(max, left));
+    if(smooth && strip.scrollTo){ strip.scrollTo({left:left, behavior:"smooth"}); }
+    else { strip.style.scrollBehavior = "auto"; strip.scrollLeft = left; strip.style.scrollBehavior = ""; }
+  }
+
+  function stripPage(dir){
+    var strip = document.getElementById("dayStrip");
+    if(!strip) return;
+    var chip = strip.querySelector(".day-chip");
+    var chipW = chip ? chip.offsetWidth + 8 : 64;
+    // листаем почти на экран, оставляя один день внахлёст — чтобы не терять место
+    var step = Math.max(chipW * 3, strip.clientWidth - chipW);
+    if(strip.scrollBy){ strip.scrollBy({left:dir * step, behavior:"smooth"}); }
+    else { strip.scrollLeft += dir * step; }
+  }
+
+  /* Стрелки гаснут на краях; «Сегодня» появляется, только когда сегодня не видно. */
+  function updateStripControls(){
+    var strip = document.getElementById("dayStrip");
+    var prev = document.getElementById("dayPrev");
+    var next = document.getElementById("dayNext");
+    var todayBtn = document.getElementById("dayToday");
+    if(!strip) return;
+    var max = strip.scrollWidth - strip.clientWidth;
+    if(prev) prev.disabled = strip.scrollLeft <= 2;
+    if(next) next.disabled = strip.scrollLeft >= max - 2;
+    if(todayBtn){
+      var chip = strip.querySelector(".day-chip.is-today");
+      var visible = false;
+      if(chip){
+        var l = chip.offsetLeft - strip.scrollLeft;
+        visible = (l >= -1 && l + chip.offsetWidth <= strip.clientWidth + 1);
+      }
+      todayBtn.hidden = visible;
+    }
+  }
+
+  (function stripControls(){
+    var strip = document.getElementById("dayStrip");
+    var prev = document.getElementById("dayPrev");
+    var next = document.getElementById("dayNext");
+    var todayBtn = document.getElementById("dayToday");
+    if(prev) prev.addEventListener("click", function(){ stripPage(-1); });
+    if(next) next.addEventListener("click", function(){ stripPage(1); });
+    if(todayBtn) todayBtn.addEventListener("click", function(){ scrollStripToToday(true); });
+    if(strip){
+      var raf = 0;
+      strip.addEventListener("scroll", function(){
+        if(raf) return;
+        raf = requestAnimationFrame(function(){ raf = 0; updateStripControls(); });
+      }, {passive:true});
+      // колесо мыши по полосе листает её вбок, а не крутит страницу
+      strip.addEventListener("wheel", function(e){
+        if(Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        var max = strip.scrollWidth - strip.clientWidth;
+        if(max <= 0) return;
+        if((e.deltaY < 0 && strip.scrollLeft <= 0) ||
+           (e.deltaY > 0 && strip.scrollLeft >= max)) return;
+        e.preventDefault();
+        strip.style.scrollBehavior = "auto";
+        strip.scrollLeft += e.deltaY;
+        strip.style.scrollBehavior = "";
+      }, {passive:false});
+    }
+    window.addEventListener("resize", function(){ updateStripControls(); });
+  })();
 
   /* После правки, загрузки или удаления записи обновляем всё на странице
      сразу, не дожидаясь пересборки сайта и не прерывая воспроизведение. */
