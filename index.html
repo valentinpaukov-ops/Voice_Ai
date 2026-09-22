@@ -540,7 +540,8 @@
     padding-bottom:18px;border-bottom:1px solid var(--border);
   }
   .arch-day-head .arch-sub{margin-bottom:0;}
-  .adh-play{flex:0 0 auto;white-space:nowrap;}
+  /* кнопка живёт в колонке эфира, сразу под списком записей */
+  .adh-play{margin-top:16px;white-space:nowrap;}
   /* Эфир и новости дня — двумя колонками рядом. */
   /* Колонка эфира компактная, новостям отдаём больше ширины — карточка новости
      объёмнее строки трека, в узкой колонке заголовок ломается на четыре строки. */
@@ -553,6 +554,14 @@
   .arch-col-h{
     font-family:var(--font-mono);font-size:11px;text-transform:uppercase;
     letter-spacing:.06em;color:var(--accent-strong);margin-bottom:12px;font-weight:600;
+  }
+  /* заголовок колонки новостей — в цвет её кружочка в календаре */
+  .arch-col-h.is-news{color:var(--wave);}
+  /* на светлом фоне тот же бирюзовый в мелком шрифте читается плохо —
+     берём на полтона темнее, оттенок остаётся прежним */
+  :root[data-theme="light"] .arch-col-h.is-news{color:#0a6f63;}
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]) .arch-col-h.is-news{color:#0a6f63;}
   }
   .arch-empty-sm{
     font-size:13px;color:var(--text-dim);padding:10px 0;
@@ -2787,14 +2796,13 @@
     var air = tracksOfDay(day), news = newsOfDay(day);
     var isToday = day === todayStr();
 
-    /* Шапка дня: дата, краткий итог и одна кнопка на весь эфир. */
+    /* Шапка дня: только дата и краткий итог. Кнопка «Слушать этот эфир»
+       стоит под самим списком записей — рядом с тем, что она включает. */
     var html = '<div class="arch-day-head">' +
                  '<div class="adh-text">' +
                    '<h3>' + escapeHtml(humanDay(day)) + (isToday ? " — сегодня" : "") + '</h3>' +
                    '<div class="arch-sub">' + escapeHtml(dayTitleAttr(day).split(": ")[1] || "пусто") + '</div>' +
                  '</div>' +
-                 (air.length ? '<button type="button" class="btn-add adh-play" data-play-day="' +
-                               escapeHtml(day) + '">▶ Слушать этот эфир</button>' : '') +
                '</div>';
 
     /* Две колонки рядом: слева эфир, справа новости — чтобы день читался целиком. */
@@ -2810,12 +2818,14 @@
                  '<span class="at-sub">' + escapeHtml(t.host || "") + (t.tag ? " · " + escapeHtml(t.tag) : "") + '</span></span>' +
                '</div>';
       }).join("");
+      html += '<button type="button" class="btn-add adh-play" data-play-day="' +
+              escapeHtml(day) + '">▶ Слушать этот эфир</button>';
     } else {
       html += '<div class="arch-empty-sm">Эфира в этот день не было.</div>';
     }
     html += '</div>';
 
-    html += '<div class="arch-col"><h4 class="arch-col-h">Новости этого дня</h4>';
+    html += '<div class="arch-col"><h4 class="arch-col-h is-news">Новости этого дня</h4>';
     if(news.length){
       html += '<div class="news-list">' + news.map(newsRowHtml).join("") + '</div>';
     } else {
