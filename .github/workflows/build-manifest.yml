@@ -79,12 +79,22 @@ jobs:
                          and os.path.isfile(os.path.join(AUDIO_DIR, f)))
 
           existing = {}
+          air = {}
           if os.path.exists(MANIFEST):
               try:
                   with open(MANIFEST, encoding="utf-8") as fh:
-                      for t in (json.load(fh).get("tracks") or []):
-                          if isinstance(t, dict) and t.get("file"):
-                              existing[t["file"]] = t
+                      data = json.load(fh)
+                  for t in (data.get("tracks") or []):
+                      if isinstance(t, dict) and t.get("file"):
+                          existing[t["file"]] = t
+                  # ПРОГРАММА ЭФИРА ПО ДНЯМ — её ведёт редактор со страницы,
+                  # робот обязан сохранить её как есть, иначе она пропадёт
+                  # при первой же загрузке файла.
+                  raw_air = data.get("air")
+                  if isinstance(raw_air, dict):
+                      for day, files in raw_air.items():
+                          if isinstance(files, list):
+                              air[day] = [f for f in files if isinstance(f, str)]
               except Exception as e:
                   print("манифест не прочитан (%s) — собираю заново" % e)
 
@@ -127,9 +137,26 @@ jobs:
               if f not in set(files):
                   print("  - %s (файла больше нет)" % f)
 
+          # из программы дней вычищаем ссылки на файлы, которых уже нет,
+          # иначе в дне останется запись-призрак, которая не играет
+          alive = set(files)
+          clean_air, dropped = {}, 0
+          for day in sorted(air.keys()):
+              alive_files = [f for f in air[day] if f in alive]
+              dropped += len(air[day]) - len(alive_files)
+              clean_air[day] = alive_files
+          if dropped:
+              print("  из программы дней убрано ссылок на удалённые файлы: %d" % dropped)
+
+          out = {"updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                 "tracks": tracks}
+          if clean_air:
+              out["air"] = clean_air
+              print("Программа эфира: %d %s" % (len(clean_air),
+                    "день" if len(clean_air) == 1 else "дн."))
+
           with open(MANIFEST, "w", encoding="utf-8") as fh:
-              json.dump({"updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                         "tracks": tracks}, fh, ensure_ascii=False, indent=2)
+              json.dump(out, fh, ensure_ascii=False, indent=2)
               fh.write("\n")
 
           mb = sum(t.get("size", 0) for t in tracks) / 1e6
