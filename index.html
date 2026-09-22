@@ -533,17 +533,60 @@
     font-family:var(--font-mono);font-size:11px;text-transform:uppercase;
     letter-spacing:.06em;color:var(--text-dim);margin-bottom:12px;font-weight:500;
   }
+  /* Шапка дня: дата слева, кнопка «Слушать этот эфир» справа. */
+  .arch-day-head{
+    display:flex;align-items:flex-start;justify-content:space-between;
+    gap:18px;flex-wrap:wrap;margin-bottom:22px;
+    padding-bottom:18px;border-bottom:1px solid var(--border);
+  }
+  .arch-day-head .arch-sub{margin-bottom:0;}
+  .adh-play{flex:0 0 auto;white-space:nowrap;}
+  /* Эфир и новости дня — двумя колонками рядом. */
+  /* Колонка эфира компактная, новостям отдаём больше ширины — карточка новости
+     объёмнее строки трека, в узкой колонке заголовок ломается на четыре строки. */
+  .arch-cols{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);gap:30px;align-items:start;}
+  .arch-col{min-width:0;}
+  /* новости в колонке дня чуть мельче, чем на странице новостей */
+  .arch-col .news-row{grid-template-columns:1fr;gap:6px;}
+  .arch-col .news-row h3{font-size:17px;line-height:1.3;}
+  .arch-col .news-when{font-size:11px;}
+  .arch-col-h{
+    font-family:var(--font-mono);font-size:11px;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--accent-strong);margin-bottom:12px;font-weight:600;
+  }
+  .arch-empty-sm{
+    font-size:13px;color:var(--text-dim);padding:10px 0;
+    border-top:1px solid var(--border);
+  }
   .arch-track{
     display:flex;align-items:center;gap:13px;padding:11px 0;
     border-bottom:1px solid var(--border);
   }
+  .arch-track.is-playable{cursor:pointer;}
+  .arch-track.is-playable:hover .at-title{color:var(--accent-strong);}
+  .at-play{
+    flex:0 0 auto;width:26px;height:26px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:var(--accent-strong);
+    border:1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .arch-track.is-playable:hover .at-play{background:color-mix(in srgb, var(--accent) 18%, transparent);}
   .arch-track:last-child{border-bottom:none;}
   .arch-track .at-main{flex:1;min-width:0;}
   .arch-track .at-title{font-weight:600;font-size:14px;display:block;}
   .arch-track .at-sub{font-size:12px;color:var(--text-dim);}
   .arch-empty{color:var(--text-dim);font-size:14px;border:1px dashed var(--border);border-radius:12px;padding:26px;text-align:center;}
+  @media (max-width:1180px){
+    /* две колонки дня не помещаются рядом с календарём — ставим их друг под друга */
+    .arch-cols{grid-template-columns:1fr;gap:22px;}
+  }
   @media (max-width:860px){
     .arch-grid{grid-template-columns:1fr;gap:24px;}
+    .arch-cols{grid-template-columns:1fr 1fr;gap:24px;}
+  }
+  @media (max-width:640px){
+    .arch-cols{grid-template-columns:1fr;gap:22px;}
+    .adh-play{width:100%;}
   }
 
   /* ---------- Эфир по дням ---------- */
@@ -2743,27 +2786,43 @@
     }
     var air = tracksOfDay(day), news = newsOfDay(day);
     var isToday = day === todayStr();
-    var html = '<h3>' + escapeHtml(humanDay(day)) + (isToday ? " — сегодня" : "") + '</h3>';
-    html += '<div class="arch-sub">' + escapeHtml(dayTitleAttr(day).split(": ")[1] || "пусто") + '</div>';
 
+    /* Шапка дня: дата, краткий итог и одна кнопка на весь эфир. */
+    var html = '<div class="arch-day-head">' +
+                 '<div class="adh-text">' +
+                   '<h3>' + escapeHtml(humanDay(day)) + (isToday ? " — сегодня" : "") + '</h3>' +
+                   '<div class="arch-sub">' + escapeHtml(dayTitleAttr(day).split(": ")[1] || "пусто") + '</div>' +
+                 '</div>' +
+                 (air.length ? '<button type="button" class="btn-add adh-play" data-play-day="' +
+                               escapeHtml(day) + '">▶ Слушать этот эфир</button>' : '') +
+               '</div>';
+
+    /* Две колонки рядом: слева эфир, справа новости — чтобы день читался целиком. */
+    html += '<div class="arch-cols">';
+
+    html += '<div class="arch-col"><h4 class="arch-col-h">Эфир этого дня</h4>';
     if(air.length){
-      html += '<div class="arch-block"><h4>Эфир этого дня</h4>';
       html += air.map(function(t){
-        return '<div class="arch-track">' +
+        return '<div class="arch-track is-playable" data-play-id="' + escapeHtml(String(t.id)) +
+               '" data-day="' + escapeHtml(day) + '" title="Послушать эту запись" role="button" tabindex="0">' +
+                 '<span class="at-play" aria-hidden="true">▶</span>' +
                  '<span class="at-main"><span class="at-title">' + escapeHtml(t.title) + '</span>' +
                  '<span class="at-sub">' + escapeHtml(t.host || "") + (t.tag ? " · " + escapeHtml(t.tag) : "") + '</span></span>' +
                '</div>';
       }).join("");
-      html += '<button type="button" class="btn-add" data-play-day="' + escapeHtml(day) + '" style="margin-top:14px;">' +
-              'Слушать этот эфир</button></div>';
+    } else {
+      html += '<div class="arch-empty-sm">Эфира в этот день не было.</div>';
     }
+    html += '</div>';
+
+    html += '<div class="arch-col"><h4 class="arch-col-h">Новости этого дня</h4>';
     if(news.length){
-      html += '<div class="arch-block"><h4>Новости этого дня</h4>' +
-              '<div class="news-list">' + news.map(newsRowHtml).join("") + '</div></div>';
+      html += '<div class="news-list">' + news.map(newsRowHtml).join("") + '</div>';
+    } else {
+      html += '<div class="arch-empty-sm">Новостей в этот день не выходило.</div>';
     }
-    if(!air.length && !news.length){
-      html += '<div class="arch-empty">В этот день ничего не выходило.</div>';
-    }
+    html += '</div></div>';
+
     box.innerHTML = html;
   }
 
@@ -4119,13 +4178,13 @@
     var chip = e.target.closest ? e.target.closest(".day-chip[data-day]") : null;
     if(!chip || chip.disabled) return;
     var day = chip.getAttribute("data-day");
-    if(chip.getAttribute("data-kind") === "air"){
-      setAirDay(day, true);              // есть эфир — включаем его
-    } else {
-      calPicked = day;                   // только новости — открываем архив на этом дне
-      if(location.hash === "#/archive"){ showArchive(day); }
-      else { location.hash = "#/archive"; }
-    }
+    /* День в ленте ВСЕГДА ведёт в архив на этот день — и когда там эфир,
+       и когда только новости. Раньше день с эфиром сразу подменял очередь
+       в плеере, из-за чего логика «нажал на день» была разной в разных днях.
+       Теперь единое правило: лента → календарь → день → «Слушать». */
+    calPicked = day;
+    if(location.hash === "#/archive"){ showArchive(day); }
+    else { location.hash = "#/archive"; }
   });
   document.getElementById("airDayBack").addEventListener("click", function(){
     var d = pickDefaultDay();
@@ -4156,11 +4215,28 @@
   });
   // «Слушать этот эфир» — переносит день в плеер и возвращает на главную
   document.getElementById("archDay").addEventListener("click", function(e){
-    var btn = e.target.closest ? e.target.closest("[data-play-day]") : null;
+    if(!e.target.closest) return;
+    // отдельная запись дня — включаем именно её
+    var row = e.target.closest("[data-play-id]");
+    if(row){
+      var id = row.getAttribute("data-play-id"), rd = row.getAttribute("data-day");
+      location.hash = "#air";
+      setTimeout(function(){ setAirDay(rd, false); selectTrack(id, true); }, 60);
+      return;
+    }
+    var btn = e.target.closest("[data-play-day]");
     if(!btn) return;
     var day = btn.getAttribute("data-play-day");
     location.hash = "#air";
     setTimeout(function(){ setAirDay(day, true); }, 60);
+  });
+  // клавиатура: Enter или пробел на записи дня
+  document.getElementById("archDay").addEventListener("keydown", function(e){
+    if(e.key !== "Enter" && e.key !== " ") return;
+    var row = e.target.closest ? e.target.closest("[data-play-id]") : null;
+    if(!row) return;
+    e.preventDefault();
+    row.click();
   });
 
   hookFirstGesture();
