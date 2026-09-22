@@ -833,6 +833,17 @@
   .nc-check span{user-select:none;}
   .nc-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;}
   /* опасные действия: удалить запись насовсем, очистить день */
+  .au-convert{
+    display:flex;flex-wrap:wrap;align-items:center;gap:14px;
+    margin-top:12px;padding:11px 13px;border-radius:10px;
+    background:color-mix(in srgb, var(--wave) 10%, transparent);
+    border:1px solid color-mix(in srgb, var(--wave) 30%, transparent);
+  }
+  .au-convert select{
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:6px 9px;font-size:12.5px;font-family:inherit;
+  }
+  .au-conv-note{font-size:12px;color:var(--text-dim);flex:1 1 200px;}
   .nc-note{font-size:11.5px;color:var(--text-dim);line-height:1.4;padding-top:9px;}
   .nc-field select{
     background:var(--surface);border:1px solid var(--border);border-radius:9px;
@@ -1633,6 +1644,18 @@
             <input type="file" id="auFile" accept="audio/*" hidden>
           </div>
           <div class="au-picked" id="auPicked" hidden></div>
+          <div class="au-convert" id="auConvert" hidden>
+            <label class="nc-check">
+              <input type="checkbox" id="auCompress">
+              <span>Сжать в MP3 прямо здесь, в браузере</span>
+            </label>
+            <select id="auQuality">
+              <option value="speech">Речь — 64 кбит/с, моно</option>
+              <option value="talk">Речь получше — 96 кбит/с, моно</option>
+              <option value="music">Музыка — 128 кбит/с, стерео</option>
+            </select>
+            <span class="au-conv-note" id="auConvNote"></span>
+          </div>
           <div class="nc-grid" style="margin-top:14px;">
             <label class="nc-field nc-wide"><span>Название в эфире</span><input type="text" id="auTitle" placeholder="Итоги недели: продукт и релизы"></label>
             <label class="nc-field"><span>Ведущий или команда</span><input type="text" id="auHost" placeholder="Анна Волкова, продуктовая команда"></label>
@@ -4016,6 +4039,125 @@
     }
     var BIG = 25e6;      // выше этого предупреждаем и проверяем токен заранее
 
+    /* ============ Сжатие в MP3 прямо в браузере ============
+       Звук достаём из файла через Web Audio (умеет и видео: из MP4 берётся
+       звуковая дорожка), приводим к нужной частоте и числу каналов, кодируем
+       библиотекой LAME. Всё считается на компьютере редактора: файл никуда
+       не отправляется, пока мы сами не положим его в репозиторий.
+
+       LAME (lamejs) — отдельный файл lame.min.js рядом с index.html,
+       LGPL, http://lame.sourceforge.net. Подгружается только когда нужен,
+       слушатели его не скачивают. */
+    var MP3_PROFILES = {
+      speech: {ch:1, rate:32000, kbps:64,  label:"речь, 64 кбит/с моно"},
+      talk:   {ch:1, rate:32000, kbps:96,  label:"речь, 96 кбит/с моно"},
+      music:  {ch:2, rate:44100, kbps:128, label:"музыка, 128 кбит/с стерео"}
+    };
+    var lamePromise = null;
+    function loadLame(){
+      if(window.lamejs && window.lamejs.Mp3Encoder) return Promise.resolve();
+      if(lamePromise) return lamePromise;
+      lamePromise = new Promise(function(resolve, reject){
+        var sc = document.createElement("script");
+        sc.src = "lame.min.js";
+        sc.onload = function(){
+          if(window.lamejs && window.lamejs.Mp3Encoder) resolve();
+          else reject(new Error("Файл lame.min.js загрузился, но кодировщик в нём не найден."));
+        };
+        sc.onerror = function(){
+          lamePromise = null;
+          reject(new Error("Рядом с index.html нет файла lame.min.js — положите его в репозиторий, иначе сжимать нечем."));
+        };
+        document.head.appendChild(sc);
+      });
+      return lamePromise;
+    }
+
+    function looksLikeVideo(file){
+      var t = file.type || "";
+      if(/^audio\//i.test(t)) return false;           // webm и mp4 бывают и звуковыми
+      if(/^video\//i.test(t)) return true;
+      return /\.(mp4|m4v|mov|mkv|webm|avi|wmv)$/i.test(file.name || "");
+    }
+    function mp3Name(name){
+      return String(name || "zapis").replace(/\.[^.]+$/, "") + ".mp3";
+    }
+
+    /* Пересчёт частоты и сведение каналов делает сам браузер. */
+    function resampleTo(audio, channels, rate){
+      var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if(!OC) return Promise.reject(new Error("Браузер не умеет пересчитывать звук."));
+      var len = Math.max(1, Math.ceil(audio.duration * rate));
+      var oc = new OC(channels, len, rate);
+      var src = oc.createBufferSource();
+      src.buffer = audio;
+      src.connect(oc.destination);
+      src.start();
+      return oc.startRendering();
+    }
+
+    /* Кодируем порциями, отдавая управление странице, чтобы она не замирала. */
+    function encodeMp3(buf, prof, onProgress){
+      return new Promise(function(resolve, reject){
+        var enc, left, right, l16, r16;
+        try{
+          enc = new window.lamejs.Mp3Encoder(prof.ch, buf.sampleRate, prof.kbps);
+          left = buf.getChannelData(0);
+          right = prof.ch > 1 && buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
+        }catch(e){ reject(e); return; }
+        var BLOCK = 1152 * 40, total = left.length, pos = 0, parts = [];
+        l16 = new Int16Array(BLOCK);
+        r16 = right ? new Int16Array(BLOCK) : null;
+        function to16(x){ return x < 0 ? Math.max(-1, x) * 0x8000 : Math.min(1, x) * 0x7FFF; }
+        (function step(){
+          try{
+            var started = Date.now();
+            while(pos < total && Date.now() - started < 40){
+              var n = Math.min(BLOCK, total - pos);
+              for(var i = 0; i < n; i++){
+                l16[i] = to16(left[pos + i]);
+                if(r16) r16[i] = to16(right[pos + i]);
+              }
+              var chunk = r16
+                ? enc.encodeBuffer(l16.subarray(0, n), r16.subarray(0, n))
+                : enc.encodeBuffer(l16.subarray(0, n));
+              if(chunk.length) parts.push(new Int8Array(chunk));
+              pos += n;
+            }
+            if(onProgress) onProgress(pos / total);
+            if(pos < total){ setTimeout(step, 0); return; }
+            var tail = enc.flush();
+            if(tail.length) parts.push(new Int8Array(tail));
+            resolve(new Blob(parts, {type:"audio/mpeg"}));
+          }catch(e){ reject(e); }
+        })();
+      });
+    }
+
+    var lastDuration = 0;   // длительность сжатой записи — пишем сразу в манифест
+    function toMp3(file, profileKey, onProgress){
+      var prof = MP3_PROFILES[profileKey] || MP3_PROFILES.speech;
+      return loadLame().then(function(){
+        return file.arrayBuffer ? file.arrayBuffer() : new Response(file).arrayBuffer();
+      }).then(function(raw){
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if(!AC) throw new Error("Браузер не умеет читать звук из файлов.");
+        var ac = new AC();
+        return new Promise(function(res, rej){
+          ac.decodeAudioData(raw, res, function(){
+            rej(new Error("Этот браузер не смог прочитать звук из файла. " +
+                "Обычно так бывает с редкими кодеками — попробуйте в Chrome или Edge, " +
+                "либо снимите галочку и загрузите файл как есть."));
+          });
+        }).then(function(audio){ try{ ac.close(); }catch(e){} return audio; });
+      }).then(function(audio){
+        lastDuration = Math.round(audio.duration * 10) / 10;
+        return resampleTo(audio, prof.ch, prof.rate);
+      }).then(function(rendered){
+        return encodeMp3(rendered, prof, onProgress);
+      });
+    }
+
     function human(bytes){
       return bytes > 1e6 ? (bytes/1e6).toFixed(1) + " МБ" : Math.round(bytes/1e3) + " КБ";
     }
@@ -4074,6 +4216,34 @@
     }
     document.addEventListener("voiceai:library-changed", function(){ fillTagBank(); });
 
+    /* Видео и тяжёлые файлы предлагаем сжать сразу, MP3 поменьше — не трогаем. */
+    function updateConvertBox(file){
+      var box = document.getElementById("auConvert");
+      var chk = document.getElementById("auCompress");
+      var qty = document.getElementById("auQuality");
+      var note = document.getElementById("auConvNote");
+      if(!box) return;
+      if(!file){ box.hidden = true; return; }
+      box.hidden = false;
+      var video = looksLikeVideo(file);
+      chk.checked = video || file.size > 12e6;
+      qty.value = video || /речь|podcast|подкаст|эфир/i.test(file.name) ? "speech" : qty.value || "speech";
+      note.textContent = video
+        ? "Возьмём из файла только звук — в эфире видео не нужно, и файл станет в разы легче."
+        : (chk.checked ? "Файл крупный — сжатие сильно ускорит загрузку."
+                       : "Можно сжать, если файл тяжеловат.");
+      document.getElementById("auUpload").textContent = uploadLabel();
+    }
+    document.getElementById("auCompress").addEventListener("change", function(){
+      var f = chosen;
+      var note = document.getElementById("auConvNote");
+      if(note && f){
+        note.textContent = this.checked
+          ? "Сожмём перед отправкой — файл никуда не уходит, всё считается здесь."
+          : "Отправим как есть, " + human(f.size) + ".";
+      }
+    });
+
     /* Кнопка сама объясняет правило: есть дата — запись ещё и встанет в эфир
        этого дня, нет даты — просто пополнит фонотеку. */
     function uploadLabel(){
@@ -4125,11 +4295,9 @@
       /* Формально GitHub принимает до 100 МБ, но через браузер запрос
          раздувается в полтора раза (base64) и на больших файлах отбивается.
          Честно предупреждаем заранее, а не после десяти минут ожидания. */
-      if(file.size > BIG){
-        say("Файл " + human(file.size) + " — крупноват для загрузки через сайт. " +
-            "Если не пройдёт, сожмите запись в MP3: из видео звук весит в разы меньше.", true);
-      } else if(file.size > 10e6){
-        say("Файл " + human(file.size) + " — загрузка займёт время");
+      updateConvertBox(file);
+      if(file.size > BIG && !document.getElementById("auCompress").checked){
+        say("Файл " + human(file.size) + " — крупноват для загрузки через сайт. Лучше сжать.", true);
       } else {
         say("");
       }
@@ -4200,6 +4368,7 @@
       ["auTitle","auHost","auDesc","auDate","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
       fillSections("Эфир");
       chosen = null; picked.hidden = true; fileInp.value = "";
+      var cb = document.getElementById("auConvert"); if(cb) cb.hidden = true;
     }
 
     cancelEdit.addEventListener("click", function(){
@@ -4322,23 +4491,38 @@
       /* Правило простое: дата заполнена — запись встанет в эфир этого дня,
          дата пустая — просто пополнит фонотеку и будет ждать. */
       var entryDay = document.getElementById("auDate").value.trim();
-      var fileName = uniqueName((entryDay ? entryDay + "_" : "") + safeName(chosen.name));
-      var path = "audio/" + fileName;
+      var wantCompress = document.getElementById("auCompress").checked;
+      var quality = document.getElementById("auQuality").value;
+      var srcFile = chosen, srcSize = chosen.size;
+      var toUpload = chosen, fileName = "", path = "";
+      lastDuration = 0;
 
       uploadBtn.disabled = true;
       bar.classList.add("is-on");
-      say("Читаю файл…");
+      say(wantCompress ? "Достаю звук…" : "Читаю файл…");
 
       /* Для крупного файла сначала убеждаемся, что токен рабочий. Тогда, если
          загрузка потом отвалится, мы точно знаем: дело в размере, а не в токене,
          и можем сказать это прямо, а не гонять человека перевыпускать ключ. */
-      var big = chosen.size > BIG;
+      var big = chosen.size > BIG && !wantCompress;
       var tokenOk = !big;
       (big ? GH.check().then(function(){ tokenOk = true; }) : Promise.resolve())
       .then(function(){
-        return fileToBase64(chosen);
+        if(!wantCompress) return srcFile;
+        return toMp3(srcFile, quality, function(pct){
+          say("Сжимаю в MP3 — " + Math.round(pct * 100) + "%");
+        });
+      }).then(function(result){
+        toUpload = result;
+        var base = safeName(result === srcFile ? srcFile.name : mp3Name(srcFile.name));
+        fileName = uniqueName((entryDay ? entryDay + "_" : "") + base);
+        path = "audio/" + fileName;
+        if(result !== srcFile){
+          say("Сжали: " + human(srcSize) + " → " + human(result.size));
+        }
+        return fileToBase64(result);
       }).then(function(b64){
-        say("Загружаю " + human(chosen.size) + "…");
+        say("Загружаю " + human(toUpload.size) + "…");
         return GH.uploadFile(path, b64, "Запись в фонотеку: " + title);
       }).then(function(){
         say("Добавляю в список эфира…");
@@ -4348,8 +4532,10 @@
             title: title,
             host: document.getElementById("auHost").value.trim() || "Voice Ai",
             tag: document.getElementById("auTag").value.trim() || "Эфир",
-            size: chosen.size
+            size: toUpload.size
           };
+          // длительность знаем сразу, если сжимали сами — карточка не ждёт робота
+          if(lastDuration > 0) entry.duration = lastDuration;
           // дату пишем, только если она задана: пустая дата = запись без эфира
           if(entryDay) entry.date = entryDay;
           var tg = readTags();
@@ -4389,8 +4575,8 @@
         var m = err && err.message ? err.message : "Не получилось";
         /* Токен мы только что проверили — значит, GitHub отказал из-за размера.
            Не отправляем человека перевыпускать ключ на пустом месте. */
-        if(tokenOk && chosen && chosen.size > BIG && /Токен не принят|Доступ запрещён/.test(m)){
-          m = "GitHub не принял файл " + human(chosen.size) + ". Токен при этом рабочий — " +
+        if(tokenOk && toUpload && toUpload.size > BIG && /Токен не принят|Доступ запрещён/.test(m)){
+          m = "GitHub не принял файл " + human(toUpload.size) + ". Токен при этом рабочий — " +
               "дело в размере: через браузер запрос раздувается примерно в полтора раза. " +
               "Сожмите запись в MP3 (из видео звук весит в разы меньше) или положите файл " +
               "в папку audio прямо на GitHub — там проходит до 25 МБ.";
