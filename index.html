@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Voice Ai — внутреннее радио TedoTechnologies">
+<meta name="description" content="Voice_Ai — корпоративное радио «Технологии Доверия»">
 <meta name="color-scheme" content="dark light">
 <script>
   /* Выставляем тему до отрисовки страницы, иначе на миг мелькнёт чужая.
@@ -1044,6 +1044,8 @@
     font-size:13px;
   }
   footer .wrap{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  .foot-mail{color:var(--accent-strong);text-decoration:none;border-bottom:1px solid transparent;}
+  .foot-mail:hover{border-bottom-color:var(--accent);}
 
   /* ---------- Library (section) pages ---------- */
   .lib-wrap{padding-block:40px 64px;}
@@ -1078,6 +1080,12 @@
     .lib-controls{align-items:stretch;}
     .sort-wrap{justify-content:space-between;}
   }
+
+  .lib-count{
+    font-family:var(--font-mono);font-size:11px;color:var(--text-dim);
+    margin:-14px 0 20px;
+  }
+  .lib-count:empty{display:none;}
 
   .filter-row{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 26px;}
   .chip{
@@ -1589,6 +1597,7 @@
         </select>
       </label>
     </div>
+    <p class="lib-count" id="libCount"></p>
     <div id="libraryList"></div>
   </div>
 </div>
@@ -1627,8 +1636,8 @@
 
 <footer>
   <div class="wrap">
-    <span>Voice Ai — внутреннее радио TedoTechnologies. В эфире для команды.</span>
-    <span>Есть идея для эфира? Пишите в канал #voice-ai</span>
+    <span>Voice_Ai. Корпоративное радио Технологии Доверия. 2026</span>
+    <span id="footerContact"></span>
   </div>
 </footer>
 
@@ -1780,7 +1789,9 @@
     shows:    {title:"Шоу",              eyebrow:"Все материалы", data:showItems,    kind:"media"},
     guides:   {title:"Гайды",            eyebrow:"Все материалы", data:guideItems,   kind:"list"}
   };
-  var libFilterState = {news:"Все", podcasts:"Все", shows:"Все", guides:"Все"};
+  /* Выбранные теги на каждой странице. Пустой список = показываем всё.
+     Теги складываются по «или»: выбрали HR и Продукт — увидите и то, и другое. */
+  var libFilterState = {news:[], podcasts:[], shows:[], guides:[]};
   // порядок показа на страницах разделов, у каждого раздела свой
   var libSortState = {news:"date-desc", podcasts:"date-desc", shows:"date-desc", guides:"date-desc"};
 
@@ -2428,16 +2439,29 @@
       var own = (it.tags && it.tags.length) ? it.tags : [it.tag];
       own.forEach(function(t){ if(t && tags.indexOf(t)===-1){ tags.push(t); } });
     });
-    var all = ["Все"].concat(tags);
-    var current = libFilterState[type];
-    var html = all.map(function(t){
-      return '<button type="button" class="chip'+(t===current?' active':'')+'" data-tag="'+escapeHtml(t)+'">'+escapeHtml(t)+'</button>';
+    var sel = libFilterState[type] || [];
+    var html = '<button type="button" class="chip' + (sel.length === 0 ? " active" : "") +
+               '" data-all="1">Все</button>';
+    html += tags.map(function(t){
+      var on = sel.indexOf(t) !== -1;
+      return '<button type="button" class="chip' + (on ? " active" : "") + '" data-tag="' +
+             escapeHtml(t) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
+             escapeHtml(t) + '</button>';
     }).join("");
+
     var filtersEl = document.getElementById("libFilters");
     filtersEl.innerHTML = html;
     Array.prototype.forEach.call(filtersEl.querySelectorAll(".chip"), function(chip){
       chip.addEventListener("click", function(){
-        libFilterState[type] = chip.getAttribute("data-tag");
+        if(chip.getAttribute("data-all")){
+          libFilterState[type] = [];              // «Все» снимает выбор целиком
+        } else {
+          var t = chip.getAttribute("data-tag");
+          var list = (libFilterState[type] || []).slice();
+          var i = list.indexOf(t);
+          if(i === -1){ list.push(t); } else { list.splice(i, 1); }   // включить / выключить
+          libFilterState[type] = list;
+        }
         renderLibraryFilters(type);
         renderLibraryList(type);
       });
@@ -2470,16 +2494,29 @@
 
   function renderLibraryList(type, focusId){
     var cfg = LIB_CONFIG[type];
-    var current = libFilterState[type];
+    var sel = libFilterState[type] || [];
     var items = cfg.data.filter(function(it){
-      if(current==="Все") return true;
+      if(!sel.length) return true;
       var own = (it.tags && it.tags.length) ? it.tags : [it.tag];
-      return own.indexOf(current) !== -1;
+      // достаточно совпадения по любому из выбранных тегов
+      for(var i=0;i<own.length;i++){ if(sel.indexOf(own[i]) !== -1) return true; }
+      return false;
     });
     items = sortItems(items, libSortState[type] || "date-desc");
+
+    var countEl = document.getElementById("libCount");
+    if(countEl){
+      countEl.textContent = sel.length
+        ? items.length + " " + plural(items.length, "материал", "материала", "материалов") +
+          " по тегам: " + sel.join(", ")
+        : "";
+    }
+
     var listEl = document.getElementById("libraryList");
     if(items.length===0){
-      listEl.innerHTML = '<p class="lib-empty">По тегу «'+escapeHtml(current)+'» пока ничего нет.</p>';
+      listEl.innerHTML = '<p class="lib-empty">По ' +
+        (sel.length > 1 ? "выбранным тегам" : "тегу «" + escapeHtml(sel[0] || "") + "»") +
+        ' пока ничего нет.</p>';
       return;
     }
     if(cfg.kind==="news"){
@@ -2508,7 +2545,7 @@
     document.getElementById("viewLibrary").hidden = false;
     document.getElementById("libEyebrow").textContent = LIB_CONFIG[type].eyebrow;
     document.getElementById("libTitle").textContent = LIB_CONFIG[type].title;
-    if(!focusId){ libFilterState[type] = "Все"; window.scrollTo({top:0}); }
+    if(!focusId){ libFilterState[type] = []; window.scrollTo({top:0}); }
     var sortEl = document.getElementById("libSort");
     if(sortEl){
       sortEl.value = libSortState[type] || "date-desc";
@@ -3794,6 +3831,24 @@
   themeBtn.addEventListener("click", function(){
     applyTheme(currentTheme() === "dark" ? "light" : "dark");
   });
+
+  /* ================= Контакт редакции =================
+     ↓↓↓ ЗАМЕНИТЕ АДРЕС НА СВОЙ — это единственное место, где он задаётся.
+     Если оставить пустым, строка в подвале просто не появится. */
+  var EDITORIAL_EMAIL = "info@tedo.ru";
+
+  (function(){
+    var el = document.getElementById("footerContact");
+    if(!el) return;
+    if(!EDITORIAL_EMAIL){
+      el.textContent = "";
+      return;
+    }
+    var subject = encodeURIComponent("Идея для эфира Voice_Ai");
+    el.innerHTML = 'Есть идеи и новости для эфира? ' +
+      '<a class="foot-mail" href="mailto:' + escapeHtml(EDITORIAL_EMAIL) + '?subject=' + subject + '">' +
+      escapeHtml(EDITORIAL_EMAIL) + '</a>';
+  })();
 
   /* ================= Режим редактора =================
      ВАЖНО: это не защита, а удобство. Страница статическая, и спрятать в
