@@ -877,7 +877,8 @@
   body:not(.is-admin) .nr-admin{display:none;}
 
   /* банк тегов — подставляем уже использованные */
-  .nc-tagbank{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+  .nc-tagbank{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;}
+  .tb-none{font-size:11.5px;color:var(--text-dim);}
   .nc-tagbank button{
     background:none;border:1px solid var(--border);border-radius:999px;
     color:var(--text-dim);cursor:pointer;padding:3px 10px;
@@ -1626,7 +1627,7 @@
       <div class="news-composer admin-only" id="audioComposer">
         <button type="button" class="nc-toggle" id="auToggle">+ Загрузить запись в фонотеку</button>
         <div class="nc-body" id="auBody" hidden>
-          <p class="nc-hint" id="auHint">Запись попадает в <b>фонотеку</b> — общую библиотеку, из которой собираются эфиры. Поставьте дату первого эфира, если она уже известна: запись встанет в эфир этого дня. Оставьте поле пустым — запись просто ляжет в фонотеку и будет ждать, пока вы её куда-нибудь поставите. Через сайт проходят файлы до 100 МБ.</p>
+          <p class="nc-hint" id="auHint">Запись попадает в <b>фонотеку</b> — общую библиотеку, из которой собираются эфиры. Поставьте дату первого эфира, если она уже известна: запись встанет в эфир этого дня. Оставьте поле пустым — запись просто ляжет в фонотеку и будет ждать, пока вы её куда-нибудь поставите. Надёжнее всего проходят файлы до 25 МБ — для часа речи в MP3 этого с запасом хватает.</p>
           <div class="au-drop" id="auDrop">
             Нажмите или перетащите сюда аудиофайл
             <input type="file" id="auFile" accept="audio/*" hidden>
@@ -1638,9 +1639,9 @@
             <label class="nc-field"><span>Раздел — где запись появится</span>
               <select id="auTag"></select>
             </label>
-            <label class="nc-field nc-wide"><span>Теги через запятую — по ним ищут и фильтруют</span>
-              <input type="text" id="auTags" list="auTagBank" placeholder="ИИ, онбординг, продукт">
-              <datalist id="auTagBank"></datalist>
+            <label class="nc-field nc-wide"><span>Теги — начните печатать, подходящие подскажутся</span>
+              <input type="text" id="auTags" placeholder="ИИ, онбординг, продукт" autocomplete="off">
+              <div class="nc-tagbank" id="auTagBank"></div>
             </label>
             <label class="nc-field"><span>Первый эфир — можно не указывать</span><input type="date" id="auDate"></label>
             <label class="nc-field"><span>&nbsp;</span><span class="nc-note" id="auDateNote">Без даты запись просто ляжет в фонотеку</span></label>
@@ -1720,8 +1721,8 @@
             <label class="nc-field nc-wide"><span>Описание</span><textarea id="ncText" rows="3" placeholder="Что произошло и почему это важно команде"></textarea></label>
             <label class="nc-field"><span>Автор</span><input type="text" id="ncAuthor" placeholder="Анна Волкова"></label>
             <label class="nc-field nc-wide">
-              <span>Теги через запятую</span>
-              <input type="text" id="ncTags" placeholder="Продукт, Релизы">
+              <span>Теги — начните печатать, подходящие подскажутся</span>
+              <input type="text" id="ncTags" placeholder="Продукт, Релизы" autocomplete="off">
               <div class="nc-tagbank" id="ncTagBank"></div>
             </label>
             <label class="nc-field"><span>Название источника</span><input type="text" id="ncSourceName" placeholder="База знаний"></label>
@@ -2088,9 +2089,12 @@
 
   /* Пересобрать страницы разделов и превью на главной из фонотеки. */
   function refreshSections(){
-    LIB_CONFIG.podcasts.data = sectionItems(SECTION_PODCAST);
-    LIB_CONFIG.shows.data    = sectionItems(SECTION_SHOW);
-    LIB_CONFIG.guides.data   = sectionItems(SECTION_GUIDE);
+    /* Реальные записи из фонотеки идут первыми, а прежние материалы остаются
+       следом: пока разделов мало, они держат страницы наполненными. Когда
+       своего контента станет достаточно, эти списки можно просто очистить. */
+    LIB_CONFIG.podcasts.data = sectionItems(SECTION_PODCAST).concat(podcastItems);
+    LIB_CONFIG.shows.data    = sectionItems(SECTION_SHOW).concat(showItems);
+    LIB_CONFIG.guides.data   = sectionItems(SECTION_GUIDE).concat(guideItems);
     renderHomePreviews();
     var hash = location.hash.replace(/^#\//, "");
     if(LIB_CONFIG[hash]){ renderLibraryFilters(hash); renderLibraryList(hash); }
@@ -2792,9 +2796,9 @@
   function renderHomePreviews(){
     // на главной — три свежие новости, остальные на странице «Новости»
     document.getElementById("homeNews").innerHTML = visibleNewsItems().slice(0,3).map(newsRowHtml).join("");
-    var pod = sortItems(LIB_CONFIG.podcasts.data.slice(), "date-desc");
-    var shw = sortItems(LIB_CONFIG.shows.data.slice(), "date-desc");
-    var gds = sortItems(LIB_CONFIG.guides.data.slice(), "date-desc");
+    var pod = LIB_CONFIG.podcasts.data.slice();
+    var shw = LIB_CONFIG.shows.data.slice();
+    var gds = LIB_CONFIG.guides.data.slice();
     document.getElementById("homePodcasts").innerHTML = pod.length
       ? pod.slice(0,3).map(mediaCardHtml).join("")
       : emptySectionHtml("подкастов");
@@ -3808,30 +3812,12 @@
     }
     function knownTags(){
       var seen = [];
-      newsItems.forEach(function(n){
+      (newsItems || []).forEach(function(n){
         (n.tags || []).forEach(function(t){ if(t && seen.indexOf(t) === -1) seen.push(t); });
       });
       return seen.sort(function(a,b){ return a.localeCompare(b, "ru"); });
     }
-    function renderTagBank(){
-      var have = currentTags();
-      tagBank.innerHTML = knownTags().map(function(t){
-        var on = have.indexOf(t) !== -1;
-        return '<button type="button" class="' + (on ? "is-on" : "") + '" data-tag="' +
-               escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
-      }).join("");
-    }
-    tagBank.addEventListener("click", function(e){
-      var btn = e.target.closest ? e.target.closest("button[data-tag]") : null;
-      if(!btn) return;
-      var t = btn.getAttribute("data-tag");
-      var have = currentTags();
-      var i = have.indexOf(t);
-      if(i === -1){ have.push(t); } else { have.splice(i, 1); }
-      tagsInput.value = have.join(", ");
-      renderTagBank();
-    });
-    tagsInput.addEventListener("input", renderTagBank);
+    var renderTagBank = setupTagPicker(tagsInput, tagBank, knownTags) || function(){};
     document.addEventListener("voiceai:news-updated", renderTagBank);   // новости подгрузились
     renderTagBank();
 
@@ -4028,6 +4014,8 @@
       statusEl.textContent = msg;
       statusEl.classList.toggle("is-error", !!isError);
     }
+    var BIG = 25e6;      // выше этого предупреждаем и проверяем токен заранее
+
     function human(bytes){
       return bytes > 1e6 ? (bytes/1e6).toFixed(1) + " МБ" : Math.round(bytes/1e3) + " КБ";
     }
@@ -4059,24 +4047,27 @@
       fillSections(v || "Эфир");
     });
 
-    /* Банк тегов для подсказок: берём всё, что уже использовали — и в записях,
-       и в новостях, чтобы теги не расползались на синонимы. */
-    function fillTagBank(){
+    /* Банк тегов: всё, что уже использовали — и в записях, и в новостях,
+       чтобы теги не расползались на синонимы. */
+    function allKnownTags(){
       var seen = {}, out = [];
       function take(list){
         (list || []).forEach(function(x){
           x = String(x || "").trim();
-          if(x && !seen[x]){ seen[x] = true; out.push(x); }
+          if(x && !seen[x.toLowerCase()]){ seen[x.toLowerCase()] = true; out.push(x); }
         });
       }
-      allTracks.forEach(function(t){ take(t.tags); });
-      newsItems.forEach(function(n){ take(n.tags); });
-      var bank = document.getElementById("auTagBank");
-      if(bank){
-        bank.innerHTML = out.sort(function(a,b){ return a.localeCompare(b,"ru"); })
-          .map(function(x){ return '<option value="' + escapeHtml(x) + '">'; }).join("");
-      }
+      /* Форма собирается раньше, чем наполняются данные, поэтому читаем
+         осторожно: на этом шаге списки ещё могут быть не созданы. */
+      (allTracks || []).forEach(function(t){ take(t.tags); });
+      (newsItems || []).forEach(function(n){ take(n.tags); });
+      return out.sort(function(a,b){ return a.localeCompare(b,"ru"); });
     }
+    var fillTagBank = setupTagPicker(
+      document.getElementById("auTags"),
+      document.getElementById("auTagBank"),
+      allKnownTags
+    ) || function(){};
     function readTags(){
       return (document.getElementById("auTags").value || "")
         .split(",").map(function(x){ return x.trim(); }).filter(Boolean);
@@ -4131,7 +4122,17 @@
       chosen = file;
       picked.hidden = false;
       picked.textContent = safeName(file.name) + " · " + human(file.size);
-      say(file.size > 50e6 ? "Файл крупный, загрузка займёт время" : "");
+      /* Формально GitHub принимает до 100 МБ, но через браузер запрос
+         раздувается в полтора раза (base64) и на больших файлах отбивается.
+         Честно предупреждаем заранее, а не после десяти минут ожидания. */
+      if(file.size > BIG){
+        say("Файл " + human(file.size) + " — крупноват для загрузки через сайт. " +
+            "Если не пройдёт, сожмите запись в MP3: из видео звук весит в разы меньше.", true);
+      } else if(file.size > 10e6){
+        say("Файл " + human(file.size) + " — загрузка займёт время");
+      } else {
+        say("");
+      }
       if(!document.getElementById("auTitle").value){
         document.getElementById("auTitle").value =
           safeName(file.name).replace(/\.[^.]+$/, "").replace(/^[\d\-_. ]+/, "").replace(/[_-]+/g, " ").trim();
@@ -4328,9 +4329,17 @@
       bar.classList.add("is-on");
       say("Читаю файл…");
 
-      fileToBase64(chosen).then(function(b64){
+      /* Для крупного файла сначала убеждаемся, что токен рабочий. Тогда, если
+         загрузка потом отвалится, мы точно знаем: дело в размере, а не в токене,
+         и можем сказать это прямо, а не гонять человека перевыпускать ключ. */
+      var big = chosen.size > BIG;
+      var tokenOk = !big;
+      (big ? GH.check().then(function(){ tokenOk = true; }) : Promise.resolve())
+      .then(function(){
+        return fileToBase64(chosen);
+      }).then(function(b64){
         say("Загружаю " + human(chosen.size) + "…");
-        return GH.uploadFile(path, b64, "Запись в эфир: " + title);
+        return GH.uploadFile(path, b64, "Запись в фонотеку: " + title);
       }).then(function(){
         say("Добавляю в список эфира…");
         return GH.editJson("audio/manifest.json", "tracks", function(list){
@@ -4377,7 +4386,16 @@
       })["catch"](function(err){
         uploadBtn.disabled = false;
         bar.classList.remove("is-on");
-        say(err.message, true);
+        var m = err && err.message ? err.message : "Не получилось";
+        /* Токен мы только что проверили — значит, GitHub отказал из-за размера.
+           Не отправляем человека перевыпускать ключ на пустом месте. */
+        if(tokenOk && chosen && chosen.size > BIG && /Токен не принят|Доступ запрещён/.test(m)){
+          m = "GitHub не принял файл " + human(chosen.size) + ". Токен при этом рабочий — " +
+              "дело в размере: через браузер запрос раздувается примерно в полтора раза. " +
+              "Сожмите запись в MP3 (из видео звук весит в разы меньше) или положите файл " +
+              "в папку audio прямо на GitHub — там проходит до 25 МБ.";
+        }
+        say(m, true);
       });
     });
   })();
@@ -5166,6 +5184,92 @@
       try{ new ResizeObserver(function(){ updateStripControls(); }).observe(strip); }catch(e){}
     }
   })();
+
+  /* ================= Подбор тегов =================
+     Поле остаётся обычной строкой «через запятую», но под ним живёт список
+     уже использованных тегов, который фильтруется по мере ввода: печатаешь
+     «онб» — видишь «Онбординг». Клик по тегу добавляет его или снимает. */
+  function setupTagPicker(input, bank, allTags){
+    if(!input || !bank) return;
+
+    function current(){
+      return input.value.split(",").map(function(t){ return t.trim(); }).filter(Boolean);
+    }
+    function typedTail(){
+      var parts = input.value.split(",");
+      return parts[parts.length - 1].trim();
+    }
+    function uniq(list){
+      var seen = {}, out = [];
+      list.forEach(function(t){
+        var k = t.toLowerCase();
+        if(t && !seen[k]){ seen[k] = true; out.push(t); }
+      });
+      return out;
+    }
+    function render(){
+      var have = current(), q = typedTail().toLowerCase();
+      var all = allTags();
+      var shown = all.filter(function(t){
+        return !q || t.toLowerCase().indexOf(q) !== -1;
+      });
+      // выбранные держим на виду всегда, чтобы их можно было снять
+      have.forEach(function(t){
+        if(shown.indexOf(t) === -1 && all.indexOf(t) !== -1) shown.unshift(t);
+      });
+      if(!shown.length){
+        bank.innerHTML = q
+          ? '<span class="tb-none">Такого тега ещё не было — он добавится как новый</span>'
+          : '<span class="tb-none">Тегов пока нет — впишите первый</span>';
+        return;
+      }
+      bank.innerHTML = shown.map(function(t){
+        var on = have.some(function(x){ return x.toLowerCase() === t.toLowerCase(); });
+        return '<button type="button" class="' + (on ? "is-on" : "") + '" data-tag="' +
+               escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
+      }).join("");
+    }
+    /* После выбора из подсказок оставляем запятую в конце: так поле готово
+       к следующему тегу, а уже выбранные снимаются одним кликом, потому что
+       «набираемого хвоста» больше нет. */
+    function setTags(list, ready){
+      var v = uniq(list).join(", ");
+      input.value = v && ready ? v + ", " : v;
+      render();
+    }
+
+    bank.addEventListener("click", function(e){
+      var btn = e.target.closest ? e.target.closest("button[data-tag]") : null;
+      if(!btn) return;
+      var t = btn.getAttribute("data-tag");
+      var have = current();
+      var tail = typedTail();
+      if(tail){
+        /* Человек набирал буквы и выбрал подсказку — значит, хочет её добавить,
+           а не снять. Заменяем набранный хвост выбранным тегом. */
+        have.pop();
+        have = have.filter(function(x){ return x.toLowerCase() !== t.toLowerCase(); });
+        have.push(t);
+      } else {
+        var i = -1;
+        have.forEach(function(x, k){ if(x.toLowerCase() === t.toLowerCase()) i = k; });
+        if(i !== -1){ have.splice(i, 1); } else { have.push(t); }
+      }
+      setTags(have, true);
+      input.focus();
+    });
+
+    input.addEventListener("input", render);
+    input.addEventListener("focus", render);
+    input.addEventListener("keydown", function(e){
+      if(e.key !== "Enter") return;
+      e.preventDefault();
+      var first = bank.querySelector("button[data-tag]:not(.is-on)");
+      if(typedTail() && first){ first.click(); }
+    });
+    render();
+    return render;
+  }
 
   /* ================= Сборка эфира (только редактор) =================
      Три инструмента: выбрать день, который собираем; взять запись из
