@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T12:01:11Z",
+  "updated": "2026-09-22T12:02:33Z",
   "tracks": [
     {
       "file": "2026-09-22_01_Voice_Ai_intro.MP3",
@@ -10,16 +10,6 @@
       "size": 914544,
       "desc": "Кто такой VOICE Ai",
       "duration": 57.2
-    },
-    {
-      "file": "FURA.MP3",
-      "title": "FURA",
-      "host": "Voice Ai",
-      "tag": "AI agent",
-      "duration": 99.3,
-      "size": 1588712,
-      "date": "2026-09-22",
-      "desc": "Фура это ИИ агент по работе с корпоративной базой знаний Я.Знаю. все подробности на https://tedora.tedointernal.ru/"
     },
     {
       "file": "Первый_шаг_в_ИИ_без_страха.mp3",
@@ -47,6 +37,14 @@
       "tag": "Эфир",
       "date": "2026-09-22",
       "size": 2
+    },
+    {
+      "file": "2026_09_20_FURA.MP3",
+      "title": "09 20 FURA",
+      "host": "Voice Ai",
+      "tag": "Эфир",
+      "duration": 99.3,
+      "size": 1588712
     }
   ]
 }
