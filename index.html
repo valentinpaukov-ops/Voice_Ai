@@ -833,6 +833,12 @@
   .nc-check span{user-select:none;}
   .nc-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;}
   /* опасные действия: удалить запись насовсем, очистить день */
+  .nc-note{font-size:11.5px;color:var(--text-dim);line-height:1.4;padding-top:9px;}
+  .nc-field select{
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;
+    color:var(--text);padding:9px 10px;font-size:13px;font-family:inherit;
+  }
+  .nc-field select:focus{outline:none;border-color:var(--accent);}
   .nc-ghost.nc-danger{color:var(--live);border-color:color-mix(in srgb, var(--live) 45%, transparent);}
   .nc-ghost.nc-danger:hover{border-color:var(--live);background:color-mix(in srgb, var(--live) 12%, transparent);}
   .nc-ghost{
@@ -1618,9 +1624,9 @@
       </div>
 
       <div class="news-composer admin-only" id="audioComposer">
-        <button type="button" class="nc-toggle" id="auToggle">+ Загрузить запись в эфир</button>
+        <button type="button" class="nc-toggle" id="auToggle">+ Загрузить запись в фонотеку</button>
         <div class="nc-body" id="auBody" hidden>
-          <p class="nc-hint" id="auHint">Файл уйдёт прямо в папку <code>audio</code> репозитория и появится в эфире у всех. Через сайт можно грузить файлы до 100 МБ — это больше, чем позволяет загрузка через сам GitHub.</p>
+          <p class="nc-hint" id="auHint">Запись попадает в <b>фонотеку</b> — общую библиотеку, из которой собираются эфиры. Поставьте дату первого эфира, если она уже известна: запись встанет в эфир этого дня. Оставьте поле пустым — запись просто ляжет в фонотеку и будет ждать, пока вы её куда-нибудь поставите. Через сайт проходят файлы до 100 МБ.</p>
           <div class="au-drop" id="auDrop">
             Нажмите или перетащите сюда аудиофайл
             <input type="file" id="auFile" accept="audio/*" hidden>
@@ -1629,15 +1635,22 @@
           <div class="nc-grid" style="margin-top:14px;">
             <label class="nc-field nc-wide"><span>Название в эфире</span><input type="text" id="auTitle" placeholder="Итоги недели: продукт и релизы"></label>
             <label class="nc-field"><span>Ведущий или команда</span><input type="text" id="auHost" placeholder="Анна Волкова, продуктовая команда"></label>
-            <label class="nc-field"><span>Рубрика</span><input type="text" id="auTag" placeholder="Дайджест"></label>
-            <label class="nc-field"><span>День эфира</span><input type="date" id="auDate"></label>
+            <label class="nc-field"><span>Раздел — где запись появится</span>
+              <select id="auTag"></select>
+            </label>
+            <label class="nc-field nc-wide"><span>Теги через запятую — по ним ищут и фильтруют</span>
+              <input type="text" id="auTags" list="auTagBank" placeholder="ИИ, онбординг, продукт">
+              <datalist id="auTagBank"></datalist>
+            </label>
+            <label class="nc-field"><span>Первый эфир — можно не указывать</span><input type="date" id="auDate"></label>
+            <label class="nc-field"><span>&nbsp;</span><span class="nc-note" id="auDateNote">Без даты запись просто ляжет в фонотеку</span></label>
             <label class="nc-field nc-wide">
               <span>Описание выпуска — показывается в шапке эфира</span>
               <textarea id="auDesc" rows="2" placeholder="О чём этот выпуск и кому он будет полезен"></textarea>
             </label>
           </div>
           <div class="nc-actions">
-            <button type="button" class="btn-add" id="auUpload">Опубликовать в эфир</button>
+            <button type="button" class="btn-add" id="auUpload">Загрузить в фонотеку</button>
             <button type="button" class="nc-ghost" id="auCancelEdit" hidden>Отменить правку</button>
             <button type="button" class="nc-ghost nc-danger" id="auDelete" hidden>Удалить из фонотеки</button>
             <span class="nc-status" id="auStatus"></span>
@@ -2041,6 +2054,47 @@
   }
 
   newsItems = sortNewsDesc(newsItems.map(normalizeNews));
+
+  /* ===================== Разделы =====================
+     Поле tag у записи — это РАЗДЕЛ: где материал живёт на сайте. Свободные
+     теги (поле tags) — это темы, по ним ищут и фильтруют. Раздел решает,
+     на какой странице появится запись; теги — как её там найдут. */
+  var SECTION_PODCAST = "Подкаст", SECTION_SHOW = "Шоу", SECTION_GUIDE = "Гайд";
+  var SECTIONS = [ "Эфир", SECTION_PODCAST, SECTION_SHOW, SECTION_GUIDE ];
+
+  /* Материалы раздела для его страницы. Запись без даты ещё не выходила,
+     поэтому слушателю не показывается — так же, как черновик будущего дня. */
+  function sectionItems(section){
+    var today = todayStr();
+    return allTracks.filter(function(t){
+      if(t.demo || !t.file) return false;
+      if((t.tag || "").trim() !== section) return false;
+      return isAdmin || (t.day && t.day <= today);
+    }).map(function(t){
+      var tags = (t.tags && t.tags.length) ? t.tags : [];
+      return {
+        id: t.id, file: t.file,
+        title: t.title,
+        tag: tags.length ? tags[0] : section,
+        tags: tags.length ? tags : [section],
+        meta: t.host || "Voice Ai",
+        durSec: t.dur || 0,
+        readTime: t.dur ? fmt(t.dur) : "",
+        snippet: t.desc || "",
+        date: t.day || ""
+      };
+    });
+  }
+
+  /* Пересобрать страницы разделов и превью на главной из фонотеки. */
+  function refreshSections(){
+    LIB_CONFIG.podcasts.data = sectionItems(SECTION_PODCAST);
+    LIB_CONFIG.shows.data    = sectionItems(SECTION_SHOW);
+    LIB_CONFIG.guides.data   = sectionItems(SECTION_GUIDE);
+    renderHomePreviews();
+    var hash = location.hash.replace(/^#\//, "");
+    if(LIB_CONFIG[hash]){ renderLibraryFilters(hash); renderLibraryList(hash); }
+  }
 
   var LIB_CONFIG = {
     news:     {title:"Новости компании", eyebrow:"Все материалы", data:newsItems,     kind:"news"},
@@ -2701,6 +2755,11 @@
     );
   }
 
+  function emptySectionHtml(what){
+    return '<p class="lib-empty">Пока нет ни одного ' + escapeHtml(what) +
+           '. Загрузите запись и выберите нужный раздел в форме.</p>';
+  }
+
   function mediaCardHtml(item){
     return (
       '<article class="media-card" data-id="'+escapeHtml(item.id)+'">'+
@@ -2711,7 +2770,7 @@
         '<div class="media-meta">'+
           '<span class="m-name">'+escapeHtml(item.meta)+'</span>'+
           '<span class="tabular">'+escapeHtml(fmt(item.durSec))+'</span>'+
-          '<button type="button" class="media-play-btn" aria-label="Слушать выпуск" data-title="'+escapeHtml(item.title)+'" data-meta="'+escapeHtml(item.meta)+'" data-tag="'+escapeHtml(item.tag)+'">'+
+          '<button type="button" class="media-play-btn" aria-label="Слушать выпуск" data-file="'+escapeHtml(item.file || "")+'" data-title="'+escapeHtml(item.title)+'" data-meta="'+escapeHtml(item.meta)+'" data-tag="'+escapeHtml(item.tag)+'">'+
             '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'+
           '</button>'+
         '</div>'+
@@ -2733,15 +2792,26 @@
   function renderHomePreviews(){
     // на главной — три свежие новости, остальные на странице «Новости»
     document.getElementById("homeNews").innerHTML = visibleNewsItems().slice(0,3).map(newsRowHtml).join("");
-    document.getElementById("homePodcasts").innerHTML = podcastItems.slice(0,3).map(mediaCardHtml).join("");
-    document.getElementById("homeShows").innerHTML = showItems.slice(0,3).map(mediaCardHtml).join("");
-    document.getElementById("homeGuides").innerHTML = guideItems.slice(0,3).map(function(g){ return listRowHtml(g, g.readTime); }).join("");
+    var pod = sortItems(LIB_CONFIG.podcasts.data.slice(), "date-desc");
+    var shw = sortItems(LIB_CONFIG.shows.data.slice(), "date-desc");
+    var gds = sortItems(LIB_CONFIG.guides.data.slice(), "date-desc");
+    document.getElementById("homePodcasts").innerHTML = pod.length
+      ? pod.slice(0,3).map(mediaCardHtml).join("")
+      : emptySectionHtml("подкастов");
+    document.getElementById("homeShows").innerHTML = shw.length
+      ? shw.slice(0,3).map(mediaCardHtml).join("")
+      : emptySectionHtml("выпусков шоу");
+    document.getElementById("homeGuides").innerHTML = gds.length
+      ? gds.slice(0,3).map(function(g){ return listRowHtml(g, g.readTime); }).join("")
+      : emptySectionHtml("гайдов");
   }
 
   // one delegated listener covers every media-play-btn, home or library page
   document.addEventListener("click", function(e){
     var btn = e.target.closest ? e.target.closest(".media-play-btn") : null;
     if(!btn) return;
+    var f = btn.getAttribute("data-file");
+    if(f && playFromLibrary(f)) return;      // это настоящая запись из фонотеки
     addLibraryTrackToQueue(btn.getAttribute("data-title"), btn.getAttribute("data-meta"), btn.getAttribute("data-tag"));
   });
 
@@ -3130,7 +3200,10 @@
   function buildSearchIndex(){
     var idx = [];
     tracks.forEach(function(t){
-      idx.push({type:"track", typeLabel:"Эфир", title:t.title, snippet:t.desc || t.host, tag:t.tag, extra:t.desc || "", hash:"#air", id:t.id});
+      idx.push({type:"track", typeLabel:t.tag || "Эфир", title:t.title, snippet:t.desc || t.host,
+                tag:(t.tags && t.tags.length ? t.tags.join(" ") : t.tag),
+                extra:[t.desc, t.host, t.tag, (t.tags||[]).join(" ")].filter(Boolean).join(" "),
+                hash:"#air", id:t.id});
     });
     visibleNewsItems().forEach(function(n){
       idx.push({type:"news", typeLabel:"Новости", title:n.title, snippet:n.text || n.snippet,
@@ -3962,6 +4035,78 @@
     function safeName(name){
       return name.replace(/[\\/:*?"<>|#%]+/g, "").replace(/\s+/g, " ").trim();
     }
+    /* Список разделов: четыре основных плюс всё, что уже встречается
+       в фонотеке, плюс возможность завести свой. */
+    function fillSections(current){
+      var sel = document.getElementById("auTag");
+      var seen = {}, opts = [];
+      SECTIONS.forEach(function(x){ seen[x] = true; opts.push(x); });
+      allTracks.forEach(function(t){
+        var g = (t.tag || "").trim();
+        if(g && !seen[g]){ seen[g] = true; opts.push(g); }
+      });
+      if(current && !seen[current]){ opts.push(current); }
+      sel.innerHTML = opts.map(function(x){
+        return '<option value="' + escapeHtml(x) + '"' + (x === current ? " selected" : "") + '>' +
+               escapeHtml(x) + '</option>';
+      }).join("") + '<option value="__new">+ своя рубрика…</option>';
+      sel.value = current || "Эфир";
+    }
+    document.getElementById("auTag").addEventListener("change", function(){
+      var sel = document.getElementById("auTag");
+      if(sel.value !== "__new") return;
+      var v = (window.prompt("Название раздела") || "").trim();
+      fillSections(v || "Эфир");
+    });
+
+    /* Банк тегов для подсказок: берём всё, что уже использовали — и в записях,
+       и в новостях, чтобы теги не расползались на синонимы. */
+    function fillTagBank(){
+      var seen = {}, out = [];
+      function take(list){
+        (list || []).forEach(function(x){
+          x = String(x || "").trim();
+          if(x && !seen[x]){ seen[x] = true; out.push(x); }
+        });
+      }
+      allTracks.forEach(function(t){ take(t.tags); });
+      newsItems.forEach(function(n){ take(n.tags); });
+      var bank = document.getElementById("auTagBank");
+      if(bank){
+        bank.innerHTML = out.sort(function(a,b){ return a.localeCompare(b,"ru"); })
+          .map(function(x){ return '<option value="' + escapeHtml(x) + '">'; }).join("");
+      }
+    }
+    function readTags(){
+      return (document.getElementById("auTags").value || "")
+        .split(",").map(function(x){ return x.trim(); }).filter(Boolean);
+    }
+    document.addEventListener("voiceai:library-changed", function(){ fillTagBank(); });
+
+    /* Кнопка сама объясняет правило: есть дата — запись ещё и встанет в эфир
+       этого дня, нет даты — просто пополнит фонотеку. */
+    function uploadLabel(){
+      var d = (document.getElementById("auDate").value || "").trim();
+      return d ? "Загрузить и поставить в эфир" : "Загрузить в фонотеку";
+    }
+    document.getElementById("auDate").addEventListener("input", function(){
+      if(!editingFile) uploadBtn.textContent = uploadLabel();
+    });
+
+    /* Без даты в начале имени файлы могут совпасть — добавляем номер,
+       чтобы новая загрузка не затёрла чужую запись с тем же названием. */
+    function uniqueName(name){
+      var busy = {};
+      allTracks.forEach(function(t){ if(t.file) busy[t.file] = true; });
+      if(!busy[name]) return name;
+      var dot = name.lastIndexOf("."), base = dot > 0 ? name.slice(0, dot) : name,
+          ext = dot > 0 ? name.slice(dot) : "";
+      for(var i = 2; i < 500; i++){
+        if(!busy[base + "-" + i + ext]) return base + "-" + i + ext;
+      }
+      return base + "-" + Date.now() + ext;
+    }
+
     function datePrefix(){
       var d = new Date();
       return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2) + "_";
@@ -3969,7 +4114,8 @@
 
     toggle.addEventListener("click", function(){
       body.hidden = !body.hidden;
-      toggle.textContent = body.hidden ? "+ Загрузить запись в эфир" : "− Свернуть";
+      if(!body.hidden){ fillSections(document.getElementById("auTag").value || "Эфир"); fillTagBank(); }
+      toggle.textContent = body.hidden ? "+ Загрузить запись в фонотеку" : "− Свернуть";
       if(!body.hidden && !GH.connected()){
         say("Сначала подключите GitHub в форме новостей", true);
       }
@@ -4045,12 +4191,13 @@
       editingFile = file || null;
       cancelEdit.hidden = !file;
       deleteBtn.hidden = !file;       // удалить насовсем можно только из правки
-      uploadBtn.textContent = file ? "Сохранить изменения" : "Опубликовать в эфир";
+      uploadBtn.textContent = file ? "Сохранить изменения" : uploadLabel();
       drop.hidden = !!file;                       // при правке файл менять не нужно
-      toggle.textContent = file ? "− Правка записи" : (body.hidden ? "+ Загрузить запись в эфир" : "− Свернуть");
+      toggle.textContent = file ? "− Правка записи" : (body.hidden ? "+ Загрузить запись в фонотеку" : "− Свернуть");
     }
     function clearAudioForm(){
-      ["auTitle","auHost","auTag","auDesc","auDate"].forEach(function(id){ document.getElementById(id).value = ""; });
+      ["auTitle","auHost","auDesc","auDate","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
+      fillSections("Эфир");
       chosen = null; picked.hidden = true; fileInp.value = "";
     }
 
@@ -4069,7 +4216,9 @@
       body.hidden = false;
       document.getElementById("auTitle").value = tr.title || "";
       document.getElementById("auHost").value = tr.host || "";
-      document.getElementById("auTag").value = tr.tag || "";
+      fillSections(tr.tag || "Эфир");
+      fillTagBank();
+      document.getElementById("auTags").value = (tr.tags || []).join(", ");
       document.getElementById("auDesc").value = tr.desc || "";
       document.getElementById("auDate").value = tr.day || "";
       picked.hidden = false;
@@ -4142,6 +4291,8 @@
             next.title = t;
             next.host = document.getElementById("auHost").value.trim() || "Voice Ai";
             next.tag = document.getElementById("auTag").value.trim() || "Эфир";
+          var tg = readTags();
+          if(tg.length){ next.tags = tg; } else { delete next.tags; }
             var dsc = document.getElementById("auDesc").value.trim();
             if(dsc){ next.desc = dsc; } else { delete next.desc; }
             var dt = document.getElementById("auDate").value.trim();
@@ -4167,11 +4318,11 @@
       var title = document.getElementById("auTitle").value.trim();
       if(!title){ say("Впишите название записи", true); return; }
 
-      var fileName = datePrefix() + safeName(chosen.name);
+      /* Правило простое: дата заполнена — запись встанет в эфир этого дня,
+         дата пустая — просто пополнит фонотеку и будет ждать. */
+      var entryDay = document.getElementById("auDate").value.trim();
+      var fileName = uniqueName((entryDay ? entryDay + "_" : "") + safeName(chosen.name));
       var path = "audio/" + fileName;
-      // день, в эфир которого встанет запись: указанный в форме или сегодняшний
-      var entryDay = document.getElementById("auDate").value.trim() ||
-                     datePrefix().replace("_", "");
 
       uploadBtn.disabled = true;
       bar.classList.add("is-on");
@@ -4185,31 +4336,33 @@
         return GH.editJson("audio/manifest.json", "tracks", function(list){
           var entry = {
             file: fileName,
-            // дата первой публикации — она же день, в который запись выйдет
-            date: entryDay,
             title: title,
             host: document.getElementById("auHost").value.trim() || "Voice Ai",
             tag: document.getElementById("auTag").value.trim() || "Эфир",
             size: chosen.size
           };
+          // дату пишем, только если она задана: пустая дата = запись без эфира
+          if(entryDay) entry.date = entryDay;
+          var tg = readTags();
+          if(tg.length) entry.tags = tg;
           var d = document.getElementById("auDesc").value.trim();
           if(d) entry.desc = d;
           var i = -1;
           for(var k=0;k<list.length;k++){ if(list[k] && list[k].file === fileName){ i = k; break; } }
           if(i >= 0){ list[i] = entry; } else { list.push(entry); }
           return list;
-        }, "Запись в списке эфира: " + title);
+        }, "В фонотеку: " + title);
       }).then(function(list){
         uploadBtn.disabled = false;
         bar.classList.remove("is-on");
         chosen = null;
         picked.hidden = true;
         fileInp.value = "";
-        ["auTitle","auHost","auTag","auDesc","auDate"].forEach(function(id){ document.getElementById(id).value = ""; });
-        refreshAirAfterEdit(list);     // запись появляется в очереди сразу
-        /* Если у дня уже есть своя программа, новая запись сама в неё не
-           попадёт — дописываем в конец явно. */
-        if(airProgram[entryDay]){
+        ["auTitle","auHost","auDesc","auDate","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
+        refreshAirAfterEdit(list);     // запись появляется в фонотеке сразу
+        /* Дата задана — ставим запись в эфир этого дня явно, дописывая
+           в конец программы. Так состав дня всегда виден в манифесте. */
+        if(entryDay){
           var prog = programOfDay(entryDay);
           if(prog.indexOf(fileName) === -1){
             prog.push(fileName);
@@ -4217,7 +4370,9 @@
           }
         }
         document.dispatchEvent(new CustomEvent("voiceai:library-changed"));
-        say("Готово — запись в эфире");
+        say(entryDay
+            ? "Готово — запись в фонотеке и в эфире " + humanDay(entryDay)
+            : "Готово — запись в фонотеке. В эфир её можно поставить в любой день");
         hint.textContent = "Последняя загрузка: " + fileName;
       })["catch"](function(err){
         uploadBtn.disabled = false;
@@ -4523,6 +4678,7 @@
         title: t.title || t.file,
         host: t.host || "Voice Ai",
         tag: t.tag || "Эфир",
+        tags: Array.isArray(t.tags) ? t.tags.filter(Boolean) : [],
         desc: t.desc || "",
         dur: (typeof t.duration === "number" && t.duration > 0) ? t.duration : null,
         src: encodeURI(src),
@@ -4533,6 +4689,7 @@
     loaded.forEach(function(t){ t.day = parseTrackDate(t); });
     allTracks = loaded;
     airProgram = readProgram(data.air);
+    refreshSections();     // подкасты, шоу и гайды собираются из этой же фонотеки
 
     var day = pickDefaultDay();
     if(day && setAirDay(day, false)) return true;
@@ -4556,10 +4713,12 @@
   var airProgram = {};     // программа эфира по дням: {"2026-09-25": ["a.mp3"]}
   var airDay = "";         // какой день сейчас в эфире
 
+  /* День записи определяет ТОЛЬКО поле date. Имя файла больше ни на что не
+     влияет: иначе запись, намеренно загруженную без даты, выдавала бы в эфир
+     дата в её имени. Файлам, брошенным в папку мимо формы, дату проставляет
+     робот — по имени, но один раз и явно. */
   function parseTrackDate(t){
-    if(t.date && /^\d{4}-\d{2}-\d{2}$/.test(t.date)) return t.date;
-    var m = /(\d{4}-\d{2}-\d{2})/.exec(t.file || t.src || "");
-    return m ? m[1] : "";
+    return (t.date && /^\d{4}-\d{2}-\d{2}$/.test(t.date)) ? t.date : "";
   }
   function todayStr(){
     var d = new Date();
@@ -4573,6 +4732,27 @@
                   дне свой, файл при этом один.
      Если для дня программы нет, он собирается по датам записей — так работают
      все старые данные, переделывать ничего не нужно. */
+
+  /* Включить запись из раздела: если она стоит в эфире своего дня — открываем
+     этот день и играем именно её; если нет (лежит в фонотеке) — играем прямо
+     сейчас, не трогая собранную программу. */
+  function playFromLibrary(file){
+    var t = trackByFile(file);
+    if(!t) return false;
+    location.hash = "#air";
+    setTimeout(function(){
+      var days = daysOfFile(file);
+      if(days.length && setAirDay(days[days.length - 1], false)){
+        selectTrack(t.id, true);
+      } else {
+        if(tracks.indexOf(t) === -1){ tracks = tracks.concat([t]); renderQueue(); }
+        selectTrack(t.id, true);
+      }
+      var air = document.getElementById("air");
+      if(air) air.scrollIntoView({behavior:"smooth", block:"start"});
+    }, 60);
+    return true;
+  }
 
   function trackByFile(file){
     for(var i=0;i<allTracks.length;i++){ if(allTracks[i].file === file) return allTracks[i]; }
@@ -4683,6 +4863,18 @@
     });
   }
 
+  /* В каких днях реально стоит запись. Нужно, чтобы показывать в фонотеке,
+     что лежит без дела, и не путать «есть дата» с «стоит в эфире». */
+  function daysOfFile(file){
+    var out = [];
+    Object.keys(airProgram).forEach(function(d){
+      if(airProgram[d].indexOf(file) !== -1) out.push(d);
+    });
+    var t = trackByFile(file);
+    if(t && t.day && !airProgram[t.day] && out.indexOf(t.day) === -1) out.push(t.day);
+    return out.sort();
+  }
+
   function airDays(){
     var seen = {};
     allTracks.forEach(function(t){ if(t.day) seen[t.day] = true; });
@@ -4731,12 +4923,10 @@
 
   function setAirDay(day, autoplay, allowEmpty){
     var list = tracksOfDay(day);
-    // Записи без даты (залиты мимо формы, без даты в имени) не должны
-    // потеряться — подмешиваем их в текущий эфир, иначе они не звучат нигде.
-    // В явной программе дня такого не делаем: там состав задал редактор.
-    if(!airProgram[day] && day === pickDefaultDay()){
-      list = list.concat(allTracks.filter(function(t){ return !t.day; }));
-    }
+    /* Запись без даты живёт в фонотеке и не звучит нигде, пока редактор
+       сам не поставит её в какой-нибудь день. Раньше такие записи молча
+       подмешивались в текущий эфир — теперь загрузка без даты означает
+       ровно то, что означает, и ничего не включает сама. */
     // пустой день открываем только редактору — ему надо его собирать
     if(!list.length && !allowEmpty) return false;
     airDay = day;
@@ -5199,9 +5389,13 @@
         if(g && !seen[g]){ seen[g] = true; tags.push(g); }
       });
       tags.sort(function(a,b){ return a.localeCompare(b, "ru"); });
-      if(activeTag && tags.indexOf(activeTag) === -1) activeTag = "";
+      if(activeTag && activeTag !== "__idle" && tags.indexOf(activeTag) === -1) activeTag = "";
+      var idle = pool.filter(function(t){ return daysOfFile(t.file).length === 0; }).length;
       tagsBox.innerHTML = '<button type="button" class="lib-tag' + (activeTag ? "" : " is-on") +
-                          '" data-tag="">Все</button>' +
+                          '" data-tag="">Все · ' + pool.length + '</button>' +
+        (idle ? '<button type="button" class="lib-tag' + (activeTag === "__idle" ? " is-on" : "") +
+                '" data-tag="__idle" title="Записи, которые не стоят ни в одном дне">' +
+                'Не в эфире · ' + idle + '</button>' : "") +
         tags.map(function(g){
           return '<button type="button" class="lib-tag' + (g === activeTag ? " is-on" : "") +
                  '" data-tag="' + escapeHtml(g) + '">' + escapeHtml(g) + '</button>';
@@ -5209,7 +5403,8 @@
 
       var q = (search.value || "").trim().toLowerCase();
       var rows = pool.filter(function(t){
-        if(activeTag && (t.tag || "").trim() !== activeTag) return false;
+        if(activeTag === "__idle"){ if(daysOfFile(t.file).length) return false; }
+        else if(activeTag && (t.tag || "").trim() !== activeTag) return false;
         if(!q) return true;
         return ((t.title||"") + " " + (t.host||"") + " " + (t.desc||"") + " " + (t.tag||""))
                  .toLowerCase().indexOf(q) !== -1;
@@ -5223,8 +5418,13 @@
       }
       listBox.innerHTML = rows.map(function(t){
         var already = inDay.indexOf(t.file) !== -1;
-        var sub = [t.host || "", t.tag || "", t.day ? "впервые " + humanDay(t.day) : "без даты",
-                   t.dur ? fmt(t.dur) : ""].filter(Boolean).join(" · ");
+        var days = daysOfFile(t.file);
+        var where = days.length
+          ? (days.length === 1 ? "в эфире " + humanDay(days[0])
+                               : "в эфире " + days.length + " " + plural(days.length, "дня", "дней", "дней"))
+          : "не в эфире";
+        var sub = [t.host || "", t.tag || "", where, t.dur ? fmt(t.dur) : ""]
+                  .filter(Boolean).join(" · ");
         return '<div class="lib-row' + (already ? " is-in" : "") + '">' +
                  '<span class="lib-main">' +
                    '<span class="lib-title">' + escapeHtml(t.title) + '</span>' +
@@ -5314,7 +5514,8 @@
       var t = {
         id: mkId(), file: i.file, date: i.date || "",
         title: i.title || i.file, host: i.host || "Voice Ai",
-        tag: i.tag || "Эфир", desc: i.desc || "",
+        tag: i.tag || "Эфир", tags: Array.isArray(i.tags) ? i.tags.filter(Boolean) : [],
+        desc: i.desc || "",
         dur: (typeof i.duration === "number" && i.duration > 0) ? i.duration : null,
         src: encodeURI(src), demo: false
       };
@@ -5327,6 +5528,7 @@
       t.title = i.title || t.title;
       t.host  = i.host || "";
       t.tag   = i.tag || "Эфир";
+      t.tags  = Array.isArray(i.tags) ? i.tags.filter(Boolean) : [];
       t.desc  = i.desc || "";
       t.date  = i.date || "";
       t.day   = parseTrackDate(t);
@@ -5343,13 +5545,12 @@
       return ia - ib;
     });
 
+    refreshSections();     // страницы подкастов, шоу и гайдов — из той же фонотеки
+
     // пересобираем очередь текущего дня, сохраняя то, что играет
     var playingId = state.currentId;
     var day = airDay || pickDefaultDay();
     var next = tracksOfDay(day);
-    if(day === pickDefaultDay()){
-      next = next.concat(allTracks.filter(function(t){ return !t.day; }));
-    }
     if(next.length){
       tracks = next;
       if(!getTrack(playingId)){ state.currentId = tracks[0].id; }
