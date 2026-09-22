@@ -5151,9 +5151,13 @@
     // отдельная запись дня — включаем именно её
     var row = e.target.closest("[data-play-id]");
     if(row){
+      // включаем запись, не уходя из архива: плеер внизу покажет, что звучит
       var id = row.getAttribute("data-play-id"), rd = row.getAttribute("data-day");
-      location.hash = "#air";
-      setTimeout(function(){ setAirDay(rd, false); selectTrack(id, true); }, 60);
+      var tr = null;
+      tracksOfDay(rd).forEach(function(x){ if(x.id === id) tr = x; });
+      if(!tr) return;
+      selectTrack(tr.id, true);
+      showInlineHint("Играет: " + (tr.title || "запись"));
       return;
     }
     // «Редактировать эфир» — открыть этот день в сборке на главной
@@ -5285,17 +5289,15 @@
   /* Включить запись из раздела: если она стоит в эфире своего дня — открываем
      этот день и играем именно её; если нет (лежит в фонотеке) — играем прямо
      сейчас, не трогая собранную программу. */
+  /* Запуск с карточки не уводит со страницы. Плеер на сайте один и живёт
+     поверх всех разделов: он не перезапускается при переходах, поэтому можно
+     включить подкаст на его странице, спокойно уйти в новости или на главную —
+     и он продолжит играть. Ничего не подмешиваем в эфир и не подменяем день. */
   function playFromLibrary(file){
     var t = trackByFile(file);
     if(!t) return false;
-    location.hash = "#air";
-    setTimeout(function(){
-      /* Ничего не подмешиваем в эфир и не подменяем день: подкаст — отдельный
-         материал, а очередь остаётся той, что собрала редакция. */
-      selectTrack(t.id, true);
-      var air = document.getElementById("air");
-      if(air) air.scrollIntoView({behavior:"smooth", block:"start"});
-    }, 60);
+    selectTrack(t.id, true);
+    showInlineHint("Играет: " + (t.title || "запись"));
     return true;
   }
 
