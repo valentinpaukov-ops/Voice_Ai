@@ -74,7 +74,7 @@ jobs:
               return first("title"), (first("artist") or first("albumartist")), dur
 
           os.makedirs(AUDIO_DIR, exist_ok=True)
-          files = sorted(f for f in os.listdir(AUDIO_DIR)
+          found = sorted(f for f in os.listdir(AUDIO_DIR)
                          if os.path.splitext(f)[1].lower() in AUDIO_EXT
                          and os.path.isfile(os.path.join(AUDIO_DIR, f)))
 
@@ -87,6 +87,12 @@ jobs:
                               existing[t["file"]] = t
               except Exception as e:
                   print("манифест не прочитан (%s) — собираю заново" % e)
+
+          # ПОРЯДОК ЭФИРА ЗАДАЁТ РЕДАКТОР, а не алфавит: сохраняем порядок из
+          # манифеста как есть, новые файлы дописываем в конец.
+          have = set(found)
+          files = [f for f in existing.keys() if f in have]
+          files += [f for f in found if f not in existing]
 
           tracks, added, kept = [], 0, 0
           for fn in files:
