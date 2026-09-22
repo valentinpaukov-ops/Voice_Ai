@@ -679,13 +679,10 @@
     background:none;border:1px solid var(--border);color:var(--text-dim);font-size:12px;
   }
   .lib-edit:hover{border-color:var(--accent);color:var(--accent-strong);}
-  .lib-pub{
-    flex:0 0 auto;font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;
-    letter-spacing:.04em;padding:5px 10px;border-radius:999px;cursor:pointer;
-    color:var(--accent-ink);background:var(--accent);border:1px solid var(--accent);
+  .lib-add.is-off{
+    flex:0 0 auto;font-family:var(--font-mono);font-size:11px;padding:5px 11px;
+    border-radius:999px;border:1px dashed var(--border);color:var(--text-dim);
   }
-  .lib-pub:hover{filter:brightness(1.08);}
-  .lib-pub:disabled{opacity:.5;cursor:default;}
   .lib-row.is-draft .lib-title{color:var(--accent-strong);}
   .lib-title .draft-badge{margin-left:8px;}
   .lib-row.is-in .lib-add{color:var(--text-dim);border-style:dashed;}
@@ -1074,14 +1071,30 @@
     box-shadow:var(--shadow);
   }
   .media-card.flash{animation:flashHighlight 1.8s ease;}
-  .media-card .swatch{
-    height:6px;
-    width:38px;
-    border-radius:4px;
-    background:var(--wave);
+  .media-card .swatch{display:none;}
+  /* Обложка рисуется из названия: оттенок и монограмма получаются
+     из его букв, поэтому у каждой карточки свой вид и ни одного файла. */
+  .media-cover{
+    position:relative;height:124px;border-radius:12px;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    background:
+      radial-gradient(120% 120% at 18% 12%, hsl(var(--h) 72% 58% / .55), transparent 62%),
+      linear-gradient(135deg, hsl(var(--h) 58% 34%), hsl(calc(var(--h) + 42) 52% 18%));
   }
-  .media-card:nth-child(2) .swatch{background:var(--accent);}
-  .media-card:nth-child(3) .swatch{background:var(--live);}
+  .media-cover img{width:100%;height:100%;object-fit:cover;display:block;}
+  .mc-mono{
+    font-family:var(--font-mono);font-size:54px;font-weight:700;line-height:1;
+    color:#fff;opacity:.9;letter-spacing:-.02em;
+    text-shadow:0 2px 14px rgba(0,0,0,.35);
+  }
+  .mc-wave{
+    position:absolute;left:0;right:0;bottom:0;height:34px;opacity:.38;
+    background:repeating-linear-gradient(90deg,
+      rgba(255,255,255,.85) 0 2px, transparent 2px 7px);
+    mask-image:linear-gradient(180deg, transparent, #000 85%);
+    -webkit-mask-image:linear-gradient(180deg, transparent, #000 85%);
+  }
+  .media-card:hover .media-cover{filter:brightness(1.06);}
   .media-card h3{
     font-family:var(--font-body);
     text-transform:none;
@@ -1106,11 +1119,34 @@
   }
   .media-meta .m-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .media-play-btn{
-    margin-left:auto;flex:none;
+    margin-left:auto;flex:none;position:relative;
     width:28px;height:28px;border-radius:50%;
     background:var(--accent);color:var(--accent-ink);
     border:none;cursor:pointer;
     display:flex;align-items:center;justify-content:center;
+    transition:transform .16s cubic-bezier(.3,1.4,.5,1), box-shadow .16s ease, background .16s ease;
+  }
+  .media-play-btn:hover{
+    transform:scale(1.18);
+    box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .media-play-btn:active{transform:scale(.94);}
+  .media-play-btn svg{transition:transform .16s ease;}
+  .media-play-btn:hover svg{transform:translateX(1px) scale(1.08);}
+  /* кнопка той записи, что сейчас звучит, тихо пульсирует */
+  .media-play-btn.is-playing{animation:mpPulse 1.9s ease-out infinite;}
+  @keyframes mpPulse{
+    0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 60%, transparent);}
+    70%{box-shadow:0 0 0 11px color-mix(in srgb, var(--accent) 0%, transparent);}
+    100%{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);}
+  }
+  .media-play-btn.is-mute{
+    background:none;border:1px dashed var(--border);color:var(--text-dim);cursor:default;
+  }
+  .media-play-btn.is-mute:hover{transform:none;box-shadow:none;}
+  @media (prefers-reduced-motion: reduce){
+    .media-play-btn, .media-play-btn svg{transition:none;}
+    .media-play-btn.is-playing{animation:none;}
   }
   .media-play-btn svg{width:12px;height:12px;}
 
@@ -2027,27 +2063,27 @@
   ];
 
   var podcastItems = [
-    {id:"p1", tag:"Культура", title:"Как радио в офисе меняет культуру команды", meta:"Анна Волкова", durSec:840, snippet:"Разбираем, почему фоновый голос коллег вместо плейлиста из наушников сближает распределённую команду сильнее, чем ещё один созвон."},
-    {id:"p2", tag:"Удалёнка", title:"Гид по удалёнке: как оставаться на одной волне", meta:"Игорь Петренко", durSec:1140, snippet:"Практики синхронизации для команд на четырёх часовых поясах — от ритуалов созвонов до асинхронных апдейтов."},
-    {id:"p3", tag:"Инженерия", title:"История одного релиза: что было за кадром", meta:"Мария Ким", durSec:660, snippet:"Три ночных дедлайна, один откат и что мы вынесли из релиза 4.2 — честный разбор от инженерной команды."},
-    {id:"p4", tag:"Продукт", title:"Внутренняя кухня: как рождаются фичи", meta:"Игорь Петренко", durSec:900, snippet:"От идеи на созвоне до релиза в проде — честный маршрут одной фичи глазами продуктовой команды."},
-    {id:"p5", tag:"HR", title:"Разбор инцидента без вины", meta:"Мария Ким", durSec:1320, snippet:"Как в Voice Ai проводят blameless-постмортемы и почему это в итоге экономит нервы всей команде."}
+    {id:"p1", date:"2026-09-16", tag:"Культура", title:"Как радио в офисе меняет культуру команды", meta:"Анна Волкова", durSec:840, snippet:"Разбираем, почему фоновый голос коллег вместо плейлиста из наушников сближает распределённую команду сильнее, чем ещё один созвон."},
+    {id:"p2", date:"2026-09-11", tag:"Удалёнка", title:"Гид по удалёнке: как оставаться на одной волне", meta:"Игорь Петренко", durSec:1140, snippet:"Практики синхронизации для команд на четырёх часовых поясах — от ритуалов созвонов до асинхронных апдейтов."},
+    {id:"p3", date:"2026-09-08", tag:"Инженерия", title:"История одного релиза: что было за кадром", meta:"Мария Ким", durSec:660, snippet:"Три ночных дедлайна, один откат и что мы вынесли из релиза 4.2 — честный разбор от инженерной команды."},
+    {id:"p4", date:"2026-09-03", tag:"Продукт", title:"Внутренняя кухня: как рождаются фичи", meta:"Игорь Петренко", durSec:900, snippet:"От идеи на созвоне до релиза в проде — честный маршрут одной фичи глазами продуктовой команды."},
+    {id:"p5", date:"2026-08-28", tag:"HR", title:"Разбор инцидента без вины", meta:"Мария Ким", durSec:1320, snippet:"Как в Voice Ai проводят blameless-постмортемы и почему это в итоге экономит нервы всей команде."}
   ];
 
   var showItems = [
-    {id:"s1", tag:"Ежедневное", title:"Утренний брифинг", meta:"Анна Волкова", durSec:600, snippet:"Короткое включение в начале дня: что горит, что в приоритете, кого сегодня поздравить."},
-    {id:"s2", tag:"Инженерия", title:"Кодревью вслух", meta:"Игорь Петренко", durSec:2100, snippet:"Разбираем реальные пул-реквесты в эфире — без имён, но с уроками для всех."},
-    {id:"s3", tag:"Еженедельное", title:"Пятничные итоги", meta:"Мария Ким", durSec:1200, snippet:"Что случилось за неделю в компании — без графиков, зато с шутками из общего чата."},
-    {id:"s4", tag:"HR", title:"Голос HR", meta:"Отдел коммуникаций", durSec:960, snippet:"Отвечаем на анонимные вопросы про отпуска, бонусы и грейды в прямом эфире."},
-    {id:"s5", tag:"Продукт", title:"Продуктовый разбор полётов", meta:"Анна Волкова", durSec:1680, snippet:"Смотрим на метрики последнего релиза и решаем, что берём в следующий спринт."}
+    {id:"s1", date:"2026-09-17", tag:"Ежедневное", title:"Утренний брифинг", meta:"Анна Волкова", durSec:600, snippet:"Короткое включение в начале дня: что горит, что в приоритете, кого сегодня поздравить."},
+    {id:"s2", date:"2026-09-12", tag:"Инженерия", title:"Кодревью вслух", meta:"Игорь Петренко", durSec:2100, snippet:"Разбираем реальные пул-реквесты в эфире — без имён, но с уроками для всех."},
+    {id:"s3", date:"2026-09-09", tag:"Еженедельное", title:"Пятничные итоги", meta:"Мария Ким", durSec:1200, snippet:"Что случилось за неделю в компании — без графиков, зато с шутками из общего чата."},
+    {id:"s4", date:"2026-09-04", tag:"HR", title:"Голос HR", meta:"Отдел коммуникаций", durSec:960, snippet:"Отвечаем на анонимные вопросы про отпуска, бонусы и грейды в прямом эфире."},
+    {id:"s5", date:"2026-08-29", tag:"Продукт", title:"Продуктовый разбор полётов", meta:"Анна Волкова", durSec:1680, snippet:"Смотрим на метрики последнего релиза и решаем, что берём в следующий спринт."}
   ];
 
   var guideItems = [
-    {id:"g1", tag:"Онбординг", title:"Как настроить рабочее место в первый день", meta:"HR-команда", readTime:"4 мин чтения", snippet:"Доступы, ноутбук, Slack и первый созвон с бадди — чек-лист для нового человека в команде."},
-    {id:"g2", tag:"HR", title:"Как проходит перформанс-ревью", meta:"HR-команда", readTime:"6 мин чтения", snippet:"Кто оценивает, по каким критериям и что делать, если вы не согласны с итогом."},
-    {id:"g3", tag:"Радио", title:"Как подать идею для эфира Voice Ai", meta:"Редакция Voice Ai", readTime:"3 мин чтения", snippet:"Форма, дедлайны и что редакция ищет в теме — от вопроса в эфир до целого выпуска."},
-    {id:"g4", tag:"Инженерия", title:"Чек-лист безопасного релиза", meta:"Платформенная команда", readTime:"5 мин чтения", snippet:"Фиче-флаги, откат за две минуты и кого предупредить перед пятничным деплоем."},
-    {id:"g5", tag:"HR", title:"Как оформить отпуск на HR-портале", meta:"HR-команда", readTime:"2 мин чтения", snippet:"Пошагово: заявка, согласование руководителя и что видно в календаре команды."}
+    {id:"g1", date:"2026-09-15", tag:"Онбординг", title:"Как настроить рабочее место в первый день", meta:"HR-команда", readTime:"4 мин чтения", snippet:"Доступы, ноутбук, Slack и первый созвон с бадди — чек-лист для нового человека в команде."},
+    {id:"g2", date:"2026-09-10", tag:"HR", title:"Как проходит перформанс-ревью", meta:"HR-команда", readTime:"6 мин чтения", snippet:"Кто оценивает, по каким критериям и что делать, если вы не согласны с итогом."},
+    {id:"g3", date:"2026-09-05", tag:"Радио", title:"Как подать идею для эфира Voice Ai", meta:"Редакция Voice Ai", readTime:"3 мин чтения", snippet:"Форма, дедлайны и что редакция ищет в теме — от вопроса в эфир до целого выпуска."},
+    {id:"g4", date:"2026-08-30", tag:"Инженерия", title:"Чек-лист безопасного релиза", meta:"Платформенная команда", readTime:"5 мин чтения", snippet:"Фиче-флаги, откат за две минуты и кого предупредить перед пятничным деплоем."},
+    {id:"g5", date:"2026-08-26", tag:"HR", title:"Как оформить отпуск на HR-портале", meta:"HR-команда", readTime:"2 мин чтения", snippet:"Пошагово: заявка, согласование руководителя и что видно в календаре команды."}
   ];
 
   /* ================= Новости =================
@@ -2118,7 +2154,7 @@
     }).map(function(t){
       var tags = (t.tags && t.tags.length) ? t.tags : [];
       return {
-        id: t.id, file: t.file,
+        id: t.id, file: t.file, placeholder: !!t.placeholder, cover: t.cover || "",
         draft: !(t.day && t.day <= today),     // ещё не опубликовано
         title: t.title,
         tag: tags.length ? tags[0] : section,
@@ -2133,13 +2169,39 @@
   }
 
   /* Пересобрать страницы разделов и превью на главной из фонотеки. */
+  /* Демо-материалы подмешиваем в фонотеку как «заготовки»: у них есть дата,
+     раздел, теги и описание, их видно в списках и можно править — только звука
+     пока нет. Как только редактор сохранит правку, заготовка станет обычной
+     записью манифеста и заживёт своей жизнью. */
+  function placeholderTracks(){
+    var out = [];
+    function take(list, section){
+      (list || []).forEach(function(it){
+        var file = "demo-" + it.id;
+        if(trackByFile(file)) return;            // уже materialized в манифесте
+        out.push({
+          id: "ph-" + it.id, file: file, placeholder: true,
+          date: it.date || "", day: it.date || "",
+          title: it.title, host: it.meta || "Voice Ai",
+          tag: section, tags: it.tag ? [it.tag] : [],
+          desc: it.snippet || "", dur: it.durSec || null,
+          src: null, demo: false
+        });
+      });
+    }
+    take(podcastItems, SECTION_PODCAST);
+    take(showItems, SECTION_SHOW);
+    take(guideItems, SECTION_GUIDE);
+    return out;
+  }
+
   function refreshSections(){
     /* Реальные записи из фонотеки идут первыми, а прежние материалы остаются
        следом: пока разделов мало, они держат страницы наполненными. Когда
        своего контента станет достаточно, эти списки можно просто очистить. */
-    LIB_CONFIG.podcasts.data = sectionItems(SECTION_PODCAST).concat(podcastItems);
-    LIB_CONFIG.shows.data    = sectionItems(SECTION_SHOW).concat(showItems);
-    LIB_CONFIG.guides.data   = sectionItems(SECTION_GUIDE).concat(guideItems);
+    LIB_CONFIG.podcasts.data = sectionItems(SECTION_PODCAST);
+    LIB_CONFIG.shows.data    = sectionItems(SECTION_SHOW);
+    LIB_CONFIG.guides.data   = sectionItems(SECTION_GUIDE);
     renderHomePreviews();
     var hash = location.hash.replace(/^#\//, "");
     if(LIB_CONFIG[hash]){ renderLibraryFilters(hash); renderLibraryList(hash); }
@@ -2543,6 +2605,7 @@
     setHidden(heroIconPause, !playing);
     setHidden(pbIconPause, !playing);
     updateActiveRowIndicator();
+    syncMediaPlaying();          // пульс на карточке подкаста или шоу
     if(playing && !vuRafId){ vuRafId = requestAnimationFrame(vuLoop); }
   }
 
@@ -2820,23 +2883,59 @@
            '. Загрузите запись и выберите нужный раздел в форме.</p>';
   }
 
+  /* Оттенок обложки выводим из названия: одинаковое название — одинаковый вид,
+     разные — заметно разные. Никаких файлов и никакого места в репозитории. */
+  function coverHue(text){
+    var h = 0, str = String(text || "Voice Ai");
+    for(var i = 0; i < str.length; i++){ h = (h * 31 + str.charCodeAt(i)) % 360; }
+    return h;
+  }
+  function coverLetter(text){
+    var t = String(text || "").replace(/^[^\p{L}\p{N}]+/u, "");
+    return (t.charAt(0) || "V").toUpperCase();
+  }
+  function coverHtml(item){
+    if(item.cover){
+      return '<span class="media-cover"><img src="' + escapeHtml(item.cover) +
+             '" alt="" loading="lazy"></span>';
+    }
+    return '<span class="media-cover" style="--h:' + coverHue(item.title) + '">' +
+             '<span class="mc-mono">' + escapeHtml(coverLetter(item.title)) + '</span>' +
+             '<span class="mc-wave"></span>' +
+           '</span>';
+  }
+
   function mediaCardHtml(item){
+    var playable = !!item.file && !item.placeholder;
     return (
       '<article class="media-card'+(item.draft ? " is-draft" : "")+'" data-id="'+escapeHtml(item.id)+'">'+
-        '<span class="swatch"></span>'+
+        coverHtml(item)+
         '<span class="media-tag">'+escapeHtml(item.tag)+'</span>'+
         (item.draft ? '<span class="draft-badge">черновик · виден только вам</span>' : "")+
         '<h3>'+escapeHtml(item.title)+'</h3>'+
         '<p>'+linkify(item.snippet)+'</p>'+
         '<div class="media-meta">'+
           '<span class="m-name">'+escapeHtml(item.meta)+'</span>'+
-          '<span class="tabular">'+escapeHtml(fmt(item.durSec))+'</span>'+
-          '<button type="button" class="media-play-btn" aria-label="Слушать выпуск" data-file="'+escapeHtml(item.file || "")+'" data-title="'+escapeHtml(item.title)+'" data-meta="'+escapeHtml(item.meta)+'" data-tag="'+escapeHtml(item.tag)+'">'+
-            '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'+
-          '</button>'+
+          '<span class="tabular">'+escapeHtml(item.durSec ? fmt(item.durSec) : "—:—")+'</span>'+
+          (playable
+            ? '<button type="button" class="media-play-btn" aria-label="Слушать выпуск" data-file="'+escapeHtml(item.file)+'" data-title="'+escapeHtml(item.title)+'" data-meta="'+escapeHtml(item.meta)+'" data-tag="'+escapeHtml(item.tag)+'">'+
+                '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'+
+              '</button>'
+            : '<span class="media-play-btn is-mute" title="Аудио к этой карточке ещё не загружено">'+
+                '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'+
+              '</span>')+
         '</div>'+
       '</article>'
     );
+  }
+
+  /* Кнопка записи, которая звучит сейчас, подсвечивается на всех страницах. */
+  function syncMediaPlaying(){
+    var cur = getTrack(state.currentId);
+    var f = cur && cur.file ? cur.file : "";
+    Array.prototype.forEach.call(document.querySelectorAll(".media-play-btn[data-file]"), function(b){
+      b.classList.toggle("is-playing", !!f && b.getAttribute("data-file") === f && state.playing);
+    });
   }
 
   /* Новость с датой в будущем — такой же черновик, как эфир на завтра:
@@ -2853,9 +2952,10 @@
   function renderHomePreviews(){
     // на главной — три свежие новости, остальные на странице «Новости»
     document.getElementById("homeNews").innerHTML = visibleNewsItems().slice(0,3).map(newsRowHtml).join("");
-    var pod = LIB_CONFIG.podcasts.data.slice();
-    var shw = LIB_CONFIG.shows.data.slice();
-    var gds = LIB_CONFIG.guides.data.slice();
+    // везде один порядок по умолчанию: от свежего к старому
+    var pod = sortItems(LIB_CONFIG.podcasts.data.slice(), "date-desc");
+    var shw = sortItems(LIB_CONFIG.shows.data.slice(), "date-desc");
+    var gds = sortItems(LIB_CONFIG.guides.data.slice(), "date-desc");
     document.getElementById("homePodcasts").innerHTML = pod.length
       ? pod.slice(0,3).map(mediaCardHtml).join("")
       : emptySectionHtml("подкастов");
@@ -2865,6 +2965,7 @@
     document.getElementById("homeGuides").innerHTML = gds.length
       ? gds.slice(0,3).map(function(g){ return listRowHtml(g, g.readTime); }).join("")
       : emptySectionHtml("гайдов");
+    syncMediaPlaying();
   }
 
   // one delegated listener covers every media-play-btn, home or library page
@@ -4541,6 +4642,17 @@
         bar.classList.add("is-on");
         say("Сохраняю…");
         GH.editJson("audio/manifest.json", "tracks", function(list){
+          /* Если правим заготовку, её ещё нет в манифесте — заводим запись.
+             Так демо-карточка при первом же сохранении становится настоящей. */
+          var found = list.some(function(item){ return item && item.file === editingFile; });
+          if(!found){
+            var src = trackByFile(editingFile) || {};
+            list = list.concat([{
+              file: editingFile, title: src.title || t,
+              host: src.host || "Voice Ai", tag: src.tag || "Эфир",
+              placeholder: true
+            }]);
+          }
           return list.map(function(item){
             if(!item || item.file !== editingFile) return item;
             var next = {};
@@ -4986,6 +5098,7 @@
     if(!loaded.length) return false;
     loaded.forEach(function(t){ t.day = parseTrackDate(t); });
     allTracks = loaded;
+    allTracks = allTracks.concat(placeholderTracks());
     airProgram = readProgram(data.air);
     refreshSections();     // подкасты, шоу и гайды собираются из этой же фонотеки
 
@@ -5760,34 +5873,6 @@
         return;
       }
 
-      // публикация одним нажатием: ставим сегодняшнюю дату
-      var pb = e.target.closest(".lib-pub");
-      if(pb){
-        var pf = pb.getAttribute("data-pub");
-        var pt = trackByFile(pf);
-        if(!pt) return;
-        if(!GH.connected()){ showHint("Сначала подключите GitHub — в форме новостей"); return; }
-        var today = todayStr();
-        pb.disabled = true;
-        GH.editJson("audio/manifest.json", "tracks", function(list){
-          return list.map(function(item){
-            if(!item || item.file !== pf) return item;
-            var next = {};
-            for(var k in item){ if(Object.prototype.hasOwnProperty.call(item, k)) next[k] = item[k]; }
-            next.date = today;
-            return next;
-          });
-        }, "Опубликовано: " + pt.title).then(function(list){
-          refreshAirAfterEdit(list);
-          renderLibrary();
-          showHint("«" + pt.title + "» опубликован — теперь виден всем");
-        })["catch"](function(err){
-          pb.disabled = false;
-          showHint("Не получилось: " + err.message);
-        });
-        return;
-      }
-
       var b = e.target.closest(".lib-add");
       if(!b) return;
       var file = b.getAttribute("data-file");
@@ -5851,8 +5936,8 @@
           ? (days.length === 1 ? "в эфире " + humanDay(days[0])
                                : "в эфире " + days.length + " " + plural(days.length, "дня", "дней", "дней"))
           : "не в эфире";
-        var sub = [t.host || "", t.tag || "", where, t.dur ? fmt(t.dur) : ""]
-                  .filter(Boolean).join(" · ");
+        var sub = [t.host || "", t.tag || "", t.placeholder ? "без звука" : where,
+                   t.dur ? fmt(t.dur) : ""].filter(Boolean).join(" · ");
         var draft = !(t.day && t.day <= todayStr());
         return '<div class="lib-row' + (already ? " is-in" : "") + (draft ? " is-draft" : "") + '">' +
                  '<span class="lib-main">' +
@@ -5860,13 +5945,15 @@
                      (draft ? '<span class="draft-badge">черновик</span>' : "") + '</span>' +
                    '<span class="lib-sub">' + escapeHtml(sub) + '</span>' +
                  '</span>' +
-                 (draft ? '<button type="button" class="lib-pub" data-pub="' + escapeHtml(t.file) +
-                          '" title="Поставить сегодняшнюю дату — материал станет виден всем">Опубликовать</button>' : "") +
                  '<button type="button" class="lib-edit" data-edit="' + escapeHtml(t.file) +
-                   '" title="Изменить название, описание, раздел, теги и дату">✎</button>' +
-                 '<button type="button" class="lib-add" data-file="' + escapeHtml(t.file) + '">' +
-                   (already ? "уже в эфире" : "+ в эфир") +
-                 '</button>' +
+                   '" title="' + (draft
+                       ? "Черновик: откройте и поставьте дату — материал станет виден всем"
+                       : "Изменить название, описание, раздел, теги и дату") + '">✎</button>' +
+                 (t.placeholder
+                   ? '<span class="lib-add is-off" title="Аудио ещё не загружено — в эфир поставить нечего">нет звука</span>'
+                   : '<button type="button" class="lib-add" data-file="' + escapeHtml(t.file) + '">' +
+                       (already ? "уже в эфире" : "+ в эфир") +
+                     '</button>') +
                '</div>';
       }).join("");
     }
@@ -5979,6 +6066,8 @@
       return ia - ib;
     });
 
+    allTracks = allTracks.filter(function(t){ return !t.placeholder; })
+                         .concat(placeholderTracks());
     refreshSections();     // страницы подкастов, шоу и гайдов — из той же фонотеки
 
     // пересобираем очередь текущего дня, сохраняя то, что играет
