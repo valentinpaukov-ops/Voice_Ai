@@ -4073,7 +4073,14 @@
   document.getElementById("dayStrip").addEventListener("click", function(e){
     var chip = e.target.closest ? e.target.closest(".day-chip[data-day]") : null;
     if(!chip || chip.disabled) return;
-    setAirDay(chip.getAttribute("data-day"), true);
+    var day = chip.getAttribute("data-day");
+    if(chip.getAttribute("data-kind") === "air"){
+      setAirDay(day, true);              // есть эфир — включаем его
+    } else {
+      calPicked = day;                   // только новости — открываем архив на этом дне
+      if(location.hash === "#/archive"){ showArchive(day); }
+      else { location.hash = "#/archive"; }
+    }
   });
   document.getElementById("airDayBack").addEventListener("click", function(){
     var d = pickDefaultDay();
@@ -4265,11 +4272,15 @@
     for(var i = 6; i >= 0; i--){
       var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i);
       var key = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
-      var has = tracksOfDay(key).length > 0;
+      // день доступен, если за него есть хоть что-то: эфир или новости
+      var hasAir = tracksOfDay(key).length > 0;
+      var hasNews = newsOfDay(key).length > 0;
+      var has = hasAir || hasNews;
       var dow = RU_DOW_SHORT[(d.getDay() + 6) % 7];
       html += '<button type="button" class="day-chip' +
               (key === airDay ? " is-current" : "") +
               (has ? "" : " is-empty") + '" data-day="' + key + '"' +
+              ' data-kind="' + (hasAir ? "air" : "news") + '"' +
               (has ? "" : " disabled") + ' title="' + escapeHtml(dayTitleAttr(key)) + '">' +
                 '<span class="dc-dow">' + dow + '</span>' +
                 '<span class="dc-num">' + d.getDate() + '</span>' +
