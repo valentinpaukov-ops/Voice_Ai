@@ -742,8 +742,16 @@
   }
   .day-chip:hover{border-color:var(--accent);}
   .day-chip.is-current{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);}
-  .day-chip.is-today .dc-num{color:var(--accent);}
+  /* Сегодня видно всегда — выбран этот день или нет: подсвеченная рамка,
+     мягкое свечение вокруг и акцентные цифры. */
+  .day-chip.is-today{
+    border-color:color-mix(in srgb, var(--accent) 62%, transparent);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  }
+  .day-chip.is-today .dc-dow{color:var(--accent-strong);}
+  .day-chip.is-today .dc-num{color:var(--accent-strong);font-weight:700;}
   .day-chip.is-empty{opacity:.4;cursor:default;}
+  .day-chip.is-today.is-empty{opacity:.8;}   /* даже пустое сегодня не гасим */
   .day-chip.is-empty:hover{border-color:var(--border);}
   /* «завтра и дальше» — пунктиром, чтобы пустое будущее не путали с пустым прошлым */
   .day-chip.is-future{opacity:.5;border-style:dashed;}
@@ -2955,7 +2963,10 @@
               '<button type="button" class="btn-add adh-play" data-play-day="' +
               escapeHtml(day) + '">▶ Слушать этот эфир</button>' +
               // редактору — собрать из этого выпуска новый
-              (isAdmin ? '<button type="button" class="nc-ghost" data-base-day="' +
+              (isAdmin ? '<button type="button" class="nc-ghost" data-edit-day="' +
+                         escapeHtml(day) + '" title="Открыть этот день в сборке: порядок, состав, добор из фонотеки">' +
+                         '✎ Редактировать эфир</button>' +
+                         '<button type="button" class="nc-ghost" data-base-day="' +
                          escapeHtml(day) + '" title="Скопировать состав этого эфира в тот день, который вы собираете">' +
                          'Взять за основу</button>' : "") +
               '</div>';
@@ -4396,6 +4407,12 @@
        и когда только новости. Раньше день с эфиром сразу подменял очередь
        в плеере, из-за чего логика «нажал на день» была разной в разных днях.
        Теперь единое правило: лента → календарь → день → «Слушать». */
+    /* Будущий день для редактора — это черновик, который он собирает.
+       Вести его в архив «посмотреть» бессмысленно: сразу открываем сборку. */
+    if(isAdmin && day > todayStr()){
+      openDayForEditing(day);
+      return;
+    }
     calPicked = day;
     if(location.hash === "#/archive"){ showArchive(day); }
     else { location.hash = "#/archive"; }
@@ -4436,6 +4453,13 @@
       var id = row.getAttribute("data-play-id"), rd = row.getAttribute("data-day");
       location.hash = "#air";
       setTimeout(function(){ setAirDay(rd, false); selectTrack(id, true); }, 60);
+      return;
+    }
+    // «Редактировать эфир» — открыть этот день в сборке на главной
+    var ed = e.target.closest("[data-edit-day]");
+    if(ed){
+      if(!isAdmin) return;
+      openDayForEditing(ed.getAttribute("data-edit-day"));
       return;
     }
     // «Взять за основу» — копия состава дня в тот день, который собирает редактор
@@ -4825,8 +4849,11 @@
       var dow = RU_DOW_SHORT[(d.getDay() + 6) % 7];
       var planned = (i > 0 && has);     // будущее, в котором уже что-то собрано
       var title = planned
-        ? dayTitleAttr(key) + " — запланировано, слушателям пока не видно"
-        : ((i > 0 && !has) ? humanDay(key) + ": впереди" : dayTitleAttr(key));
+        ? dayTitleAttr(key) + " — черновик, слушателям не виден" +
+          (isAdmin ? ". Нажмите, чтобы собрать этот день" : "")
+        : ((i > 0 && !has)
+            ? humanDay(key) + (isAdmin ? ": пусто — нажмите, чтобы собрать этот день" : ": впереди")
+            : dayTitleAttr(key));
       html += '<button type="button" class="day-chip' +
               (key === airDay ? " is-current" : "") +
               (i === 0 ? " is-today" : "") +
@@ -5033,6 +5060,21 @@
       }
       if(choice) showHint("Готово: " + human);
     });
+  }
+
+  /* Открыть день в сборке: очередь на главной, поле даты, прокрутка к списку.
+     Отсюда работают и стрелки порядка, и перетаскивание, и добор из фонотеки. */
+  function openDayForEditing(day){
+    if(!day || !isAdmin) return;
+    location.hash = "#air";
+    setTimeout(function(){
+      setAirDay(day, false, true);
+      var tools = document.getElementById("airTools");
+      var list  = document.getElementById("queueList");
+      var target = list || tools;
+      if(target) target.scrollIntoView({behavior:"smooth", block:"center"});
+      showHint("Собираем эфир на " + humanDay(day) + " — порядок меняется стрелками ↑↓ или перетаскиванием");
+    }, 80);
   }
 
   function syncAirDayPicker(){
