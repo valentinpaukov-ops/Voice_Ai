@@ -540,8 +540,9 @@
     padding-bottom:18px;border-bottom:1px solid var(--border);
   }
   .arch-day-head .arch-sub{margin-bottom:0;}
-  /* кнопка живёт в колонке эфира, сразу под списком записей */
-  .adh-play{margin-top:16px;white-space:nowrap;}
+  /* кнопки живут в колонке эфира, сразу под списком записей */
+  .arch-col-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px;}
+  .adh-play{white-space:nowrap;}
   /* Эфир и новости дня — двумя колонками рядом. */
   /* Колонка эфира компактная, новостям отдаём больше ширины — карточка новости
      объёмнее строки трека, в узкой колонке заголовок ломается на четыре строки. */
@@ -607,6 +608,74 @@
     font-family:var(--font-mono);font-size:11px;
   }
   .air-back:hover{border-color:var(--accent);color:var(--accent-strong);}
+
+  /* ---------- Сборка эфира: день, повтор, фонотека ---------- */
+  .air-tools{margin-top:18px;padding-top:18px;border-top:1px solid var(--border);}
+  .at-row{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px;}
+  .at-field{display:flex;flex-direction:column;gap:5px;min-width:0;}
+  .at-field > span{
+    font-family:var(--font-mono);font-size:10px;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--text-dim);
+  }
+  .at-field input, .at-field select{
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;
+    color:var(--text);padding:8px 10px;font-size:13px;font-family:inherit;
+  }
+  .at-field input:focus, .at-field select:focus{outline:none;border-color:var(--accent);}
+  .at-lib-btn{align-self:flex-end;}
+  .nc-danger{color:var(--live);border-color:color-mix(in srgb, var(--live) 40%, transparent);}
+  .nc-danger:hover{border-color:var(--live);background:color-mix(in srgb, var(--live) 12%, transparent);}
+
+  .lib-panel{
+    margin-top:16px;padding:16px;border:1px solid var(--border);
+    border-radius:13px;background:var(--surface);
+  }
+  .lib-search{
+    width:100%;margin:12px 0 10px;padding:9px 12px;font-size:13px;font-family:inherit;
+    background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);
+  }
+  .lib-search:focus{outline:none;border-color:var(--accent);}
+  .lib-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .lib-tag{
+    font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+    padding:4px 9px;border-radius:999px;cursor:pointer;color:var(--text-dim);
+    background:none;border:1px solid var(--border);
+  }
+  .lib-tag:hover{border-color:var(--accent);color:var(--text);}
+  .lib-tag.is-on{
+    color:var(--accent-ink);background:var(--accent);
+    border-color:var(--accent);font-weight:600;
+  }
+  .lib-list{max-height:340px;overflow-y:auto;}
+  .lib-row{
+    display:flex;align-items:center;gap:12px;padding:9px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .lib-row:last-child{border-bottom:none;}
+  .lib-main{flex:1 1 auto;min-width:0;}
+  .lib-title{display:block;font-size:14px;font-weight:600;}
+  .lib-sub{display:block;font-size:11.5px;color:var(--text-dim);}
+  .lib-add{
+    flex:0 0 auto;font-family:var(--font-mono);font-size:11px;
+    padding:5px 11px;border-radius:999px;cursor:pointer;
+    background:none;border:1px solid var(--border);color:var(--text);
+  }
+  .lib-add:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .lib-row.is-in .lib-add{color:var(--text-dim);border-style:dashed;}
+  .lib-empty{font-size:13px;color:var(--text-dim);padding:14px 0;}
+
+  /* маленькое окно выбора: заменить / дописать / отмена */
+  .ask-back{
+    position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
+    background:rgba(8,8,12,.62);padding:20px;
+  }
+  .ask-box{
+    background:var(--bg-elevated);border:1px solid var(--border);border-radius:15px;
+    box-shadow:var(--shadow);padding:22px;max-width:440px;width:100%;
+  }
+  .ask-box h4{font-size:16px;margin-bottom:8px;}
+  .ask-box p{font-size:13.5px;color:var(--text-dim);margin-bottom:18px;line-height:1.5;}
+  .ask-actions{display:flex;flex-wrap:wrap;gap:9px;}
 
   .day-history{
     margin-top:28px;padding-top:20px;
@@ -1476,6 +1545,31 @@
       <p class="queue-hint" id="queueHint" hidden></p>
       <p class="queue-note" id="queueNote"></p>
 
+      <!-- Сборка эфира. Всё внутри — только для режима редактора. -->
+      <div class="air-tools admin-only" id="airTools">
+        <div class="at-row">
+          <label class="at-field">
+            <span>Собираю эфир на</span>
+            <input type="date" id="airDayPick">
+          </label>
+          <label class="at-field">
+            <span>Повторить прошлый эфир</span>
+            <select id="repeatPick"><option value="">— выберите день —</option></select>
+          </label>
+          <button type="button" class="nc-ghost at-lib-btn" id="libToggle">+ Взять из фонотеки</button>
+        </div>
+        <div class="lib-panel" id="libPanel" hidden>
+          <p class="nc-hint">
+            Здесь вся фонотека — эфиры, подкасты, шоу, гайды, музыка: всё, что
+            когда-либо загружали. Записи можно ставить в любой день сколько угодно
+            раз, файл при этом остаётся один.
+          </p>
+          <input type="search" class="lib-search" id="libSearch" placeholder="Поиск по названию, описанию, ведущему">
+          <div class="lib-tags" id="libTags"></div>
+          <div class="lib-list" id="libList"></div>
+        </div>
+      </div>
+
       <div class="day-history">
         <div class="day-history-head">
           <h3>История эфиров</h3>
@@ -1513,6 +1607,7 @@
           <div class="nc-actions">
             <button type="button" class="btn-add" id="auUpload">Опубликовать в эфир</button>
             <button type="button" class="nc-ghost" id="auCancelEdit" hidden>Отменить правку</button>
+            <button type="button" class="nc-ghost nc-danger" id="auDelete" hidden>Удалить из фонотеки</button>
             <span class="nc-status" id="auStatus"></span>
           </div>
           <div class="au-bar" id="auBar"><i></i></div>
@@ -2138,9 +2233,13 @@
 
       var tagEl = document.createElement("span");
       tagEl.className = "q-tag";
+      // если запись впервые выходила раньше — честно помечаем повтором
+      var repeatNote = (!tr.demo && tr.day && airDay && tr.day < airDay)
+        ? " · повтор от " + humanDay(tr.day) : "";
       tagEl.textContent = tr.broken
         ? tr.tag + " · файл не читается"
         : tr.tag + (tr.demo ? (tr.src ? " · демо-джингл" : " · без звука") : "")
+                 + repeatNote
                  // редактору подсказываем, что запись выпадет из архива
                  + ((isAdmin && !tr.demo && !tr.day) ? " · без даты" : "");
 
@@ -2182,17 +2281,23 @@
         });
       }
 
+      /* Крестик убирает запись ИЗ ЭФИРА ЭТОГО ДНЯ. Файл остаётся в фонотеке
+         и продолжает жить в тех днях, где он тоже стоит. Удаление насовсем —
+         отдельная кнопка в форме правки, с подтверждением. */
       var removeBtn = document.createElement("button");
       removeBtn.type = "button";
       removeBtn.className = "q-btn q-remove";
-      var repoDelete = isAdmin && !tr.demo && tr.file && GH.connected();
-      removeBtn.setAttribute("aria-label", repoDelete ? "Удалить запись из эфира" : "Убрать из очереди");
-      removeBtn.setAttribute("title", repoDelete ? "Удалить запись насовсем" : "Убрать из этой вкладки");
+      var fromDay = isAdmin && !tr.demo && tr.file && airDay;
+      removeBtn.setAttribute("aria-label", fromDay ? "Убрать из эфира этого дня" : "Убрать из очереди");
+      removeBtn.setAttribute("title", fromDay
+        ? "Убрать из эфира этого дня — запись останется в фонотеке"
+        : "Убрать из этой вкладки");
       removeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
       removeBtn.addEventListener("click", function(e){
         e.stopPropagation();
-        if(repoDelete){
-          document.dispatchEvent(new CustomEvent("voiceai:delete-track", {detail:{file: tr.file, title: tr.title}}));
+        if(fromDay){
+          var next = programOfDay(airDay).filter(function(f){ return f !== tr.file; });
+          saveProgram(airDay, next, "Убрано из эфира " + airDay + ": " + tr.title);
         } else {
           removeTrack(tr.id);
         }
@@ -2413,32 +2518,16 @@
     allTracks = out;
   }
 
+  /* Порядок эфира — это порядок записей в программе дня, а не в фонотеке.
+     Поэтому перестановка больше не трогает общий список и не может сбить
+     порядок в других днях. */
   function persistQueueOrder(){
-    syncAllTracksOrder();
-    if(!isAdmin || !GH.connected()) return;      // слушателю сохранять нечего
+    if(!isAdmin) return;                          // слушателю сохранять нечего
+    if(!airDay) return;
     var order = tracks.map(function(t){ return t.file; }).filter(Boolean);
-    if(!order.length) return;
-
-    clearTimeout(orderSaveTimer);
-    orderSaveTimer = setTimeout(function(){
-      GH.editJson("audio/manifest.json", "tracks", function(list){
-        var queue = order.slice();
-        var byFile = {};
-        list.forEach(function(it){ if(it && it.file) byFile[it.file] = it; });
-        // на местах записей текущего дня раскладываем их в новом порядке
-        return list.map(function(it){
-          if(it && it.file && order.indexOf(it.file) !== -1){
-            var f = queue.shift();
-            return byFile[f] || it;
-          }
-          return it;
-        });
-      }, "Изменён порядок эфира").then(function(){
-        showHint("Порядок эфира сохранён");
-      })["catch"](function(err){
-        showHint("Не удалось сохранить порядок: " + err.message);
-      });
-    }, 900);   // ждём, пока редактор закончит переставлять
+    airProgram[airDay] = order.slice();           // локально — сразу
+    if(!GH.connected()) return;
+    saveProgram(airDay, order, "Изменён порядок эфира " + airDay, 900);
   }
 
   function moveTrack(id, dir){
@@ -2822,8 +2911,14 @@
                  '<span class="at-sub">' + escapeHtml(t.host || "") + (t.tag ? " · " + escapeHtml(t.tag) : "") + '</span></span>' +
                '</div>';
       }).join("");
-      html += '<button type="button" class="btn-add adh-play" data-play-day="' +
-              escapeHtml(day) + '">▶ Слушать этот эфир</button>';
+      html += '<div class="arch-col-actions">' +
+              '<button type="button" class="btn-add adh-play" data-play-day="' +
+              escapeHtml(day) + '">▶ Слушать этот эфир</button>' +
+              // редактору — собрать из этого выпуска новый
+              (isAdmin ? '<button type="button" class="nc-ghost" data-base-day="' +
+                         escapeHtml(day) + '" title="Скопировать состав этого эфира в тот день, который вы собираете">' +
+                         'Взять за основу</button>' : "") +
+              '</div>';
     } else {
       html += '<div class="arch-empty-sm">Эфира в этот день не было.</div>';
     }
@@ -3435,6 +3530,26 @@
     }
     function editNews(mutate, message){ return editJson("news/news.json", "news", mutate, message); }
 
+    /* То же самое, но правим весь документ целиком — нужно для блока air
+       (программы эфира по дням), который не список, а объект «день → записи». */
+    function editDoc(path, mutate, message, attempt){
+      attempt = attempt || 0;
+      return getFile(path).then(function(file){
+        var doc;
+        try{ doc = JSON.parse(file.text); }
+        catch(e){ throw new Error(path + " повреждён — исправьте его на GitHub вручную."); }
+        var out = mutate(doc) || doc;
+        out.updated = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+        var text = JSON.stringify(out, null, 2) + "\n";
+        return putFile(path, text, file.sha, message).then(function(){ return out; });
+      })["catch"](function(err){
+        if(attempt < 2 && /изменился только что/.test(err.message)){
+          return editDoc(path, mutate, message, attempt + 1);
+        }
+        throw err;
+      });
+    }
+
     /* Загрузка файла (аудио). Через API лимит на файл — 100 МБ,
        это заметно больше 25 МБ веб-интерфейса GitHub. */
     function uploadFile(path, base64, message){
@@ -3470,7 +3585,8 @@
     return {
       cfg: cfg, saveCfg: saveCfg, token: token, setToken: setToken,
       connected: connected, check: check,
-      editNews: editNews, editJson: editJson, uploadFile: uploadFile, deleteFile: deleteFile
+      editNews: editNews, editJson: editJson, editDoc: editDoc,
+      uploadFile: uploadFile, deleteFile: deleteFile
     };
   })();
 
@@ -3873,9 +3989,11 @@
     var editingFile = null;
     var cancelEdit = document.getElementById("auCancelEdit");
 
+    var deleteBtn = document.getElementById("auDelete");
     function setEditingTrack(file){
       editingFile = file || null;
       cancelEdit.hidden = !file;
+      deleteBtn.hidden = !file;       // удалить насовсем можно только из правки
       uploadBtn.textContent = file ? "Сохранить изменения" : "Опубликовать в эфир";
       drop.hidden = !!file;                       // при правке файл менять не нужно
       toggle.textContent = file ? "− Правка записи" : (body.hidden ? "+ Загрузить запись в эфир" : "− Свернуть");
@@ -3910,17 +4028,46 @@
       say("Правим «" + (tr.title || file) + "»");
     });
 
+    deleteBtn.addEventListener("click", function(){
+      if(!editingFile) return;
+      var tr = trackByFile(editingFile);
+      document.dispatchEvent(new CustomEvent("voiceai:delete-track", {
+        detail:{ file: editingFile, title: (tr && tr.title) || editingFile }
+      }));
+    });
+
+    /* Удаление насовсем: файл из папки, запись из фонотеки и ссылки на неё
+       из программ всех дней — иначе в каком-нибудь дне останется призрак. */
     document.addEventListener("voiceai:delete-track", function(e){
       var file = e.detail && e.detail.file, title = (e.detail && e.detail.title) || file;
       if(!file) return;
-      if(!window.confirm("Удалить запись «" + title + "» из эфира?\n\nФайл будет удалён из папки audio, запись исчезнет у всех слушателей и из архива. Отменить это можно только через историю коммитов на GitHub.")) return;
+      var days = Object.keys(airProgram).filter(function(d){
+        return airProgram[d].indexOf(file) !== -1;
+      });
+      var where = days.length
+        ? "\n\nЗапись стоит в эфире " + days.length + " " +
+          plural(days.length, "дня", "дней", "дней") + " — она пропадёт из всех."
+        : "";
+      if(!window.confirm("Удалить «" + title + "» из фонотеки?" + where +
+         "\n\nФайл будет удалён из папки audio, запись исчезнет у всех слушателей и из архива. " +
+         "Отменить это можно только через историю коммитов на GitHub.")) return;
       say("Удаляю…");
       GH.deleteFile("audio/" + file, "Удалена запись: " + title).then(function(){
-        return GH.editJson("audio/manifest.json", "tracks", function(list){
-          return list.filter(function(t){ return t && t.file !== file; });
-        }, "Запись убрана из списка эфира: " + title);
-      }).then(function(list){
-        refreshAirAfterEdit(list);
+        return GH.editDoc("audio/manifest.json", function(doc){
+          doc.tracks = (doc.tracks || []).filter(function(t){ return t && t.file !== file; });
+          if(doc.air && typeof doc.air === "object" && !Array.isArray(doc.air)){
+            Object.keys(doc.air).forEach(function(d){
+              if(Array.isArray(doc.air[d])){
+                doc.air[d] = doc.air[d].filter(function(f){ return f !== file; });
+              }
+            });
+          }
+          return doc;
+        }, "Запись убрана из фонотеки: " + title);
+      }).then(function(doc){
+        airProgram = readProgram(doc.air);
+        refreshAirAfterEdit(doc.tracks || []);
+        document.dispatchEvent(new CustomEvent("voiceai:library-changed"));
         say("Удалено");
         if(editingFile === file){ setEditingTrack(null); clearAudioForm(); }
       })["catch"](function(err){ say(err.message, true); });
@@ -3971,6 +4118,9 @@
 
       var fileName = datePrefix() + safeName(chosen.name);
       var path = "audio/" + fileName;
+      // день, в эфир которого встанет запись: указанный в форме или сегодняшний
+      var entryDay = document.getElementById("auDate").value.trim() ||
+                     datePrefix().replace("_", "");
 
       uploadBtn.disabled = true;
       bar.classList.add("is-on");
@@ -3984,8 +4134,8 @@
         return GH.editJson("audio/manifest.json", "tracks", function(list){
           var entry = {
             file: fileName,
-            // день эфира: можно задать вручную, иначе сегодняшний
-            date: document.getElementById("auDate").value.trim() || datePrefix().replace("_", ""),
+            // дата первой публикации — она же день, в который запись выйдет
+            date: entryDay,
             title: title,
             host: document.getElementById("auHost").value.trim() || "Voice Ai",
             tag: document.getElementById("auTag").value.trim() || "Эфир",
@@ -4006,6 +4156,16 @@
         fileInp.value = "";
         ["auTitle","auHost","auTag","auDesc","auDate"].forEach(function(id){ document.getElementById(id).value = ""; });
         refreshAirAfterEdit(list);     // запись появляется в очереди сразу
+        /* Если у дня уже есть своя программа, новая запись сама в неё не
+           попадёт — дописываем в конец явно. */
+        if(airProgram[entryDay]){
+          var prog = programOfDay(entryDay);
+          if(prog.indexOf(fileName) === -1){
+            prog.push(fileName);
+            saveProgram(entryDay, prog, "В эфир " + entryDay + ": " + title);
+          }
+        }
+        document.dispatchEvent(new CustomEvent("voiceai:library-changed"));
         say("Готово — запись в эфире");
         hint.textContent = "Последняя загрузка: " + fileName;
       })["catch"](function(err){
@@ -4089,7 +4249,7 @@
   var isAdmin = resolveAdmin();
   document.body.classList.toggle("is-admin", isAdmin);
   document.getElementById("queueNote").textContent = isAdmin
-    ? "Режим редактора. Порядок эфира меняется мышью за значок ⠿ или стрелками ↑↓ и сохраняется для всех. Карандаш правит название и описание, крестик удаляет запись насовсем. Новый файл можно перетащить прямо на этот список — откроется форма публикации."
+    ? "Режим редактора. Порядок меняется мышью за значок ⠿ или стрелками ↑↓ и сохраняется для всех. Карандаш правит название, описание и дату — там же кнопка удалить запись из фонотеки насовсем. Крестик убирает запись только из эфира этого дня, сама запись остаётся в фонотеке. Ниже можно выбрать день, повторить прошлый эфир целиком или добрать записи из фонотеки. Новый файл можно перетащить прямо на этот список."
     : "Эфир собирается редакцией Voice Ai. Нажмите на любую запись, чтобы послушать её сразу.";
 
   /* ============ Продолжение эфира после обновления страницы ============ */
@@ -4238,6 +4398,16 @@
       setTimeout(function(){ setAirDay(rd, false); selectTrack(id, true); }, 60);
       return;
     }
+    // «Взять за основу» — копия состава дня в тот день, который собирает редактор
+    var base = e.target.closest("[data-base-day]");
+    if(base){
+      if(!isAdmin) return;
+      var src = base.getAttribute("data-base-day");
+      var target = airDay || todayStr();
+      location.hash = "#air";
+      setTimeout(function(){ copyDayInto(src, target); }, 80);
+      return;
+    }
     var btn = e.target.closest("[data-play-day]");
     if(!btn) return;
     var day = btn.getAttribute("data-play-day");
@@ -4263,6 +4433,19 @@
      работает в любом случае. */
   var MANIFEST_URL = "audio/manifest.json";
 
+  /* Блок air из манифеста — читаем осторожно: файл правят и руками. */
+  function readProgram(raw){
+    var out = {};
+    if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function(day){
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+      var v = raw[day];
+      if(!Array.isArray(v)) return;
+      out[day] = v.filter(function(f){ return typeof f === "string" && f; });
+    });
+    return out;
+  }
+
   function applyManifest(data){
     if(!data || !Array.isArray(data.tracks) || !data.tracks.length) return false;
     var loaded = [];
@@ -4285,6 +4468,7 @@
     if(!loaded.length) return false;
     loaded.forEach(function(t){ t.day = parseTrackDate(t); });
     allTracks = loaded;
+    airProgram = readProgram(data.air);
 
     var day = pickDefaultDay();
     if(day && setAirDay(day, false)) return true;
@@ -4304,7 +4488,8 @@
      вида 2026-09-22_Название.mp3. Очередь на главной — это записи одного
      дня: сегодняшнего, а если на сегодня ничего нет — последнего, где
      записи есть (радио не должно молчать). */
-  var allTracks = [];      // весь архив
+  var allTracks = [];      // фонотека: всё, что когда-либо загружали
+  var airProgram = {};     // программа эфира по дням: {"2026-09-25": ["a.mp3"]}
   var airDay = "";         // какой день сейчас в эфире
 
   function parseTrackDate(t){
@@ -4316,12 +4501,82 @@
     var d = new Date();
     return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
   }
+  /* ============ Фонотека и программа эфира по дням ============
+     allTracks  — фонотека: всё, что когда-либо загружали, с датой ПЕРВОЙ
+                  публикации в поле day. Эта дата больше не меняется.
+     airProgram — программа: {"2026-09-25": ["a.mp3","b.mp3"]}. Одна и та же
+                  запись может стоять в скольких угодно днях, порядок в каждом
+                  дне свой, файл при этом один.
+     Если для дня программы нет, он собирается по датам записей — так работают
+     все старые данные, переделывать ничего не нужно. */
+
+  function trackByFile(file){
+    for(var i=0;i<allTracks.length;i++){ if(allTracks[i].file === file) return allTracks[i]; }
+    return null;
+  }
+  /* список файлов дня: явная программа, иначе — по датам записей */
+  function programOfDay(day){
+    if(airProgram[day]) return airProgram[day].slice();
+    return allTracks.filter(function(t){ return t.day === day && t.file; })
+                    .map(function(t){ return t.file; });
+  }
+  /* Применить программу дня в памяти и перерисовать всё, что от неё зависит,
+     не прерывая то, что сейчас играет. */
+  function applyProgramLocally(day, files){
+    airProgram[day] = files.slice();
+    if(day === airDay){
+      var playingId = state.currentId;
+      tracks = tracksOfDay(day);
+      if(!getTrack(playingId)){ state.currentId = tracks.length ? tracks[0].id : null; }
+      renderQueue();
+      renderNowPlaying();
+    }
+    renderAirDayLabel();
+    renderDayStrip();
+    syncAirDayPicker();
+    var arch = document.getElementById("viewArchive");
+    if(arch && !arch.hidden){ renderCalendar(); renderArchiveDay(calPicked); }
+    document.dispatchEvent(new CustomEvent("voiceai:library-changed"));
+  }
+
+  var programSaveTimers = {};
+  /* Сохранить программу дня в манифест. Слушателю сохранять нечего —
+     у него нет токена, и правки живут только в его вкладке. */
+  function saveProgram(day, files, message, delay){
+    applyProgramLocally(day, files);
+    if(!isAdmin || !GH.connected()) return Promise.resolve(false);
+    var snapshot = files.slice();
+    clearTimeout(programSaveTimers[day]);
+    return new Promise(function(resolve){
+      programSaveTimers[day] = setTimeout(function(){
+        GH.editDoc("audio/manifest.json", function(doc){
+          if(!doc.air || typeof doc.air !== "object" || Array.isArray(doc.air)) doc.air = {};
+          doc.air[day] = snapshot;
+          return doc;
+        }, message).then(function(){
+          showHint(message);
+          resolve(true);
+        })["catch"](function(err){
+          showHint("Не сохранилось: " + err.message);
+          resolve(false);
+        });
+      }, delay || 0);
+    });
+  }
+
   function airDays(){
     var seen = {};
     allTracks.forEach(function(t){ if(t.day) seen[t.day] = true; });
+    Object.keys(airProgram).forEach(function(d){
+      if(airProgram[d] && airProgram[d].length) seen[d] = true;
+      else delete seen[d];         // день намеренно очищен редактором
+    });
     return Object.keys(seen).sort();
   }
   function tracksOfDay(day){
+    if(airProgram[day]){
+      return airProgram[day].map(trackByFile).filter(Boolean);
+    }
     return allTracks.filter(function(t){ return t.day === day; });
   }
   function pickDefaultDay(){
@@ -4346,23 +4601,26 @@
     return "Эфир от " + humanDay(day);
   }
 
-  function setAirDay(day, autoplay){
+  function setAirDay(day, autoplay, allowEmpty){
     var list = tracksOfDay(day);
     // Записи без даты (залиты мимо формы, без даты в имени) не должны
     // потеряться — подмешиваем их в текущий эфир, иначе они не звучат нигде.
-    if(day === pickDefaultDay()){
+    // В явной программе дня такого не делаем: там состав задал редактор.
+    if(!airProgram[day] && day === pickDefaultDay()){
       list = list.concat(allTracks.filter(function(t){ return !t.day; }));
     }
-    if(!list.length) return false;
+    // пустой день открываем только редактору — ему надо его собирать
+    if(!list.length && !allowEmpty) return false;
     airDay = day;
     tracks = list;
-    state.currentId = tracks[0].id;
+    state.currentId = tracks.length ? tracks[0].id : null;
     audioEl.pause();
     renderQueue();
     renderNowPlaying();
     renderAirDayLabel();
     renderDayStrip();
-    if(autoplay){ playCurrent(); } else { setPlayingUI(false); }
+    syncAirDayPicker();
+    if(autoplay && tracks.length){ playCurrent(); } else { setPlayingUI(false); }
     return true;
   }
 
@@ -4563,6 +4821,220 @@
       }, {passive:false});
     }
     window.addEventListener("resize", function(){ updateStripControls(); });
+  })();
+
+  /* ================= Сборка эфира (только редактор) =================
+     Три инструмента: выбрать день, который собираем; взять запись из
+     фонотеки; повторить целиком прошлый эфир. Всё пишется в air-программу
+     дня, файлы при этом не копируются и не дублируются. */
+
+  /* Окошко с несколькими вариантами ответа — confirm() умеет только два. */
+  function askChoice(title, text, options){
+    return new Promise(function(resolve){
+      var back = document.createElement("div");
+      back.className = "ask-back";
+      var box = document.createElement("div");
+      box.className = "ask-box";
+      var h = document.createElement("h4"); h.textContent = title;
+      var p = document.createElement("p"); p.textContent = text;
+      var acts = document.createElement("div"); acts.className = "ask-actions";
+      box.appendChild(h); box.appendChild(p); box.appendChild(acts);
+      back.appendChild(box);
+
+      function close(val){
+        document.removeEventListener("keydown", onKey, true);
+        if(back.parentNode) back.parentNode.removeChild(back);
+        resolve(val);
+      }
+      function onKey(e){ if(e.key === "Escape"){ e.preventDefault(); close(null); } }
+
+      options.forEach(function(o){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = o.primary ? "btn-add" : "nc-ghost";
+        b.textContent = o.label;
+        b.addEventListener("click", function(){ close(o.key); });
+        acts.appendChild(b);
+      });
+      back.addEventListener("click", function(e){ if(e.target === back) close(null); });
+      document.addEventListener("keydown", onKey, true);
+      document.body.appendChild(back);
+      var first = acts.querySelector("button");
+      if(first) first.focus();
+    });
+  }
+
+  /* Скопировать программу одного дня в другой. Именно скопировать:
+     дальше дни живут независимо, правка сегодняшнего не трогает архив. */
+  function copyDayInto(sourceDay, targetDay){
+    if(!sourceDay || !targetDay) return;
+    var source = programOfDay(sourceDay).filter(function(f){ return !!trackByFile(f); });
+    if(!source.length){ showHint("В этом дне нечего копировать"); return; }
+    if(sourceDay === targetDay){ showHint("Это тот же самый день"); return; }
+
+    var current = programOfDay(targetDay).filter(function(f){ return !!trackByFile(f); });
+    var human = humanDay(sourceDay) + " → " + humanDay(targetDay);
+
+    function apply(files, what){
+      saveProgram(targetDay, files, "Эфир " + targetDay + ": " + what);
+      if(airDay !== targetDay){ setAirDay(targetDay, false, true); }
+      showHint(what);
+    }
+
+    if(!current.length){
+      apply(source.slice(), "взят за основу эфир " + humanDay(sourceDay));
+      return;
+    }
+    askChoice(
+      "Эфир уже собран",
+      "В эфире " + humanDay(targetDay) + " уже " + current.length + " " +
+      plural(current.length, "запись", "записи", "записей") +
+      ". Что сделать с эфиром " + humanDay(sourceDay) + "?",
+      [
+        {key:"replace", label:"Заменить", primary:true},
+        {key:"append",  label:"Дописать в конец"},
+        {key:null,      label:"Отмена"}
+      ]
+    ).then(function(choice){
+      if(choice === "replace"){
+        apply(source.slice(), "заменён на эфир " + humanDay(sourceDay));
+      } else if(choice === "append"){
+        var merged = current.slice();
+        source.forEach(function(f){ if(merged.indexOf(f) === -1) merged.push(f); });
+        var added = merged.length - current.length;
+        apply(merged, "дописан эфир " + humanDay(sourceDay) + " (+" + added + ")");
+      }
+      if(choice) showHint("Готово: " + human);
+    });
+  }
+
+  function syncAirDayPicker(){
+    var pick = document.getElementById("airDayPick");
+    if(pick && airDay && pick.value !== airDay) pick.value = airDay;
+    var sel = document.getElementById("repeatPick");
+    if(!sel) return;
+    var keep = sel.value;
+    var days = airDays().filter(function(d){ return d !== airDay; }).reverse();
+    sel.innerHTML = '<option value="">— выберите день —</option>' +
+      days.map(function(d){
+        var n = tracksOfDay(d).length;
+        return '<option value="' + escapeHtml(d) + '">' + escapeHtml(humanDay(d)) +
+               " · " + n + " " + plural(n, "запись", "записи", "записей") + '</option>';
+      }).join("");
+    if(keep && days.indexOf(keep) !== -1) sel.value = keep;
+  }
+
+  (function airToolsUi(){
+    var tools    = document.getElementById("airTools");
+    if(!tools) return;
+    var pick     = document.getElementById("airDayPick");
+    var repeat   = document.getElementById("repeatPick");
+    var libBtn   = document.getElementById("libToggle");
+    var panel    = document.getElementById("libPanel");
+    var search   = document.getElementById("libSearch");
+    var tagsBox  = document.getElementById("libTags");
+    var listBox  = document.getElementById("libList");
+    var activeTag = "";
+
+    pick.addEventListener("change", function(){
+      var d = pick.value;
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ syncAirDayPicker(); return; }
+      setAirDay(d, false, true);       // пустой день редактору открываем
+      renderLibrary();
+      showHint("Собираем эфир на " + humanDay(d));
+    });
+
+    repeat.addEventListener("change", function(){
+      var d = repeat.value;
+      repeat.value = "";
+      if(d) copyDayInto(d, airDay || todayStr());
+    });
+
+    libBtn.addEventListener("click", function(){
+      panel.hidden = !panel.hidden;
+      libBtn.textContent = panel.hidden ? "+ Взять из фонотеки" : "− Свернуть фонотеку";
+      if(!panel.hidden){ renderLibrary(); search.focus(); }
+    });
+
+    search.addEventListener("input", renderLibrary);
+
+    tagsBox.addEventListener("click", function(e){
+      var b = e.target.closest ? e.target.closest(".lib-tag") : null;
+      if(!b) return;
+      activeTag = (b.getAttribute("data-tag") === activeTag) ? "" : b.getAttribute("data-tag");
+      renderLibrary();
+    });
+
+    listBox.addEventListener("click", function(e){
+      var b = e.target.closest ? e.target.closest(".lib-add") : null;
+      if(!b) return;
+      var file = b.getAttribute("data-file");
+      var day = airDay || todayStr();
+      var list = programOfDay(day);
+      var tr = trackByFile(file);
+      if(!tr) return;
+      if(list.indexOf(file) !== -1){
+        showHint("«" + tr.title + "» уже в эфире этого дня");
+        return;
+      }
+      list.push(file);
+      saveProgram(day, list, "В эфир " + day + ": " + tr.title);
+      renderLibrary();
+    });
+
+    function renderLibrary(){
+      if(!listBox) return;
+      var day = airDay || todayStr();
+      var inDay = programOfDay(day);
+      var pool = allTracks.filter(function(t){ return !t.demo && t.file; });
+
+      // рубрики строим по самой фонотеке: эфир, подкаст, шоу, гайд — что есть
+      var tags = [], seen = {};
+      pool.forEach(function(t){
+        var g = (t.tag || "").trim();
+        if(g && !seen[g]){ seen[g] = true; tags.push(g); }
+      });
+      tags.sort(function(a,b){ return a.localeCompare(b, "ru"); });
+      if(activeTag && tags.indexOf(activeTag) === -1) activeTag = "";
+      tagsBox.innerHTML = '<button type="button" class="lib-tag' + (activeTag ? "" : " is-on") +
+                          '" data-tag="">Все</button>' +
+        tags.map(function(g){
+          return '<button type="button" class="lib-tag' + (g === activeTag ? " is-on" : "") +
+                 '" data-tag="' + escapeHtml(g) + '">' + escapeHtml(g) + '</button>';
+        }).join("");
+
+      var q = (search.value || "").trim().toLowerCase();
+      var rows = pool.filter(function(t){
+        if(activeTag && (t.tag || "").trim() !== activeTag) return false;
+        if(!q) return true;
+        return ((t.title||"") + " " + (t.host||"") + " " + (t.desc||"") + " " + (t.tag||""))
+                 .toLowerCase().indexOf(q) !== -1;
+      });
+      // сначала самое свежее
+      rows.sort(function(a,b){ return (b.day || "").localeCompare(a.day || ""); });
+
+      if(!rows.length){
+        listBox.innerHTML = '<div class="lib-empty">Ничего не нашлось. Попробуйте другое слово или снимите фильтр рубрики.</div>';
+        return;
+      }
+      listBox.innerHTML = rows.map(function(t){
+        var already = inDay.indexOf(t.file) !== -1;
+        var sub = [t.host || "", t.tag || "", t.day ? "впервые " + humanDay(t.day) : "без даты",
+                   t.dur ? fmt(t.dur) : ""].filter(Boolean).join(" · ");
+        return '<div class="lib-row' + (already ? " is-in" : "") + '">' +
+                 '<span class="lib-main">' +
+                   '<span class="lib-title">' + escapeHtml(t.title) + '</span>' +
+                   '<span class="lib-sub">' + escapeHtml(sub) + '</span>' +
+                 '</span>' +
+                 '<button type="button" class="lib-add" data-file="' + escapeHtml(t.file) + '">' +
+                   (already ? "уже в эфире" : "+ в эфир") +
+                 '</button>' +
+               '</div>';
+      }).join("");
+    }
+
+    document.addEventListener("voiceai:library-changed", renderLibrary);
+    syncAirDayPicker();
   })();
 
   /* После правки, загрузки или удаления записи обновляем всё на странице
