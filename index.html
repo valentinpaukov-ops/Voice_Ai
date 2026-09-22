@@ -626,6 +626,12 @@
   .nc-danger{color:var(--live);border-color:color-mix(in srgb, var(--live) 40%, transparent);}
   .nc-danger:hover{border-color:var(--live);background:color-mix(in srgb, var(--live) 12%, transparent);}
 
+  .plan-note{
+    margin-top:12px;padding:9px 12px;border-radius:9px;font-size:12.5px;line-height:1.45;
+    color:var(--accent-strong);
+    background:color-mix(in srgb, var(--accent) 10%, transparent);
+    border:1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  }
   .lib-panel{
     margin-top:16px;padding:16px;border:1px solid var(--border);
     border-radius:13px;background:var(--surface);
@@ -735,6 +741,9 @@
   /* «завтра и дальше» — пунктиром, чтобы пустое будущее не путали с пустым прошлым */
   .day-chip.is-future{opacity:.5;border-style:dashed;}
   .day-chip.is-future.is-empty{opacity:.32;}
+  /* день впереди, для которого эфир уже собран: пунктир, но живой */
+  .day-chip.is-planned{opacity:.95;border-color:color-mix(in srgb, var(--accent) 60%, transparent);}
+  .day-chip.is-planned .dc-num{color:var(--accent-strong);}
   .dc-dow{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;}
   .dc-num{font-family:var(--font-mono);font-size:15px;color:var(--text);font-weight:600;}
   .dc-dots{display:flex;gap:3px;height:5px;}
@@ -1558,6 +1567,7 @@
           </label>
           <button type="button" class="nc-ghost at-lib-btn" id="libToggle">+ Взять из фонотеки</button>
         </div>
+        <p class="plan-note" id="planNote" hidden></p>
         <div class="lib-panel" id="libPanel" hidden>
           <p class="nc-hint">
             Здесь вся фонотека — эфиры, подкасты, шоу, гайды, музыка: всё, что
@@ -2181,7 +2191,9 @@
     if(tracks.length === 0){
       var empty = document.createElement("div");
       empty.className = "queue-empty";
-      empty.textContent = "Очередь пуста. Нажмите «Добавить записи» или перетащите аудиофайлы сюда.";
+      empty.textContent = isAdmin
+        ? "Эфир этого дня пуст. Возьмите записи из фонотеки, повторите прошлый эфир или перетащите сюда новый файл."
+        : "За этот день эфира не было.";
       queueListEl.appendChild(empty);
       queueCountEl.textContent = "очередь пуста";
       return;
@@ -2685,9 +2697,20 @@
     );
   }
 
+  /* Новость с датой в будущем — такой же черновик, как эфир на завтра:
+     до наступления дня её видит только редактор. */
+  function visibleNewsItems(){
+    if(isAdmin) return newsItems;
+    var today = todayStr();
+    return newsItems.filter(function(n){
+      var d = newsDayKey(n);
+      return !d || d <= today;
+    });
+  }
+
   function renderHomePreviews(){
     // на главной — три свежие новости, остальные на странице «Новости»
-    document.getElementById("homeNews").innerHTML = newsItems.slice(0,3).map(newsRowHtml).join("");
+    document.getElementById("homeNews").innerHTML = visibleNewsItems().slice(0,3).map(newsRowHtml).join("");
     document.getElementById("homePodcasts").innerHTML = podcastItems.slice(0,3).map(mediaCardHtml).join("");
     document.getElementById("homeShows").innerHTML = showItems.slice(0,3).map(mediaCardHtml).join("");
     document.getElementById("homeGuides").innerHTML = guideItems.slice(0,3).map(function(g){ return listRowHtml(g, g.readTime); }).join("");
@@ -2891,7 +2914,10 @@
 
     /* Шапка дня: только дата и краткий итог. Кнопка «Слушать этот эфир»
        стоит под самим списком записей — рядом с тем, что она включает. */
-    var html = '<div class="arch-day-head">' +
+    var html = (isAdmin && day > todayStr()
+                 ? '<div class="plan-note">Черновик: этот день ещё не наступил, слушателям он не виден.</div>'
+                 : "") +
+               '<div class="arch-day-head">' +
                  '<div class="adh-text">' +
                    '<h3>' + escapeHtml(humanDay(day)) + (isToday ? " — сегодня" : "") + '</h3>' +
                    '<div class="arch-sub">' + escapeHtml(dayTitleAttr(day).split(": ")[1] || "пусто") + '</div>' +
@@ -3081,7 +3107,7 @@
     tracks.forEach(function(t){
       idx.push({type:"track", typeLabel:"Эфир", title:t.title, snippet:t.desc || t.host, tag:t.tag, extra:t.desc || "", hash:"#air", id:t.id});
     });
-    newsItems.forEach(function(n){
+    visibleNewsItems().forEach(function(n){
       idx.push({type:"news", typeLabel:"Новости", title:n.title, snippet:n.text || n.snippet,
                 tag:(n.tags && n.tags.length ? n.tags.join(" ") : n.tag),
                 extra:[n.date, n.time, n.author, n.sourceName, (n.tags||[]).join(" ")].filter(Boolean).join(" "),
@@ -4573,7 +4599,14 @@
     });
     return Object.keys(seen).sort();
   }
+  /* Запланированное будущее — черновик: его видит только редактор.
+     Слушателю дня, который ещё не наступил, не существует: ни в ленте,
+     ни в календаре, ни в архиве, ни в поиске. */
+  function dayVisible(day){
+    return isAdmin || !day || day <= todayStr();
+  }
   function tracksOfDay(day){
+    if(!dayVisible(day)) return [];
     if(airProgram[day]){
       return airProgram[day].map(trackByFile).filter(Boolean);
     }
@@ -4585,7 +4618,9 @@
     var today = todayStr();
     if(days.indexOf(today) !== -1) return today;
     var past = days.filter(function(d){ return d <= today; });
-    return past.length ? past[past.length-1] : days[days.length-1];
+    if(past.length) return past[past.length-1];
+    // всё, что есть, — в будущем: редактору показываем, слушателю нет
+    return isAdmin ? days[days.length-1] : "";
   }
   // «22 сентября» — для подписей
   var RU_MONTH_GEN = ["января","февраля","марта","апреля","мая","июня",
@@ -4626,6 +4661,7 @@
 
   /* новости за день — для кружочков в календаре и полоске */
   function newsOfDay(day){
+    if(!dayVisible(day)) return [];
     return newsItems.filter(function(n){
       var d = String(n.date || "");
       var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(d);
@@ -4718,11 +4754,15 @@
       var hasNews = newsOfDay(key).length > 0;
       var has = hasAir || hasNews;
       var dow = RU_DOW_SHORT[(d.getDay() + 6) % 7];
-      var title = (i > 0 && !has) ? humanDay(key) + ": впереди" : dayTitleAttr(key);
+      var planned = (i > 0 && has);     // будущее, в котором уже что-то собрано
+      var title = planned
+        ? dayTitleAttr(key) + " — запланировано, слушателям пока не видно"
+        : ((i > 0 && !has) ? humanDay(key) + ": впереди" : dayTitleAttr(key));
       html += '<button type="button" class="day-chip' +
               (key === airDay ? " is-current" : "") +
               (i === 0 ? " is-today" : "") +
               (i > 0 ? " is-future" : "") +
+              (planned ? " is-planned" : "") +
               (has ? "" : " is-empty") + '" data-day="' + key + '"' +
               ' data-kind="' + (hasAir ? "air" : "news") + '"' +
               (has ? "" : " disabled") + ' title="' + escapeHtml(title) + '">' +
@@ -4909,6 +4949,7 @@
   }
 
   function syncAirDayPicker(){
+    updatePlanNote();
     var pick = document.getElementById("airDayPick");
     if(pick && airDay && pick.value !== airDay) pick.value = airDay;
     var sel = document.getElementById("repeatPick");
@@ -4922,6 +4963,20 @@
                " · " + n + " " + plural(n, "запись", "записи", "записей") + '</option>';
       }).join("");
     if(keep && days.indexOf(keep) !== -1) sel.value = keep;
+  }
+
+  /* Пока день не наступил, собранный эфир — черновик. Говорим об этом прямо,
+     чтобы редактор не гадал, видно его слушателям или нет. */
+  function updatePlanNote(){
+    var el = document.getElementById("planNote");
+    if(!el) return;
+    var future = airDay && airDay > todayStr();
+    el.hidden = !future;
+    if(future){
+      el.textContent = "Черновик: эфир на " + humanDay(airDay) +
+        ". Слушателям этот день пока не показывается — ни в ленте, ни в календаре, " +
+        "ни в поиске. Он появится у них сам, когда наступит " + humanDay(airDay) + ".";
+    }
   }
 
   (function airToolsUi(){
@@ -5127,7 +5182,7 @@
     var list = data && (Array.isArray(data) ? data : data.news);
     if(!Array.isArray(list) || !list.length) return false;
     newsItems = sortNewsDesc(list.map(normalizeNews));
-    LIB_CONFIG.news.data = newsItems;   // страница «Новости» берёт данные отсюда
+    LIB_CONFIG.news.data = visibleNewsItems();   // страница «Новости» берёт данные отсюда
     renderHomePreviews();
     if(location.hash === "#/news"){ renderLibraryFilters("news"); renderLibraryList("news"); }
     // форма новостей пересоберёт банк тегов, услышав это событие
