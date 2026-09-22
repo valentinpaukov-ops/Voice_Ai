@@ -744,6 +744,7 @@
   .q-btn:disabled{opacity:.3;cursor:default;}
   .q-btn:disabled:hover{background:none;color:var(--text-dim);}
   .q-btn.q-remove:hover{color:var(--live);}
+  .q-btn.q-edit:hover{color:var(--accent-strong);}
   .q-btn svg{width:14px;height:14px;}
 
   /* ---------- Generic section ---------- */
@@ -1389,6 +1390,7 @@
             <label class="nc-field nc-wide"><span>Название в эфире</span><input type="text" id="auTitle" placeholder="Итоги недели: продукт и релизы"></label>
             <label class="nc-field"><span>Ведущий или команда</span><input type="text" id="auHost" placeholder="Анна Волкова, продуктовая команда"></label>
             <label class="nc-field"><span>Рубрика</span><input type="text" id="auTag" placeholder="Дайджест"></label>
+            <label class="nc-field"><span>День эфира</span><input type="date" id="auDate"></label>
             <label class="nc-field nc-wide">
               <span>Описание выпуска — показывается в шапке эфира</span>
               <textarea id="auDesc" rows="2" placeholder="О чём этот выпуск и кому он будет полезен"></textarea>
@@ -1396,6 +1398,7 @@
           </div>
           <div class="nc-actions">
             <button type="button" class="btn-add" id="auUpload">Опубликовать в эфир</button>
+            <button type="button" class="nc-ghost" id="auCancelEdit" hidden>Отменить правку</button>
             <span class="nc-status" id="auStatus"></span>
           </div>
           <div class="au-bar" id="auBar"><i></i></div>
@@ -2023,15 +2026,40 @@
       downBtn.disabled = (i===tracks.length-1);
       downBtn.addEventListener("click", function(e){ e.stopPropagation(); moveTrack(tr.id, 1); });
 
+      // правка описания, названия и даты — только у записей из репозитория
+      var editBtn = null;
+      if(isAdmin && !tr.demo && tr.file){
+        editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "q-btn q-edit";
+        editBtn.setAttribute("aria-label","Изменить запись");
+        editBtn.setAttribute("title","Изменить название, описание, дату");
+        editBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>';
+        editBtn.addEventListener("click", function(e){
+          e.stopPropagation();
+          document.dispatchEvent(new CustomEvent("voiceai:edit-track", {detail:{file: tr.file}}));
+        });
+      }
+
       var removeBtn = document.createElement("button");
       removeBtn.type = "button";
       removeBtn.className = "q-btn q-remove";
-      removeBtn.setAttribute("aria-label","Удалить из очереди");
+      var repoDelete = isAdmin && !tr.demo && tr.file && GH.connected();
+      removeBtn.setAttribute("aria-label", repoDelete ? "Удалить запись из эфира" : "Убрать из очереди");
+      removeBtn.setAttribute("title", repoDelete ? "Удалить запись насовсем" : "Убрать из этой вкладки");
       removeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
-      removeBtn.addEventListener("click", function(e){ e.stopPropagation(); removeTrack(tr.id); });
+      removeBtn.addEventListener("click", function(e){
+        e.stopPropagation();
+        if(repoDelete){
+          document.dispatchEvent(new CustomEvent("voiceai:delete-track", {detail:{file: tr.file, title: tr.title}}));
+        } else {
+          removeTrack(tr.id);
+        }
+      });
 
       actions.appendChild(upBtn);
       actions.appendChild(downBtn);
+      if(editBtn) actions.appendChild(editBtn);
       actions.appendChild(removeBtn);
 
       row.appendChild(grip);
@@ -3068,8 +3096,11 @@
     }
     function apiUrl(path){
       var c = cfg();
+      // каждый кусок пути кодируем отдельно, слэши оставляем как есть —
+      // иначе файлы с кириллицей и пробелами в имени не находятся
+      var enc = String(path).split("/").map(encodeURIComponent).join("/");
       return "https://api.github.com/repos/" + encodeURIComponent(c.owner) + "/" +
-             encodeURIComponent(c.repo) + "/contents/" + path;
+             encodeURIComponent(c.repo) + "/contents/" + enc;
     }
 
     // base64 с корректной кириллицей — btoa сам по себе на неё ломается
@@ -3181,10 +3212,28 @@
       });
     }
 
+    /* Удаление файла из репозитория. Нужно именно удалять, а не только
+       вычёркивать из списка: робот сканирует папку и вернул бы запись обратно. */
+    function deleteFile(path, message){
+      var c = cfg();
+      return getFile(path).then(function(f){
+        return fetch(apiUrl(path), {
+          method: "DELETE",
+          headers: headers(),
+          body: JSON.stringify({ message: message, sha: f.sha, branch: c.branch })
+        }).then(function(res){
+          return res.json().catch(function(){ return null; }).then(function(data){
+            if(!res.ok) throw new Error(errorText(res, data));
+            return data;
+          });
+        });
+      });
+    }
+
     return {
       cfg: cfg, saveCfg: saveCfg, token: token, setToken: setToken,
       connected: connected, check: check,
-      editNews: editNews, editJson: editJson, uploadFile: uploadFile
+      editNews: editNews, editJson: editJson, uploadFile: uploadFile, deleteFile: deleteFile
     };
   })();
 
@@ -3571,8 +3620,100 @@
       });
     }
 
+    /* ---- правка уже загруженной записи ---- */
+    var editingFile = null;
+    var cancelEdit = document.getElementById("auCancelEdit");
+
+    function setEditingTrack(file){
+      editingFile = file || null;
+      cancelEdit.hidden = !file;
+      uploadBtn.textContent = file ? "Сохранить изменения" : "Опубликовать в эфир";
+      drop.hidden = !!file;                       // при правке файл менять не нужно
+      toggle.textContent = file ? "− Правка записи" : (body.hidden ? "+ Загрузить запись в эфир" : "− Свернуть");
+    }
+    function clearAudioForm(){
+      ["auTitle","auHost","auTag","auDesc","auDate"].forEach(function(id){ document.getElementById(id).value = ""; });
+      chosen = null; picked.hidden = true; fileInp.value = "";
+    }
+
+    cancelEdit.addEventListener("click", function(){
+      setEditingTrack(null);
+      clearAudioForm();
+      say("Правка отменена");
+    });
+
+    document.addEventListener("voiceai:edit-track", function(e){
+      var file = e.detail && e.detail.file;
+      var tr = null;
+      for(var i=0;i<allTracks.length;i++){ if(allTracks[i].file === file){ tr = allTracks[i]; break; } }
+      if(!tr) return;
+      if(!GH.connected()){ window.alert("Сначала подключите GitHub — в форме новостей."); return; }
+      body.hidden = false;
+      document.getElementById("auTitle").value = tr.title || "";
+      document.getElementById("auHost").value = tr.host || "";
+      document.getElementById("auTag").value = tr.tag || "";
+      document.getElementById("auDesc").value = tr.desc || "";
+      document.getElementById("auDate").value = tr.day || "";
+      picked.hidden = false;
+      picked.textContent = "Файл: " + file;
+      setEditingTrack(file);
+      document.getElementById("audioComposer").scrollIntoView({behavior:"smooth", block:"center"});
+      say("Правим «" + (tr.title || file) + "»");
+    });
+
+    document.addEventListener("voiceai:delete-track", function(e){
+      var file = e.detail && e.detail.file, title = (e.detail && e.detail.title) || file;
+      if(!file) return;
+      if(!window.confirm("Удалить запись «" + title + "» из эфира?\n\nФайл будет удалён из папки audio, запись исчезнет у всех слушателей и из архива. Отменить это можно только через историю коммитов на GitHub.")) return;
+      say("Удаляю…");
+      GH.deleteFile("audio/" + file, "Удалена запись: " + title).then(function(){
+        return GH.editJson("audio/manifest.json", "tracks", function(list){
+          return list.filter(function(t){ return t && t.file !== file; });
+        }, "Запись убрана из списка эфира: " + title);
+      }).then(function(){
+        say("Удалено. Обновите страницу через минуту.");
+        if(editingFile === file){ setEditingTrack(null); clearAudioForm(); }
+      })["catch"](function(err){ say(err.message, true); });
+    });
+
     uploadBtn.addEventListener("click", function(){
       if(!GH.connected()){ say("Сначала подключите GitHub в форме новостей", true); return; }
+
+      // режим правки: файл не трогаем, меняем только описание записи
+      if(editingFile){
+        var t = document.getElementById("auTitle").value.trim();
+        if(!t){ say("Впишите название записи", true); return; }
+        uploadBtn.disabled = true;
+        bar.classList.add("is-on");
+        say("Сохраняю…");
+        GH.editJson("audio/manifest.json", "tracks", function(list){
+          return list.map(function(item){
+            if(!item || item.file !== editingFile) return item;
+            var next = {};
+            for(var k in item){ if(Object.prototype.hasOwnProperty.call(item, k)) next[k] = item[k]; }
+            next.title = t;
+            next.host = document.getElementById("auHost").value.trim() || "Voice Ai";
+            next.tag = document.getElementById("auTag").value.trim() || "Эфир";
+            var dsc = document.getElementById("auDesc").value.trim();
+            if(dsc){ next.desc = dsc; } else { delete next.desc; }
+            var dt = document.getElementById("auDate").value.trim();
+            if(dt){ next.date = dt; } else { delete next.date; }
+            return next;
+          });
+        }, "Правка записи: " + t).then(function(){
+          uploadBtn.disabled = false;
+          bar.classList.remove("is-on");
+          setEditingTrack(null);
+          clearAudioForm();
+          say("Сохранено. Обновите страницу через минуту.");
+        })["catch"](function(err){
+          uploadBtn.disabled = false;
+          bar.classList.remove("is-on");
+          say(err.message, true);
+        });
+        return;
+      }
+
       if(!chosen){ say("Выберите файл", true); return; }
       var title = document.getElementById("auTitle").value.trim();
       if(!title){ say("Впишите название записи", true); return; }
@@ -3592,7 +3733,8 @@
         return GH.editJson("audio/manifest.json", "tracks", function(list){
           var entry = {
             file: fileName,
-            date: datePrefix().replace("_", ""),   // день эфира — по нему строится архив
+            // день эфира: можно задать вручную, иначе сегодняшний
+            date: document.getElementById("auDate").value.trim() || datePrefix().replace("_", ""),
             title: title,
             host: document.getElementById("auHost").value.trim() || "Voice Ai",
             tag: document.getElementById("auTag").value.trim() || "Эфир",
@@ -3611,7 +3753,7 @@
         chosen = null;
         picked.hidden = true;
         fileInp.value = "";
-        ["auTitle","auHost","auTag","auDesc"].forEach(function(id){ document.getElementById(id).value = ""; });
+        ["auTitle","auHost","auTag","auDesc","auDate"].forEach(function(id){ document.getElementById(id).value = ""; });
         say("Готово — запись в эфире. Обновите страницу через минуту.");
         hint.textContent = "Последняя загрузка: " + fileName;
       })["catch"](function(err){
