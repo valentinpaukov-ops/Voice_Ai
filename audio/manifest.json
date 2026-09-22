@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-22T09:09:13Z",
+  "updated": "2026-09-22T10:27:12Z",
   "tracks": [
     {
       "file": "2026-09-21_Итоги недели.MP3",
@@ -37,6 +37,15 @@
       "duration": 147.5,
       "size": 2359429,
       "date": "2026-09-20"
+    },
+    {
+      "file": "2026-09-22_Therr_Maitz_-_My_Love_Is_Like_47846439.mp3",
+      "date": "2026-09-22",
+      "title": "Therr Maitz My Love Is Like",
+      "host": "Voice Ai",
+      "tag": "MUSIC",
+      "size": 8364849,
+      "desc": "Музыкальная пауза. Отдыхаем ушками"
     }
   ]
 }
