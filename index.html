@@ -851,6 +851,16 @@
     border:1px solid color-mix(in srgb, var(--accent) 38%, transparent);
   }
   .media-card.is-draft{border-style:dashed;}
+  .cov-row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:6px;}
+  .cov-preview{
+    flex:0 0 auto;width:168px;height:94px;border-radius:11px;overflow:hidden;
+    border:1px dashed var(--border);background:var(--surface);
+    display:flex;align-items:center;justify-content:center;text-align:center;
+  }
+  .cov-preview img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cov-empty{font-size:11px;color:var(--text-dim);line-height:1.35;padding:0 8px;}
+  .cov-side{flex:1 1 220px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;}
+  .cov-side .nc-note{padding-top:0;}
   .au-convert{
     display:flex;flex-wrap:wrap;align-items:center;gap:14px;
     margin-top:12px;padding:11px 13px;border-radius:10px;
@@ -1729,6 +1739,21 @@
               <span>Описание выпуска — показывается в шапке эфира</span>
               <textarea id="auDesc" rows="2" placeholder="О чём этот выпуск и кому он будет полезен"></textarea>
             </label>
+            <div class="nc-field nc-wide">
+              <span>Обложка — необязательно</span>
+              <div class="cov-row">
+                <div class="cov-preview" id="covPreview">
+                  <span class="cov-empty">без обложки —<br>нарисуем сами</span>
+                </div>
+                <div class="cov-side">
+                  <button type="button" class="nc-ghost" id="covPick">Выбрать картинку</button>
+                  <button type="button" class="nc-ghost nc-danger" id="covClear" hidden>Убрать обложку</button>
+                  <span class="nc-note" id="covNote">Любая картинка: страница сама уменьшит её и сожмёт,
+                    чтобы не забивать репозиторий. Если не выбрать — обложка рисуется из названия.</span>
+                  <input type="file" id="covFile" accept="image/*" hidden>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="nc-actions">
             <button type="button" class="btn-add" id="auUpload">Загрузить в фонотеку</button>
@@ -2180,7 +2205,7 @@
         var file = "demo-" + it.id;
         if(trackByFile(file)) return;            // уже materialized в манифесте
         out.push({
-          id: "ph-" + it.id, file: file, placeholder: true,
+          id: "ph-" + it.id, file: file, placeholder: true, fromDemo: true,
           date: it.date || "", day: it.date || "",
           title: it.title, host: it.meta || "Voice Ai",
           tag: section, tags: it.tag ? [it.tag] : [],
@@ -4337,6 +4362,102 @@
     function safeName(name){
       return name.replace(/[\\/:*?"<>|#%]+/g, "").replace(/\s+/g, " ").trim();
     }
+    /* ============ Обложка ============
+       Картинку из телефона или из интернета нельзя класть в репозиторий как
+       есть: снимок легко весит 4 МБ, а всего места у сайта гигабайт. Поэтому
+       перед отправкой уменьшаем её до 1000 точек по длинной стороне и жмём
+       в WebP — получается около 60–120 КБ, то есть в тридцать раз меньше.
+       Всё это делает сам браузер, ничего никуда не отправляя. */
+    var COVER_MAX = 1000;
+    var coverBlob = null;      // выбранная и уже сжатая картинка
+    var coverUrl = "";         // путь к обложке, которая уже лежит в репозитории
+    var coverRemove = false;   // редактор нажал «убрать обложку»
+
+    function resizeCover(file){
+      return new Promise(function(resolve, reject){
+        var url = URL.createObjectURL(file);
+        var img = new Image();
+        img.onload = function(){
+          var w = img.naturalWidth, h = img.naturalHeight;
+          if(!w || !h){ URL.revokeObjectURL(url); reject(new Error("Не удалось прочитать картинку.")); return; }
+          var k = Math.min(1, COVER_MAX / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
+          var cv = document.createElement("canvas");
+          cv.width = cw; cv.height = ch;
+          var ctx = cv.getContext("2d");
+          ctx.drawImage(img, 0, 0, cw, ch);
+          URL.revokeObjectURL(url);
+          function done(blob, ext){
+            if(!blob){ reject(new Error("Браузер не смог сжать эту картинку.")); return; }
+            blob.ext = ext; blob.w = cw; blob.h = ch;
+            resolve(blob);
+          }
+          // WebP заметно легче JPEG при том же качестве; если его нет — JPEG
+          cv.toBlob(function(b){
+            if(b && b.size) return done(b, "webp");
+            cv.toBlob(function(j){ done(j, "jpg"); }, "image/jpeg", 0.82);
+          }, "image/webp", 0.82);
+        };
+        img.onerror = function(){
+          URL.revokeObjectURL(url);
+          reject(new Error("Этот формат картинки браузер не открывает. Подойдут JPG, PNG или WebP."));
+        };
+        img.src = url;
+      });
+    }
+
+    function showCover(src, note){
+      var box = document.getElementById("covPreview");
+      var clear = document.getElementById("covClear");
+      if(src){
+        box.innerHTML = '<img src="' + escapeHtml(src) + '" alt="">';
+        clear.hidden = false;
+      } else {
+        box.innerHTML = '<span class="cov-empty">без обложки —<br>нарисуем сами</span>';
+        clear.hidden = true;
+      }
+      if(note) document.getElementById("covNote").textContent = note;
+    }
+    function resetCover(){
+      coverBlob = null; coverUrl = ""; coverRemove = false;
+      showCover("", "Любая картинка: страница сама уменьшит её и сожмёт, чтобы не забивать репозиторий. " +
+                    "Если не выбрать — обложка рисуется из названия.");
+    }
+
+    document.getElementById("covPick").addEventListener("click", function(){
+      document.getElementById("covFile").click();
+    });
+    document.getElementById("covFile").addEventListener("change", function(){
+      var f = this.files && this.files[0];
+      this.value = "";
+      if(!f) return;
+      document.getElementById("covNote").textContent = "Обрабатываю картинку…";
+      resizeCover(f).then(function(blob){
+        coverBlob = blob; coverRemove = false;
+        showCover(URL.createObjectURL(blob),
+          "Готово: " + blob.w + "×" + blob.h + ", " + human(blob.size) +
+          " (было " + human(f.size) + ")");
+      })["catch"](function(err){
+        document.getElementById("covNote").textContent = err.message;
+      });
+    });
+    document.getElementById("covClear").addEventListener("click", function(){
+      coverBlob = null;
+      coverRemove = !!coverUrl;      // если обложка была в репозитории — уберём её
+      coverUrl = "";
+      showCover("", "Обложка убрана — карточка снова будет рисоваться из названия.");
+    });
+
+    /* Готовим путь и заливаем обложку рядом с записью. */
+    function pushCover(baseName){
+      if(!coverBlob) return Promise.resolve(coverRemove ? "" : null);
+      var stem = String(baseName || "cover").replace(/\.[^.]+$/, "");
+      var path = "covers/" + stem + "." + (coverBlob.ext || "webp");
+      return fileToBase64(coverBlob).then(function(b64){
+        return GH.uploadFile(path, b64, "Обложка: " + stem);
+      }).then(function(){ return path; });
+    }
+
     /* Список разделов: четыре основных плюс всё, что уже встречается
        в фонотеке, плюс возможность завести свой. */
     function fillSections(current){
@@ -4555,6 +4676,7 @@
     function clearAudioForm(){
       ["auTitle","auHost","auDesc","auDate","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
       fillSections("Эфир");
+      resetCover();
       chosen = null; picked.hidden = true; fileInp.value = "";
       var cb = document.getElementById("auConvert"); if(cb) cb.hidden = true;
     }
@@ -4576,6 +4698,8 @@
       document.getElementById("auHost").value = tr.host || "";
       fillSections(tr.tag || "Эфир");
       fillTagBank();
+      resetCover();
+      if(tr.cover){ coverUrl = tr.cover; showCover(tr.cover, "Обложка уже загружена. Можно заменить или убрать."); }
       document.getElementById("auTags").value = (tr.tags || []).join(", ");
       document.getElementById("auDesc").value = tr.desc || "";
       document.getElementById("auDate").value = tr.day || "";
@@ -4640,8 +4764,9 @@
         if(!t){ say("Впишите название записи", true); return; }
         uploadBtn.disabled = true;
         bar.classList.add("is-on");
-        say("Сохраняю…");
-        GH.editJson("audio/manifest.json", "tracks", function(list){
+        say(coverBlob ? "Загружаю обложку…" : "Сохраняю…");
+        pushCover(editingFile).then(function(coverPath){
+        return GH.editJson("audio/manifest.json", "tracks", function(list){
           /* Если правим заготовку, её ещё нет в манифесте — заводим запись.
              Так демо-карточка при первом же сохранении становится настоящей. */
           var found = list.some(function(item){ return item && item.file === editingFile; });
@@ -4666,15 +4791,20 @@
             if(dsc){ next.desc = dsc; } else { delete next.desc; }
             var dt = document.getElementById("auDate").value.trim();
             if(dt){ next.date = dt; } else { delete next.date; }
+            // обложка: новая — записываем путь, убрали — стираем поле
+            if(coverPath){ next.cover = coverPath; }
+            else if(coverPath === "" || coverRemove){ delete next.cover; }
             return next;
           });
-        }, "Правка записи: " + t).then(function(list){
+        }, "Правка записи: " + t);
+        }).then(function(list){
           uploadBtn.disabled = false;
           bar.classList.remove("is-on");
           setEditingTrack(null);
           clearAudioForm();
           refreshAirAfterEdit(list);     // показываем изменения сразу
           say("Сохранено");
+          document.dispatchEvent(new CustomEvent("voiceai:library-changed"));
         })["catch"](function(err){
           uploadBtn.disabled = false;
           bar.classList.remove("is-on");
@@ -4694,7 +4824,7 @@
       var wantCompress = document.getElementById("auCompress").checked;
       var quality = document.getElementById("auQuality").value;
       var srcFile = chosen, srcSize = chosen.size;
-      var toUpload = chosen, fileName = "", path = "";
+      var toUpload = chosen, fileName = "", path = "", savedCover = "";
       lastDuration = 0;
 
       uploadBtn.disabled = true;
@@ -4725,6 +4855,11 @@
         say("Загружаю " + human(toUpload.size) + "…");
         return GH.uploadFile(path, b64, "Запись в фонотеку: " + title);
       }).then(function(){
+        if(!coverBlob) return null;
+        say("Загружаю обложку…");
+        return pushCover(fileName);
+      }).then(function(coverPath){
+        savedCover = coverPath || "";
         say("Добавляю в список эфира…");
         return GH.editJson("audio/manifest.json", "tracks", function(list){
           var entry = {
@@ -4740,6 +4875,7 @@
           if(entryDay) entry.date = entryDay;
           var tg = readTags();
           if(tg.length) entry.tags = tg;
+          if(savedCover) entry.cover = savedCover;
           var d = document.getElementById("auDesc").value.trim();
           if(d) entry.desc = d;
           var i = -1;
@@ -5089,9 +5225,11 @@
         host: t.host || "Voice Ai",
         tag: t.tag || "Эфир",
         tags: Array.isArray(t.tags) ? t.tags.filter(Boolean) : [],
+        cover: t.cover || "",
+        placeholder: !!t.placeholder,
         desc: t.desc || "",
         dur: (typeof t.duration === "number" && t.duration > 0) ? t.duration : null,
-        src: encodeURI(src),
+        src: t.placeholder ? null : encodeURI(src),
         demo: false
       });
     });
@@ -6036,9 +6174,10 @@
         id: mkId(), file: i.file, date: i.date || "",
         title: i.title || i.file, host: i.host || "Voice Ai",
         tag: i.tag || "Эфир", tags: Array.isArray(i.tags) ? i.tags.filter(Boolean) : [],
-        desc: i.desc || "",
+        cover: i.cover || "", desc: i.desc || "",
         dur: (typeof i.duration === "number" && i.duration > 0) ? i.duration : null,
-        src: encodeURI(src), demo: false
+        placeholder: !!i.placeholder,
+        src: i.placeholder ? null : encodeURI(src), demo: false
       };
       t.day = parseTrackDate(t);
       allTracks.push(t);
@@ -6050,6 +6189,9 @@
       t.host  = i.host || "";
       t.tag   = i.tag || "Эфир";
       t.tags  = Array.isArray(i.tags) ? i.tags.filter(Boolean) : [];
+      t.cover = i.cover || "";
+      t.placeholder = !!i.placeholder;
+      if(t.placeholder) t.src = null;
       t.desc  = i.desc || "";
       t.date  = i.date || "";
       t.day   = parseTrackDate(t);
@@ -6066,7 +6208,10 @@
       return ia - ib;
     });
 
-    allTracks = allTracks.filter(function(t){ return !t.placeholder; })
+    /* Обновляем только заготовки, которых ещё нет в манифесте. Записи, которые
+       редактор уже сохранил, остаются как есть — иначе правка тут же откатилась
+       бы к исходной демо-карточке. */
+    allTracks = allTracks.filter(function(t){ return !t.fromDemo; })
                          .concat(placeholderTracks());
     refreshSections();     // страницы подкастов, шоу и гайдов — из той же фонотеки
 
