@@ -98,6 +98,10 @@ jobs:
                   if not e.get("duration"):
                       _, _, d = read_tags(path)
                       if d: e["duration"] = d
+                  # дату дописываем, если её ещё нет; проставленную вручную не трогаем
+                  if not e.get("date"):
+                      md = DATE_RE.match(stem)
+                      if md: e["date"] = "%s-%s-%s" % md.groups()
                   kept += 1
               else:
                   tt, ta, d = read_tags(path)
