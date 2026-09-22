@@ -482,6 +482,98 @@
   }
   .queue-item:hover{background:var(--surface);}
   .queue-item.active{background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  /* ---------- Архив: календарь ---------- */
+  .arch-grid{display:grid;grid-template-columns:340px 1fr;gap:30px;align-items:start;}
+  .cal-card{
+    background:var(--bg-elevated);border:1px solid var(--border);
+    border-radius:16px;padding:20px;box-shadow:var(--shadow);
+  }
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;}
+  .cal-title{font-family:var(--font-mono);font-size:13px;letter-spacing:.05em;text-transform:uppercase;}
+  .cal-nav{display:flex;gap:5px;align-items:center;}
+  .cal-nav button{
+    background:none;border:1px solid var(--border);border-radius:8px;
+    width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+    color:var(--text);cursor:pointer;
+  }
+  .cal-nav button:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .cal-nav svg{width:13px;height:13px;}
+  .cal-today{width:auto !important;padding:0 10px;font-family:var(--font-mono);font-size:10px;text-transform:uppercase;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;}
+  .cal-dow{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);padding-bottom:6px;text-transform:uppercase;}
+  .cal-day{
+    position:relative;aspect-ratio:1/1;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    font-family:var(--font-mono);font-size:13px;border-radius:9px;
+    color:var(--text);background:none;border:1px solid transparent;cursor:default;
+  }
+  .cal-day.is-pad{visibility:hidden;}
+  .cal-day.has-stuff{cursor:pointer;background:var(--surface);}
+  .cal-day.has-stuff:hover{border-color:var(--accent);}
+  .cal-day.is-empty{color:var(--text-dim);opacity:.45;}
+  .cal-day.is-today{border-color:var(--accent);}
+  .cal-day.is-picked{background:color-mix(in srgb, var(--accent) 20%, transparent);border-color:var(--accent);}
+  .cal-dots{display:flex;gap:3px;height:5px;}
+  .cal-dots i{width:5px;height:5px;border-radius:50%;display:block;}
+  .cal-legend{
+    display:flex;gap:16px;margin-top:16px;padding-top:14px;
+    border-top:1px solid var(--border);
+    font-family:var(--font-mono);font-size:11px;color:var(--text-dim);
+  }
+  .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .cal-legend i{width:6px;height:6px;border-radius:50%;display:block;}
+
+  .arch-day h3{
+    font-family:var(--font-body);text-transform:none;font-weight:700;
+    font-size:20px;margin-bottom:4px;
+  }
+  .arch-sub{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);margin-bottom:20px;}
+  .arch-block{margin-bottom:26px;}
+  .arch-block h4{
+    font-family:var(--font-mono);font-size:11px;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--text-dim);margin-bottom:12px;font-weight:500;
+  }
+  .arch-track{
+    display:flex;align-items:center;gap:13px;padding:11px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .arch-track:last-child{border-bottom:none;}
+  .arch-track .at-main{flex:1;min-width:0;}
+  .arch-track .at-title{font-weight:600;font-size:14px;display:block;}
+  .arch-track .at-sub{font-size:12px;color:var(--text-dim);}
+  .arch-empty{color:var(--text-dim);font-size:14px;border:1px dashed var(--border);border-radius:12px;padding:26px;text-align:center;}
+  @media (max-width:860px){
+    .arch-grid{grid-template-columns:1fr;gap:24px;}
+  }
+
+  /* ---------- Эфир по дням ---------- */
+  .eyebrow.is-archive{color:var(--accent-strong);}
+  .air-back{
+    display:block;margin-top:7px;
+    background:none;border:1px solid var(--border);border-radius:999px;
+    color:var(--text-dim);cursor:pointer;padding:5px 13px;
+    font-family:var(--font-mono);font-size:11px;
+  }
+  .air-back:hover{border-color:var(--accent);color:var(--accent-strong);}
+
+  .day-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .day-chip{
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    min-width:56px;padding:9px 10px;
+    background:var(--surface);border:1px solid var(--border);border-radius:11px;
+    cursor:pointer;transition:border-color .15s ease;
+  }
+  .day-chip:hover{border-color:var(--accent);}
+  .day-chip.is-current{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);}
+  .day-chip.is-empty{opacity:.4;cursor:default;}
+  .day-chip.is-empty:hover{border-color:var(--border);}
+  .dc-dow{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;}
+  .dc-num{font-family:var(--font-mono);font-size:15px;color:var(--text);font-weight:600;}
+  .dc-dots{display:flex;gap:3px;height:5px;}
+  .dc-dots i{width:5px;height:5px;border-radius:50%;display:block;}
+  .dot-air{background:var(--accent);}
+  .dot-news{background:var(--wave);}
+
   .queue-item.is-demo{opacity:.72;}
   .queue-item.is-broken .q-title{text-decoration:line-through;opacity:.6;}
   .queue-item.is-broken .q-tag{color:var(--live);border-color:var(--live);}
@@ -1072,6 +1164,21 @@
 
   @media (max-width:860px){
     nav.mainnav{display:none;}
+    /* длинная дата «пн, 22 сентября · Москва» не помещается в телефон
+       и растягивала всю страницу вбок — на узких экранах оставляем время */
+    #clockDate{display:none;}
+    .clock strong{font-size:13px;}
+  }
+  /* ноутбучная ширина: меню, поиск и часы вместе не помещались и
+     растягивали страницу вбок — ужимаем поиск, дату прячем.
+     На широких экранах поиск остаётся прежним. */
+  @media (max-width:1200px){
+    .topbar .search-wrap{width:170px;margin-right:14px;}
+    .topbar .search-wrap:focus-within{width:270px;}
+    #clockDate{display:none;}
+    .brand .freq{display:none;}   /* декоративная подпись съедала ~100px */
+  }
+  @media (max-width:860px){
     .topbar .search-wrap{display:none;}
     .menu-btn{display:flex;}
     .hero-grid{grid-template-columns:1fr;}
@@ -1085,6 +1192,10 @@
     .section-head{align-items:stretch;}
     .queue-actions{align-items:stretch;width:100%;}
     .btn-add{justify-content:center;}
+  }
+  @media (max-width:560px){
+    .brand .freq{display:none;}          /* «98.6 INTERNAL FM» — декор, на телефоне мешает */
+    .topbar-right{gap:8px;}
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -1109,6 +1220,7 @@
     <a href="#/podcasts">Подкасты</a>
     <a href="#/shows">Шоу</a>
     <a href="#/guides">Гайды</a>
+    <a href="#/archive">Архив</a>
     <a href="#announcements">Анонсы</a>
   </nav>
   <div class="topbar-right">
@@ -1148,6 +1260,7 @@
     <a href="#/podcasts">Подкасты</a>
     <a href="#/shows">Шоу</a>
     <a href="#/guides">Гайды</a>
+    <a href="#/archive">Архив</a>
     <a href="#announcements">Анонсы</a>
   </nav>
 </div>
@@ -1198,8 +1311,9 @@
     <div class="wrap">
       <div class="section-head">
         <div>
-          <span class="eyebrow">Очередь эфира</span>
+          <span class="eyebrow" id="airDayLabel">Очередь эфира</span>
           <h2>Далее в эфире</h2>
+          <button type="button" class="air-back" id="airDayBack" hidden>К сегодняшнему эфиру</button>
         </div>
         <div class="queue-actions">
           <span class="eyebrow" id="queueCount">6 файлов в очереди</span>
@@ -1211,6 +1325,7 @@
           <input type="file" id="fileInput" accept="audio/*" multiple hidden>
         </div>
       </div>
+      <div class="day-strip" id="dayStrip"></div>
       <div class="queue-list" id="queueList"></div>
       <p class="queue-hint" id="queueHint" hidden></p>
       <p class="queue-note" id="queueNote"></p>
@@ -1415,6 +1530,36 @@
     </div>
     <div class="filter-row" id="libFilters"></div>
     <div id="libraryList"></div>
+  </div>
+</div>
+
+<div id="viewArchive" hidden>
+  <div class="wrap lib-wrap">
+    <a href="#air" class="back-link">← Назад в эфир</a>
+    <div class="section-head" style="margin-top:16px;">
+      <div>
+        <span class="eyebrow">Что было по дням</span>
+        <h2>Архив</h2>
+      </div>
+    </div>
+    <div class="arch-grid">
+      <div class="cal-card">
+        <div class="cal-head">
+          <span class="cal-title" id="calTitle">—</span>
+          <div class="cal-nav">
+            <button type="button" id="calPrev" aria-label="Предыдущий месяц"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg></button>
+            <button type="button" id="calToday" class="cal-today">Сегодня</button>
+            <button type="button" id="calNext" aria-label="Следующий месяц"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend">
+          <span><i class="dot-air"></i> эфир</span>
+          <span><i class="dot-news"></i> новости</span>
+        </div>
+      </div>
+      <div class="arch-day" id="archDay"></div>
+    </div>
   </div>
 </div>
 
@@ -2244,6 +2389,8 @@
 
   function showLibrary(type, focusId){
     document.getElementById("viewHome").hidden = true;
+    var arch = document.getElementById("viewArchive");
+    if(arch) arch.hidden = true;
     document.getElementById("viewLibrary").hidden = false;
     document.getElementById("libEyebrow").textContent = LIB_CONFIG[type].eyebrow;
     document.getElementById("libTitle").textContent = LIB_CONFIG[type].title;
@@ -2254,11 +2401,95 @@
 
   function showHome(anchorId){
     document.getElementById("viewLibrary").hidden = true;
+    var arch = document.getElementById("viewArchive");
+    if(arch) arch.hidden = true;
     document.getElementById("viewHome").hidden = false;
     if(anchorId){
       var el = document.getElementById(anchorId);
       if(el){ setTimeout(function(){ el.scrollIntoView({behavior:"smooth", block:"start"}); }, 20); }
     }
+  }
+
+  /* ================= Архив: календарь по дням ================= */
+  var RU_MONTH_NOM = ["Январь","Февраль","Март","Апрель","Май","Июнь",
+                      "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+  var calView = new Date();     // какой месяц показан
+  var calPicked = "";           // выбранный день
+
+  function renderCalendar(){
+    var grid = document.getElementById("calGrid");
+    if(!grid) return;
+    var y = calView.getFullYear(), m = calView.getMonth();
+    document.getElementById("calTitle").textContent = RU_MONTH_NOM[m] + " " + y;
+
+    var first = new Date(y, m, 1);
+    var lead = (first.getDay() + 6) % 7;            // неделя с понедельника
+    var days = new Date(y, m + 1, 0).getDate();
+    var today = todayStr();
+
+    var html = RU_DOW_SHORT.map(function(d){ return '<div class="cal-dow">'+d+'</div>'; }).join("");
+    for(var i = 0; i < lead; i++){ html += '<div class="cal-day is-pad"></div>'; }
+    for(var day = 1; day <= days; day++){
+      var key = y + "-" + ("0"+(m+1)).slice(-2) + "-" + ("0"+day).slice(-2);
+      var dots = dayDotsHtml(key);
+      var has = !!dots;
+      html += '<div class="cal-day' +
+                (has ? " has-stuff" : " is-empty") +
+                (key === today ? " is-today" : "") +
+                (key === calPicked ? " is-picked" : "") + '"' +
+              (has ? ' data-day="' + key + '" role="button" tabindex="0"' : '') +
+              ' title="' + escapeHtml(dayTitleAttr(key)) + '">' +
+                '<span>' + day + '</span>' +
+                '<span class="cal-dots">' + dots + '</span>' +
+              '</div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  function renderArchiveDay(day){
+    var box = document.getElementById("archDay");
+    if(!box) return;
+    if(!day){
+      box.innerHTML = '<div class="arch-empty">Выберите день в календаре — покажу, что было в эфире и какие вышли новости.</div>';
+      return;
+    }
+    var air = tracksOfDay(day), news = newsOfDay(day);
+    var isToday = day === todayStr();
+    var html = '<h3>' + escapeHtml(humanDay(day)) + (isToday ? " — сегодня" : "") + '</h3>';
+    html += '<div class="arch-sub">' + escapeHtml(dayTitleAttr(day).split(": ")[1] || "пусто") + '</div>';
+
+    if(air.length){
+      html += '<div class="arch-block"><h4>Эфир этого дня</h4>';
+      html += air.map(function(t){
+        return '<div class="arch-track">' +
+                 '<span class="at-main"><span class="at-title">' + escapeHtml(t.title) + '</span>' +
+                 '<span class="at-sub">' + escapeHtml(t.host || "") + (t.tag ? " · " + escapeHtml(t.tag) : "") + '</span></span>' +
+               '</div>';
+      }).join("");
+      html += '<button type="button" class="btn-add" data-play-day="' + escapeHtml(day) + '" style="margin-top:14px;">' +
+              'Слушать этот эфир</button></div>';
+    }
+    if(news.length){
+      html += '<div class="arch-block"><h4>Новости этого дня</h4>' +
+              '<div class="news-list">' + news.map(newsRowHtml).join("") + '</div></div>';
+    }
+    if(!air.length && !news.length){
+      html += '<div class="arch-empty">В этот день ничего не выходило.</div>';
+    }
+    box.innerHTML = html;
+  }
+
+  function showArchive(day){
+    document.getElementById("viewHome").hidden = true;
+    document.getElementById("viewLibrary").hidden = true;
+    document.getElementById("viewArchive").hidden = false;
+    if(day){ calPicked = day; }
+    else if(!calPicked){ calPicked = pickDefaultDay() || todayStr(); }
+    var p = calPicked.split("-");
+    calView = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, 1);
+    renderCalendar();
+    renderArchiveDay(calPicked);
+    window.scrollTo({top:0});
   }
 
   var LIB_TYPES = ["news","podcasts","shows","guides"];
@@ -2275,6 +2506,11 @@
   function handleRoute(){
     var raw = location.hash.replace(/^#/, "");
     closeMobilePanel();
+    if(raw === "/archive"){
+      showArchive(null);
+      updateActiveNav("#/archive");
+      return;
+    }
     if(raw.indexOf("/")===0){
       var type = raw.slice(1);
       if(LIB_TYPES.indexOf(type) !== -1){
@@ -3262,6 +3498,7 @@
         return GH.editJson("audio/manifest.json", "tracks", function(list){
           var entry = {
             file: fileName,
+            date: datePrefix().replace("_", ""),   // день эфира — по нему строится архив
             title: title,
             host: document.getElementById("auHost").value.trim() || "Voice Ai",
             tag: document.getElementById("auTag").value.trim() || "Эфир",
@@ -3442,6 +3679,47 @@
     document.addEventListener("pointerup", onUp, true);
     document.addEventListener("keydown", onKey, true);
   }
+  document.getElementById("dayStrip").addEventListener("click", function(e){
+    var chip = e.target.closest ? e.target.closest(".day-chip[data-day]") : null;
+    if(!chip || chip.disabled) return;
+    setAirDay(chip.getAttribute("data-day"), true);
+  });
+  document.getElementById("airDayBack").addEventListener("click", function(){
+    var d = pickDefaultDay();
+    if(d) setAirDay(d, true);
+  });
+
+  /* ---- календарь архива ---- */
+  document.getElementById("calGrid").addEventListener("click", function(e){
+    var cell = e.target.closest ? e.target.closest(".cal-day[data-day]") : null;
+    if(!cell) return;
+    calPicked = cell.getAttribute("data-day");
+    renderCalendar();
+    renderArchiveDay(calPicked);
+  });
+  document.getElementById("calPrev").addEventListener("click", function(){
+    calView = new Date(calView.getFullYear(), calView.getMonth() - 1, 1);
+    renderCalendar();
+  });
+  document.getElementById("calNext").addEventListener("click", function(){
+    calView = new Date(calView.getFullYear(), calView.getMonth() + 1, 1);
+    renderCalendar();
+  });
+  document.getElementById("calToday").addEventListener("click", function(){
+    calPicked = todayStr();
+    calView = new Date();
+    renderCalendar();
+    renderArchiveDay(calPicked);
+  });
+  // «Слушать этот эфир» — переносит день в плеер и возвращает на главную
+  document.getElementById("archDay").addEventListener("click", function(e){
+    var btn = e.target.closest ? e.target.closest("[data-play-day]") : null;
+    if(!btn) return;
+    var day = btn.getAttribute("data-play-day");
+    location.hash = "#air";
+    setTimeout(function(){ setAirDay(day, true); }, 60);
+  });
+
   hookFirstGesture();
 
   /* ============ Эфир из папки audio/ (файл audio/manifest.json) ============
@@ -3460,6 +3738,8 @@
       var src = /^https?:\/\//i.test(t.file) ? t.file : MANIFEST_URL.replace(/manifest\.json$/, "") + t.file;
       loaded.push({
         id: mkId(),
+        file: t.file,
+        date: t.date || "",
         title: t.title || t.file,
         host: t.host || "Voice Ai",
         tag: t.tag || "Эфир",
@@ -3470,6 +3750,13 @@
       });
     });
     if(!loaded.length) return false;
+    loaded.forEach(function(t){ t.day = parseTrackDate(t); });
+    allTracks = loaded;
+
+    var day = pickDefaultDay();
+    if(day && setAirDay(day, false)) return true;
+
+    // ни у одной записи нет даты — работаем как раньше, одной общей очередью
     tracks = loaded;
     state.currentId = tracks[0].id;
     renderQueue();
@@ -3478,6 +3765,138 @@
   }
 
   function startAir(){ playCurrent(true); }
+
+  /* ================= Эфир по дням =================
+     Дата записи берётся из поля date, а если его нет — из имени файла
+     вида 2026-09-22_Название.mp3. Очередь на главной — это записи одного
+     дня: сегодняшнего, а если на сегодня ничего нет — последнего, где
+     записи есть (радио не должно молчать). */
+  var allTracks = [];      // весь архив
+  var airDay = "";         // какой день сейчас в эфире
+
+  function parseTrackDate(t){
+    if(t.date && /^\d{4}-\d{2}-\d{2}$/.test(t.date)) return t.date;
+    var m = /(\d{4}-\d{2}-\d{2})/.exec(t.file || t.src || "");
+    return m ? m[1] : "";
+  }
+  function todayStr(){
+    var d = new Date();
+    return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
+  }
+  function airDays(){
+    var seen = {};
+    allTracks.forEach(function(t){ if(t.day) seen[t.day] = true; });
+    return Object.keys(seen).sort();
+  }
+  function tracksOfDay(day){
+    return allTracks.filter(function(t){ return t.day === day; });
+  }
+  function pickDefaultDay(){
+    var days = airDays();
+    if(!days.length) return "";
+    var today = todayStr();
+    if(days.indexOf(today) !== -1) return today;
+    var past = days.filter(function(d){ return d <= today; });
+    return past.length ? past[past.length-1] : days[days.length-1];
+  }
+  // «22 сентября» — для подписей
+  var RU_MONTH_GEN = ["января","февраля","марта","апреля","мая","июня",
+                      "июля","августа","сентября","октября","ноября","декабря"];
+  function humanDay(day){
+    var p = String(day).split("-");
+    if(p.length !== 3) return day;
+    return parseInt(p[2],10) + " " + RU_MONTH_GEN[parseInt(p[1],10)-1];
+  }
+  function dayLabel(day){
+    if(!day) return "Эфир";
+    if(day === todayStr()) return "Эфир сегодня";
+    return "Эфир от " + humanDay(day);
+  }
+
+  function setAirDay(day, autoplay){
+    var list = tracksOfDay(day);
+    if(!list.length) return false;
+    airDay = day;
+    tracks = list;
+    state.currentId = tracks[0].id;
+    audioEl.pause();
+    renderQueue();
+    renderNowPlaying();
+    renderAirDayLabel();
+    renderDayStrip();
+    if(autoplay){ playCurrent(); } else { setPlayingUI(false); }
+    return true;
+  }
+
+  /* новости за день — для кружочков в календаре и полоске */
+  function newsOfDay(day){
+    return newsItems.filter(function(n){
+      var d = String(n.date || "");
+      var m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(d);
+      if(m){ d = m[3]+"-"+m[2]+"-"+m[1]; }
+      return d === day;
+    });
+  }
+  function dayDotsHtml(day){
+    var out = "";
+    if(tracksOfDay(day).length) out += '<i class="dot-air"></i>';
+    if(newsOfDay(day).length) out += '<i class="dot-news"></i>';
+    return out;
+  }
+  function dayTitleAttr(day){
+    var a = tracksOfDay(day).length, n = newsOfDay(day).length;
+    var parts = [];
+    if(a) parts.push(a + " " + plural(a, "запись", "записи", "записей"));
+    if(n) parts.push(n + " " + plural(n, "новость", "новости", "новостей"));
+    return parts.length ? humanDay(day) + ": " + parts.join(", ") : humanDay(day) + ": пусто";
+  }
+  function plural(n, one, few, many){
+    var m = Math.abs(n) % 100, m1 = m % 10;
+    if(m > 10 && m < 20) return many;
+    if(m1 > 1 && m1 < 5) return few;
+    if(m1 === 1) return one;
+    return many;
+  }
+
+  var RU_DOW_SHORT = ["пн","вт","ср","чт","пт","сб","вс"];
+
+  /* последние 7 дней под очередью — быстрый переход к вчерашнему эфиру */
+  function renderDayStrip(){
+    var strip = document.getElementById("dayStrip");
+    if(!strip) return;
+    var html = "";
+    var base = new Date();
+    for(var i = 6; i >= 0; i--){
+      var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i);
+      var key = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
+      var has = tracksOfDay(key).length > 0;
+      var dow = RU_DOW_SHORT[(d.getDay() + 6) % 7];
+      html += '<button type="button" class="day-chip' +
+              (key === airDay ? " is-current" : "") +
+              (has ? "" : " is-empty") + '" data-day="' + key + '"' +
+              (has ? "" : " disabled") + ' title="' + escapeHtml(dayTitleAttr(key)) + '">' +
+                '<span class="dc-dow">' + dow + '</span>' +
+                '<span class="dc-num">' + d.getDate() + '</span>' +
+                '<span class="dc-dots">' + dayDotsHtml(key) + '</span>' +
+              '</button>';
+    }
+    strip.innerHTML = html;
+  }
+
+  function renderAirDayLabel(){
+    var el = document.getElementById("airDayLabel");
+    if(!el) return;
+    var isToday = airDay === todayStr();
+    el.textContent = dayLabel(airDay);
+    el.classList.toggle("is-archive", !!airDay && !isToday);
+    var back = document.getElementById("airDayBack");
+    if(back){
+      var days = airDays();
+      var latest = pickDefaultDay();
+      back.hidden = !airDay || airDay === latest || days.length < 2;
+      back.textContent = (latest === todayStr()) ? "К сегодняшнему эфиру" : "К последнему эфиру";
+    }
+  }
 
   /* ============ Новости из файла news/news.json ============
      Правится прямо на GitHub. Порядок в файле не важен — на сайте
