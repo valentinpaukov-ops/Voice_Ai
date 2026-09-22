@@ -674,6 +674,20 @@
     background:none;border:1px solid var(--border);color:var(--text);
   }
   .lib-add:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .lib-edit{
+    flex:0 0 auto;width:28px;height:26px;border-radius:8px;cursor:pointer;
+    background:none;border:1px solid var(--border);color:var(--text-dim);font-size:12px;
+  }
+  .lib-edit:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .lib-pub{
+    flex:0 0 auto;font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.04em;padding:5px 10px;border-radius:999px;cursor:pointer;
+    color:var(--accent-ink);background:var(--accent);border:1px solid var(--accent);
+  }
+  .lib-pub:hover{filter:brightness(1.08);}
+  .lib-pub:disabled{opacity:.5;cursor:default;}
+  .lib-row.is-draft .lib-title{color:var(--accent-strong);}
+  .lib-title .draft-badge{margin-left:8px;}
   .lib-row.is-in .lib-add{color:var(--text-dim);border-style:dashed;}
   .lib-empty{font-size:13px;color:var(--text-dim);padding:14px 0;}
 
@@ -4076,33 +4090,56 @@
     /* Кодировщик ищем сначала рядом с сайтом, а если его туда не положили —
        берём ту же версию из общедоступной CDN. Так сжатие работает сразу,
        а репозиторий остаётся независимым, если файл всё-таки добавить. */
-    var LAME_SOURCES = [
-      "lame.min.js",
+    /* Кодировщик ищем в своём репозитории, и только потом — в открытой CDN.
+
+       Свои файлы читаем текстом и выполняем сами, а не подключаем тегом
+       script: GitHub Pages отдаёт .txt как обычный текст и запрещает браузеру
+       исполнять его как код. Поэтому файл, залитый под именем lame.min.js.txt
+       (а именно так он и скачивается из переписки), тоже подойдёт —
+       переименовывать ничего не нужно. */
+    var LAME_LOCAL = ["lame.min.js", "lame.min.js.txt", "lame.js"];
+    var LAME_CDN = [
       "https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js",
       "https://unpkg.com/lamejs@1.2.1/lame.min.js"
     ];
     var lamePromise = null;
+
+    function lameReady(){ return !!(window.lamejs && window.lamejs.Mp3Encoder); }
+    function runLameCode(code){
+      if(!code) return false;
+      try{ (0, eval)(code); }catch(e){ return false; }
+      return lameReady();
+    }
+    function lameFromLocal(i){
+      if(lameReady()) return Promise.resolve(true);
+      if(i >= LAME_LOCAL.length) return Promise.resolve(false);
+      return fetch(LAME_LOCAL[i])
+        .then(function(r){ return r.ok ? r.text() : ""; })
+        .then(function(txt){ return runLameCode(txt) ? true : lameFromLocal(i + 1); })
+        ["catch"](function(){ return lameFromLocal(i + 1); });
+    }
+    function lameFromCdn(i){
+      if(lameReady()) return Promise.resolve(true);
+      if(i >= LAME_CDN.length) return Promise.resolve(false);
+      return new Promise(function(res){
+        var sc = document.createElement("script");
+        sc.src = LAME_CDN[i];
+        sc.onload = function(){ res(lameReady() ? true : null); };
+        sc.onerror = function(){ res(null); };
+        document.head.appendChild(sc);
+      }).then(function(ok){ return ok ? true : lameFromCdn(i + 1); });
+    }
+
     function loadLame(){
-      if(window.lamejs && window.lamejs.Mp3Encoder) return Promise.resolve();
+      if(lameReady()) return Promise.resolve();
       if(lamePromise) return lamePromise;
-      lamePromise = new Promise(function(resolve, reject){
-        var i = 0;
-        (function tryNext(){
-          if(i >= LAME_SOURCES.length){
-            lamePromise = null;
-            reject(new Error("Не удалось загрузить кодировщик MP3. Положите файл lame.min.js " +
-              "рядом с index.html в репозитории — тогда сжатие будет работать без интернета."));
-            return;
-          }
-          var sc = document.createElement("script");
-          sc.src = LAME_SOURCES[i++];
-          sc.onload = function(){
-            if(window.lamejs && window.lamejs.Mp3Encoder) resolve();
-            else tryNext();
-          };
-          sc.onerror = tryNext;
-          document.head.appendChild(sc);
-        })();
+      lamePromise = lameFromLocal(0).then(function(ok){
+        return ok ? true : lameFromCdn(0);
+      }).then(function(ok){
+        if(ok) return true;
+        lamePromise = null;
+        throw new Error("Не удалось загрузить кодировщик MP3. Положите файл lame.min.js " +
+          "(можно и с расширением .txt) рядом с index.html в репозитории.");
       });
       return lamePromise;
     }
@@ -5712,7 +5749,46 @@
     });
 
     listBox.addEventListener("click", function(e){
-      var b = e.target.closest ? e.target.closest(".lib-add") : null;
+      if(!e.target.closest) return;
+
+      // правка записи прямо из фонотеки — иначе до материала, который не стоит
+      // ни в одном эфире, было не добраться вообще
+      var ed = e.target.closest(".lib-edit");
+      if(ed){
+        document.dispatchEvent(new CustomEvent("voiceai:edit-track",
+          {detail:{file: ed.getAttribute("data-edit")}}));
+        return;
+      }
+
+      // публикация одним нажатием: ставим сегодняшнюю дату
+      var pb = e.target.closest(".lib-pub");
+      if(pb){
+        var pf = pb.getAttribute("data-pub");
+        var pt = trackByFile(pf);
+        if(!pt) return;
+        if(!GH.connected()){ showHint("Сначала подключите GitHub — в форме новостей"); return; }
+        var today = todayStr();
+        pb.disabled = true;
+        GH.editJson("audio/manifest.json", "tracks", function(list){
+          return list.map(function(item){
+            if(!item || item.file !== pf) return item;
+            var next = {};
+            for(var k in item){ if(Object.prototype.hasOwnProperty.call(item, k)) next[k] = item[k]; }
+            next.date = today;
+            return next;
+          });
+        }, "Опубликовано: " + pt.title).then(function(list){
+          refreshAirAfterEdit(list);
+          renderLibrary();
+          showHint("«" + pt.title + "» опубликован — теперь виден всем");
+        })["catch"](function(err){
+          pb.disabled = false;
+          showHint("Не получилось: " + err.message);
+        });
+        return;
+      }
+
+      var b = e.target.closest(".lib-add");
       if(!b) return;
       var file = b.getAttribute("data-file");
       var day = airDay || todayStr();
@@ -5777,11 +5853,17 @@
           : "не в эфире";
         var sub = [t.host || "", t.tag || "", where, t.dur ? fmt(t.dur) : ""]
                   .filter(Boolean).join(" · ");
-        return '<div class="lib-row' + (already ? " is-in" : "") + '">' +
+        var draft = !(t.day && t.day <= todayStr());
+        return '<div class="lib-row' + (already ? " is-in" : "") + (draft ? " is-draft" : "") + '">' +
                  '<span class="lib-main">' +
-                   '<span class="lib-title">' + escapeHtml(t.title) + '</span>' +
+                   '<span class="lib-title">' + escapeHtml(t.title) +
+                     (draft ? '<span class="draft-badge">черновик</span>' : "") + '</span>' +
                    '<span class="lib-sub">' + escapeHtml(sub) + '</span>' +
                  '</span>' +
+                 (draft ? '<button type="button" class="lib-pub" data-pub="' + escapeHtml(t.file) +
+                          '" title="Поставить сегодняшнюю дату — материал станет виден всем">Опубликовать</button>' : "") +
+                 '<button type="button" class="lib-edit" data-edit="' + escapeHtml(t.file) +
+                   '" title="Изменить название, описание, раздел, теги и дату">✎</button>' +
                  '<button type="button" class="lib-add" data-file="' + escapeHtml(t.file) + '">' +
                    (already ? "уже в эфире" : "+ в эфир") +
                  '</button>' +
