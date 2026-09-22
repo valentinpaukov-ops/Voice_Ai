@@ -599,6 +599,7 @@
   @media (prefers-color-scheme: light){
     :root:not([data-theme="dark"]) .arch-col-h.is-news{color:#0a6f63;}
   }
+  .arch-extra{margin-top:26px;padding-top:20px;border-top:1px solid var(--border);}
   .arch-empty-sm{
     font-size:13px;color:var(--text-dim);padding:10px 0;
     border-top:1px solid var(--border);
@@ -940,6 +941,8 @@
   .gh-help li b{color:var(--text);}
   .gh-help a{color:var(--accent-strong);}
   .gh-help p{margin-top:11px;font-size:12px;color:var(--text-dim);line-height:1.5;}
+  .news-row.is-draft{opacity:.92;}
+  .news-when .draft-badge{display:block;margin-top:6px;}
   .nr-admin{display:flex;gap:7px;margin-top:10px;}
   .nr-btn{
     background:none;border:1px solid var(--border);border-radius:8px;
@@ -2015,7 +2018,7 @@
         </div>
         <div class="cal-grid" id="calGrid"></div>
         <div class="cal-legend">
-          <span><i class="dot-air"></i> эфир</span>
+          <span><i class="dot-air"></i> аудио</span>
           <span><i class="dot-news"></i> новости</span>
         </div>
       </div>
@@ -2810,26 +2813,6 @@
      Порядок задаёт редактор, и он должен пережить обновление страницы.
      Поэтому после перестановки пишем новый порядок в audio/manifest.json.
      Записи других дней остаются на своих местах. */
-  var orderSaveTimer = null;
-
-  function syncAllTracksOrder(){
-    // приводим общий список к порядку текущей очереди
-    var pos = {};
-    tracks.forEach(function(t, i){ if(t.file) pos[t.file] = i; });
-    var inQueue = allTracks.filter(function(t){ return t.file && pos[t.file] !== undefined; });
-    inQueue.sort(function(a, b){ return pos[a.file] - pos[b.file]; });
-    var rest = allTracks.filter(function(t){ return !t.file || pos[t.file] === undefined; });
-    var out = [], qi = 0, ri = 0;
-    allTracks.forEach(function(t){
-      if(t.file && pos[t.file] !== undefined){ out.push(inQueue[qi++]); }
-      else { out.push(rest[ri++]); }
-    });
-    allTracks = out;
-  }
-
-  /* Порядок эфира — это порядок записей в программе дня, а не в фонотеке.
-     Поэтому перестановка больше не трогает общий список и не может сбить
-     порядок в других днях. */
   function persistQueueOrder(){
     if(!isAdmin) return;                          // слушателю сохранять нечего
     if(!airDay) return;
@@ -2914,21 +2897,6 @@
     }
   }
 
-  function addLibraryTrackToQueue(title, meta, tag){
-    var existing = tracks.filter(function(t){ return t.title===title; })[0];
-    var id;
-    if(existing){
-      id = existing.id;
-    } else {
-      var tr = { id:mkId(), title:title, host:meta, tag:tag, dur:null, src:null, demo:true };
-      tracks.push(tr);
-      renderQueue();
-      id = tr.id;
-    }
-    location.hash = "#air";
-    selectTrack(id, false);
-    showHint("Добавлено в очередь: «" + title + "». Это пример без звука — прикрепите файл, чтобы услышать.");
-  }
 
   /* ================= Home preview rendering ================= */
 
@@ -2942,6 +2910,13 @@
       '</div>'
     );
   }
+  /* Новость с датой в будущем ещё не опубликована — редактор должен видеть это
+     так же ясно, как черновик подкаста. */
+  function newsIsDraft(n){
+    var d = newsDayKey(n);
+    return !d || d > todayStr();
+  }
+
   function newsRowHtml(n){
     var tagsHtml = n.tags.map(function(t){
       return '<span class="news-tag">' + escapeHtml(t) + '</span>';
@@ -2961,8 +2936,10 @@
     }
 
     return (
-      '<div class="news-row' + (n.important ? ' is-important' : '') + '" data-id="' + escapeHtml(n.id) + '">' +
-        '<div class="news-when tabular">' + escapeHtml(newsWhen(n)) + '</div>' +
+      '<div class="news-row' + (n.important ? ' is-important' : '') +
+        (isAdmin && newsIsDraft(n) ? ' is-draft' : '') + '" data-id="' + escapeHtml(n.id) + '">' +
+        '<div class="news-when tabular">' + escapeHtml(newsWhen(n)) +
+          (isAdmin && newsIsDraft(n) ? '<span class="draft-badge">черновик</span>' : '') + '</div>' +
         '<div class="news-body">' +
           (tagsHtml ? '<div class="news-tags">' + tagsHtml + '</div>' : '') +
           '<h3>' + escapeHtml(n.title) + '</h3>' +
@@ -3071,9 +3048,8 @@
   document.addEventListener("click", function(e){
     var btn = e.target.closest ? e.target.closest(".media-play-btn") : null;
     if(!btn) return;
-    var f = btn.getAttribute("data-file");
-    if(f && playFromLibrary(f)) return;      // это настоящая запись из фонотеки
-    addLibraryTrackToQueue(btn.getAttribute("data-title"), btn.getAttribute("data-meta"), btn.getAttribute("data-tag"));
+    // кнопка есть только у записей с настоящим файлом — у заготовок её нет
+    playFromLibrary(btn.getAttribute("data-file"));
   });
 
   /* ================= Library pages ================= */
@@ -3314,6 +3290,21 @@
     }
     html += '</div></div>';
 
+    /* Подкасты, шоу и гайды, вышедшие в этот день, но не стоявшие в эфире:
+       они тоже часть истории дня, хотя в ежедневный выпуск не входили. */
+    var extra = sectionsOfDay(day);
+    if(extra.length){
+      html += '<div class="arch-extra"><h4 class="arch-col-h">Вышло в этот день</h4>' +
+        extra.map(function(t){
+          return '<div class="arch-track is-playable" data-play-id="' + escapeHtml(String(t.id)) +
+                 '" data-day="' + escapeHtml(day) + '" title="Послушать" role="button" tabindex="0">' +
+                   '<span class="at-play" aria-hidden="true">▶</span>' +
+                   '<span class="at-main"><span class="at-title">' + escapeHtml(t.title) + '</span>' +
+                   '<span class="at-sub">' + escapeHtml(t.host || "") + (t.tag ? " · " + escapeHtml(t.tag) : "") + '</span></span>' +
+                 '</div>';
+        }).join("") + '</div>';
+    }
+
     box.innerHTML = html;
   }
 
@@ -3458,13 +3449,30 @@
     return out;
   }
 
+  /* Что вообще можно найти поиском: вся опубликованная фонотека, а не только
+     очередь сегодняшнего дня. Иначе подкаст, вышедший неделю назад, был бы
+     ненаходим — при том что он открыт и лежит на своей странице. */
+  function searchableTracks(){
+    var today = todayStr();
+    return allTracks.filter(function(t){
+      if(t.demo || !t.file) return false;
+      return isAdmin || (t.day && t.day <= today);
+    });
+  }
+
   function buildSearchIndex(){
     var idx = [];
-    tracks.forEach(function(t){
+    var seenTrack = {};
+    searchableTracks().forEach(function(t){
+      if(seenTrack[t.file]) return;
+      seenTrack[t.file] = true;
+      var where = isSectionOnly(t.tag)
+        ? (t.tag === SECTION_PODCAST ? "#/podcasts" : (t.tag === SECTION_SHOW ? "#/shows" : "#/guides"))
+        : "#air";
       idx.push({type:"track", typeLabel:t.tag || "Эфир", title:t.title, snippet:t.desc || t.host,
                 tag:(t.tags && t.tags.length ? t.tags.join(" ") : t.tag),
                 extra:[t.desc, t.host, t.tag, (t.tags||[]).join(" ")].filter(Boolean).join(" "),
-                hash:"#air", id:t.id});
+                hash:where, id:t.id});
     });
     visibleNewsItems().forEach(function(n){
       idx.push({type:"news", typeLabel:"Новости", title:n.title, snippet:n.text || n.snippet,
@@ -3472,9 +3480,9 @@
                 extra:[n.date, n.time, n.author, n.sourceName, (n.tags||[]).join(" ")].filter(Boolean).join(" "),
                 hash:"#/news", id:n.id});
     });
-    podcastItems.forEach(function(p){ idx.push({type:"podcast", typeLabel:"Подкасты", title:p.title, snippet:p.snippet, tag:p.tag, extra:p.meta||"", hash:"#/podcasts", id:p.id}); });
-    showItems.forEach(function(s){ idx.push({type:"show", typeLabel:"Шоу", title:s.title, snippet:s.snippet, tag:s.tag, extra:s.meta||"", hash:"#/shows", id:s.id}); });
-    guideItems.forEach(function(g){ idx.push({type:"guide", typeLabel:"Гайды", title:g.title, snippet:g.snippet, tag:g.tag, extra:(g.meta||"")+" "+(g.readTime||""), hash:"#/guides", id:g.id}); });
+    /* Подкасты, шоу и гайды отдельно не перечисляем: они уже в фонотеке —
+       и настоящие записи, и карточки-заготовки. Иначе каждый материал
+       находился бы дважды. */
     return idx.concat(buildPageIndex());
   }
 
@@ -5228,7 +5236,7 @@
       // включаем запись, не уходя из архива: плеер внизу покажет, что звучит
       var id = row.getAttribute("data-play-id"), rd = row.getAttribute("data-day");
       var tr = null;
-      tracksOfDay(rd).forEach(function(x){ if(x.id === id) tr = x; });
+      publishedOfDay(rd).forEach(function(x){ if(x.id === id) tr = x; });
       if(!tr) return;
       selectTrack(tr.id, true);
       showInlineHint("Играет: " + (tr.title || "запись"));
@@ -5498,7 +5506,7 @@
 
   function airDays(){
     var seen = {};
-    allTracks.forEach(function(t){ if(t.day) seen[t.day] = true; });
+    allTracks.forEach(function(t){ if(t.day && !isSectionOnly(t.tag) && !t.placeholder) seen[t.day] = true; });
     Object.keys(airProgram).forEach(function(d){
       if(airProgram[d] && airProgram[d].length) seen[d] = true;
       else delete seen[d];         // день намеренно очищен редактором
@@ -5518,6 +5526,28 @@
     tag = (tag || "").trim();
     return tag === SECTION_PODCAST || tag === SECTION_SHOW || tag === SECTION_GUIDE;
   }
+  /* Что ВЫШЛО в этот день — шире, чем эфир: сюда попадают и подкасты, шоу,
+     гайды, опубликованные этой датой. Именно это показывают точки в ленте и
+     календаре, потому что история дня — это всё, что в нём появилось. */
+  function publishedOfDay(day){
+    if(!dayVisible(day)) return [];
+    var inAir = {};
+    tracksOfDay(day).forEach(function(t){ if(t.file) inAir[t.file] = true; });
+    var extra = allTracks.filter(function(t){
+      return t.day === day && !t.placeholder && t.file && !inAir[t.file];
+    });
+    return tracksOfDay(day).concat(extra);
+  }
+  /* Материалы разделов, вышедшие в этот день, но не стоящие в его эфире. */
+  function sectionsOfDay(day){
+    if(!dayVisible(day)) return [];
+    var inAir = {};
+    tracksOfDay(day).forEach(function(t){ if(t.file) inAir[t.file] = true; });
+    return allTracks.filter(function(t){
+      return t.day === day && !t.placeholder && t.file && !inAir[t.file];
+    });
+  }
+
   function tracksOfDay(day){
     if(!dayVisible(day)) return [];
     if(airProgram[day]){
@@ -5584,12 +5614,12 @@
   }
   function dayDotsHtml(day){
     var out = "";
-    if(tracksOfDay(day).length) out += '<i class="dot-air"></i>';
+    if(publishedOfDay(day).length) out += '<i class="dot-air"></i>';
     if(newsOfDay(day).length) out += '<i class="dot-news"></i>';
     return out;
   }
   function dayTitleAttr(day){
-    var a = tracksOfDay(day).length, n = newsOfDay(day).length;
+    var a = publishedOfDay(day).length, n = newsOfDay(day).length;
     var parts = [];
     if(a) parts.push(a + " " + plural(a, "запись", "записи", "записей"));
     if(n) parts.push(n + " " + plural(n, "новость", "новости", "новостей"));
@@ -5663,7 +5693,7 @@
       var d = new Date(base.getFullYear(), base.getMonth(), base.getDate() + i);
       var key = keyOfDate(d);
       // день доступен, если за него есть хоть что-то: эфир или новости
-      var hasAir = tracksOfDay(key).length > 0;
+      var hasAir = publishedOfDay(key).length > 0;
       var hasNews = newsOfDay(key).length > 0;
       var has = hasAir || hasNews;
       var dow = RU_DOW_SHORT[(d.getDay() + 6) % 7];
