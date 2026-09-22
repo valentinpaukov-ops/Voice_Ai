@@ -408,8 +408,43 @@
     text-align:center;
     font-family:var(--font-mono);
   }
+  /* Обложка ложится внутрь круга, не закрывая дугу прогресса по краю.
+     Поверх — мягкое затемнение, чтобы время оставалось читаемым на любой
+     картинке, даже совсем светлой. */
+  .dial-art{
+    position:absolute;inset:0;border-radius:50%;overflow:hidden;
+    clip-path:circle(40% at 50% 50%);
+    pointer-events:none;
+  }
+  /* По умолчанию картинка обрезается по центру. В режиме «целиком» под ней
+     лежит её же размытая копия — тогда круг заполнен, но ничего не теряется. */
+  .dial-art img{width:100%;height:100%;object-fit:cover;display:block;}
+  .dial-art .dial-art-blur{
+    position:absolute;inset:-12%;width:124%;height:124%;
+    filter:blur(22px) saturate(1.15);transform:scale(1.15);display:none;
+  }
+  .dial-art.is-fit .dial-art-blur{display:block;}
+  .dial-art.is-fit .dial-art-main{object-fit:contain;position:relative;}
+  .dial-art::after{
+    content:"";position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 50%,
+      rgba(8,8,12,.70) 0 18%, rgba(8,8,12,.56) 42%,
+      rgba(8,8,12,.34) 72%, rgba(8,8,12,.16) 100%);
+  }
+  .dial-face{position:relative;z-index:1;}
+  .dial.has-art .dial-face .n{color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.7);}
+  .dial.has-art .dial-face .u{color:rgba(255,255,255,.82);}
   .dial-face .n{font-size:44px;font-weight:600;color:var(--text);}
-  .dial-face .u{font-size:11px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;}
+  .dial-face .n{line-height:1;}
+  .dial-face .u{
+    margin-top:7px;font-size:15px;letter-spacing:.04em;color:var(--text);
+    font-family:var(--font-mono);line-height:1.3;white-space:nowrap;
+  }
+  .dial-face .u2{color:var(--text-dim);}
+  .dial.has-art .dial-face .u{color:#fff;}
+  .dial.has-art .dial-face .u2{color:rgba(255,255,255,.7);}
+  .dial-face .u .tabular{color:var(--text);}
+  .dial.has-art .dial-face .u .tabular{color:#fff;}
 
   /* ---------- Queue ---------- */
   .section-head{
@@ -1631,9 +1666,14 @@
       </div>
       <div>
         <div class="dial" id="dial">
+          <span class="dial-art" id="dialArt" hidden>
+            <img class="dial-art-blur" id="dialCoverBlur" src="" alt="">
+            <img class="dial-art-main" id="dialCover" src="" alt="">
+          </span>
           <div class="dial-face">
             <div class="n tabular" id="dialTime">00:00</div>
-            <div class="u">из <span id="dialTotal" class="tabular">12:40</span></div>
+            <div class="u"><span class="tabular" id="dialLeft">00:00</span>
+              <span class="tabular u2" id="dialTotal">(00:00)</span></div>
           </div>
         </div>
       </div>
@@ -2559,15 +2599,18 @@
   function updateDurationDisplays(){
     var tr = getTrack(state.currentId);
     var durText = tr ? fmt(tr.dur) : "—:—";
-    dialTotal.textContent = durText;
+    dialTotal.textContent = "(" + durText + ")";
     pbTotal.textContent = durText;
     seek.disabled = !(tr && tr.src);
   }
+
+  var dialLeft = document.getElementById("dialLeft");
 
   function updateProgressFromAudio(){
     var tr = getTrack(state.currentId);
     if(!tr){
       dialTime.textContent = "00:00";
+      if(dialLeft) dialLeft.textContent = "00:00";
       pbElapsed.textContent = "00:00";
       dial.style.setProperty("--dialdeg","0deg");
       return;
@@ -2576,6 +2619,10 @@
     var cur = tr.src ? audioEl.currentTime : 0;
     var pct = (dur && dur>0) ? Math.min(1, cur/dur) : 0;
     dialTime.textContent = fmt(cur);
+    // сколько осталось — со знаком минус, как на радиопульте
+    if(dialLeft){
+      dialLeft.textContent = (dur && dur > 0) ? fmt(Math.max(0, dur - cur)) : "—:—";
+    }
     pbElapsed.textContent = fmt(cur);
     dial.style.setProperty("--dialdeg", (pct*360)+"deg");
     if(document.activeElement !== seek){
@@ -2606,8 +2653,35 @@
       pbTitle.textContent = "Нет трека";
       pbSub.textContent = "—";
     }
+    setDialCover(tr && tr.cover ? tr.cover : "");
     updateDurationDisplays();
     updateProgressFromAudio();
+  }
+
+  /* Как широкая картинка ложится в круг: "cover" — обрезаем по центру,
+     "contain" — вписываем целиком, а пустоту заполняем её же размытой копией. */
+  var COVER_FIT = "cover";
+
+  /* Если у записи есть загруженная обложка — показываем её в круге,
+     если нет — круг остаётся ровно таким, каким был. */
+  function setDialCover(src){
+    var art = document.getElementById("dialArt");
+    var img = document.getElementById("dialCover");
+    var dialEl = document.getElementById("dial");
+    if(!art || !img || !dialEl) return;
+    var blur = document.getElementById("dialCoverBlur");
+    if(src){
+      if(img.getAttribute("src") !== src){ img.setAttribute("src", src); }
+      if(blur && blur.getAttribute("src") !== src){ blur.setAttribute("src", src); }
+      art.classList.toggle("is-fit", COVER_FIT === "contain");
+      art.hidden = false;
+      dialEl.classList.add("has-art");
+    } else {
+      art.hidden = true;
+      img.removeAttribute("src");
+      if(blur) blur.removeAttribute("src");
+      dialEl.classList.remove("has-art");
+    }
   }
 
   /* У SVG-элементов НЕТ свойства hidden: присваивание svgEl.hidden = true
