@@ -2744,6 +2744,10 @@
     var arch = document.getElementById("viewArchive");
     if(arch) arch.hidden = true;
     document.getElementById("viewHome").hidden = false;
+    /* Пока главная была скрыта, ленту дней нельзя было измерить (ширина 0),
+       поэтому пересчитываем стрелки и кнопку «Сегодня» сразу после показа —
+       иначе кнопка остаётся зажжённой, хотя сегодняшний день на виду. */
+    if(typeof updateStripControls === "function"){ updateStripControls(); }
     if(anchorId){
       var el = document.getElementById(anchorId);
       if(el){ setTimeout(function(){ el.scrollIntoView({behavior:"smooth", block:"start"}); }, 20); }
@@ -4488,7 +4492,7 @@
     var strip = document.getElementById("dayStrip");
     if(!strip) return;
     var chip = strip.querySelector(".day-chip.is-today");
-    if(!chip) return;
+    if(!chip || !strip.clientWidth) return;   // скрытую ленту не измерить
     var left = chip.offsetLeft - strip.clientWidth + chip.offsetWidth * 2.6;
     var max = Math.max(0, strip.scrollWidth - strip.clientWidth);
     left = Math.max(0, Math.min(max, left));
@@ -4514,6 +4518,9 @@
     var next = document.getElementById("dayNext");
     var todayBtn = document.getElementById("dayToday");
     if(!strip) return;
+    // лента скрыта (открыт архив или библиотека) — измерять нечего,
+    // оставляем состояние кнопок как есть, иначе получим ложные значения
+    if(!strip.clientWidth) return;
     var max = strip.scrollWidth - strip.clientWidth;
     if(prev) prev.disabled = strip.scrollLeft <= 2;
     if(next) next.disabled = strip.scrollLeft >= max - 2;
