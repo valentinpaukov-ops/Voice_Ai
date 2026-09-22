@@ -623,8 +623,15 @@
   }
   .at-field input:focus, .at-field select:focus{outline:none;border-color:var(--accent);}
   .at-lib-btn{align-self:flex-end;}
-  .nc-danger{color:var(--live);border-color:color-mix(in srgb, var(--live) 40%, transparent);}
-  .nc-danger:hover{border-color:var(--live);background:color-mix(in srgb, var(--live) 12%, transparent);}
+  .at-save{
+    align-self:flex-end;padding-bottom:9px;
+    font-family:var(--font-mono);font-size:11px;color:var(--text-dim);
+  }
+  .air-summary{
+    margin-top:12px;padding:11px 13px;border-radius:9px;font-size:13px;line-height:1.5;
+    background:color-mix(in srgb, var(--wave) 12%, transparent);
+    border:1px solid color-mix(in srgb, var(--wave) 32%, transparent);
+  }
 
   .plan-note{
     margin-top:12px;padding:9px 12px;border-radius:9px;font-size:12.5px;line-height:1.45;
@@ -817,6 +824,9 @@
   .nc-check input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none;}
   .nc-check span{user-select:none;}
   .nc-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;}
+  /* опасные действия: удалить запись насовсем, очистить день */
+  .nc-ghost.nc-danger{color:var(--live);border-color:color-mix(in srgb, var(--live) 45%, transparent);}
+  .nc-ghost.nc-danger:hover{border-color:var(--live);background:color-mix(in srgb, var(--live) 12%, transparent);}
   .nc-ghost{
     background:none;border:1px solid var(--border);border-radius:999px;
     color:var(--text);cursor:pointer;padding:9px 16px;font-size:13px;
@@ -1566,8 +1576,12 @@
             <select id="repeatPick"><option value="">— выберите день —</option></select>
           </label>
           <button type="button" class="nc-ghost at-lib-btn" id="libToggle">+ Взять из фонотеки</button>
+          <button type="button" class="btn-add at-lib-btn" id="airDone">Готово, эфир собран</button>
+          <button type="button" class="nc-ghost nc-danger at-lib-btn" id="airClear">Очистить день</button>
+          <span class="at-save" id="airSaveState"></span>
         </div>
         <p class="plan-note" id="planNote" hidden></p>
+        <p class="air-summary" id="airSummary" hidden></p>
         <div class="lib-panel" id="libPanel" hidden>
           <p class="nc-hint">
             Здесь вся фонотека — эфиры, подкасты, шоу, гайды, музыка: всё, что
@@ -4550,6 +4564,11 @@
      не прерывая то, что сейчас играет. */
   function applyProgramLocally(day, files){
     airProgram[day] = files.slice();
+    refreshDayViews(day);
+  }
+
+  /* Перерисовать всё, что зависит от программы дня. */
+  function refreshDayViews(day){
     if(day === airDay){
       var playingId = state.currentId;
       tracks = tracksOfDay(day);
@@ -4568,25 +4587,75 @@
   var programSaveTimers = {};
   /* Сохранить программу дня в манифест. Слушателю сохранять нечего —
      у него нет токена, и правки живут только в его вкладке. */
+  /* Сколько сохранений сейчас в пути — по этому счётчику кнопка «Готово»
+     понимает, можно ли уже говорить редактору, что всё записано. */
+  var pendingSaves = 0;
+  function setSaveState(text){
+    var el = document.getElementById("airSaveState");
+    if(el) el.textContent = text || "";
+  }
+
   function saveProgram(day, files, message, delay){
-    applyProgramLocally(day, files);
+    /* Если в дне не осталось записей и в этот день ничего не публиковалось,
+       пустой день в манифесте не храним — убираем его совсем, чтобы файл
+       не забивался днями-пустышками. А вот если у дня есть свои записи по
+       дате, пустой список осмыслен: он значит «в этот день ничего нет». */
+    var ownTracks = allTracks.some(function(t){ return t.day === day; });
+    var drop = !files.length && !ownTracks;
+
+    if(drop){ delete airProgram[day]; refreshDayViews(day); }
+    else { applyProgramLocally(day, files); }
+
     if(!isAdmin || !GH.connected()) return Promise.resolve(false);
     var snapshot = files.slice();
     clearTimeout(programSaveTimers[day]);
+    pendingSaves++;
+    setSaveState("Сохраняю…");
     return new Promise(function(resolve){
       programSaveTimers[day] = setTimeout(function(){
         GH.editDoc("audio/manifest.json", function(doc){
           if(!doc.air || typeof doc.air !== "object" || Array.isArray(doc.air)) doc.air = {};
-          doc.air[day] = snapshot;
+          if(drop){ delete doc.air[day]; } else { doc.air[day] = snapshot; }
           return doc;
         }, message).then(function(){
           showHint(message);
-          resolve(true);
+          done(true);
         })["catch"](function(err){
           showHint("Не сохранилось: " + err.message);
-          resolve(false);
+          setSaveState("Не сохранилось — проверьте подключение к GitHub");
+          done(false);
         });
+        function done(ok){
+          pendingSaves = Math.max(0, pendingSaves - 1);
+          if(!pendingSaves && ok) setSaveState("Все изменения сохранены");
+          resolve(ok);
+        }
       }, delay || 0);
+    });
+  }
+
+  /* Убрать программу дня целиком: день возвращается к автоматическому виду
+     (записи по датам), а если своих записей у него нет — исчезает вовсе. */
+  function clearProgram(day){
+    if(!day) return Promise.resolve(false);
+    delete airProgram[day];
+    refreshDayViews(day);
+    if(!isAdmin || !GH.connected()) return Promise.resolve(false);
+    pendingSaves++;
+    setSaveState("Сохраняю…");
+    return GH.editDoc("audio/manifest.json", function(doc){
+      if(doc.air && typeof doc.air === "object" && !Array.isArray(doc.air)) delete doc.air[day];
+      return doc;
+    }, "Очищен эфир " + day).then(function(){
+      pendingSaves = Math.max(0, pendingSaves - 1);
+      if(!pendingSaves) setSaveState("Все изменения сохранены");
+      showHint("Эфир " + humanDay(day) + " очищен");
+      return true;
+    })["catch"](function(err){
+      pendingSaves = Math.max(0, pendingSaves - 1);
+      setSaveState("Не сохранилось — проверьте подключение к GitHub");
+      showHint("Не удалось очистить: " + err.message);
+      return false;
     });
   }
 
@@ -4773,6 +4842,10 @@
     }
     strip.innerHTML = html;
     strip.setAttribute("data-ready", "1");
+    /* Шрифты подгружаются уже после первой отрисовки и меняют ширину чисел —
+       лента едет, и «сегодня» уезжает за край. Поэтому пересчитываем ещё раз,
+       когда вёрстка устоится, и отдельно — когда шрифты доехали. */
+    requestAnimationFrame(function(){ updateStripControls(); });
 
     if(keepScroll !== null){
       // innerHTML сбрасывает прокрутку в 0 — возвращаем её на место без анимации
@@ -4791,7 +4864,11 @@
     if(!strip) return;
     var chip = strip.querySelector(".day-chip.is-today");
     if(!chip || !strip.clientWidth) return;   // скрытую ленту не измерить
-    var left = chip.offsetLeft - strip.clientWidth + chip.offsetWidth * 2.6;
+    /* Считаем по реальным координатам на экране. offsetLeft тут доверять
+       нельзя: он отсчитывается от позиционированного предка, а лента им не
+       является, и на другой вёрстке страницы получались чужие числа. */
+    var cr = chip.getBoundingClientRect(), sr = strip.getBoundingClientRect();
+    var left = strip.scrollLeft + (cr.left - sr.left) - strip.clientWidth + cr.width * 2.6;
     var max = Math.max(0, strip.scrollWidth - strip.clientWidth);
     left = Math.max(0, Math.min(max, left));
     if(smooth && strip.scrollTo){ strip.scrollTo({left:left, behavior:"smooth"}); }
@@ -4802,7 +4879,7 @@
     var strip = document.getElementById("dayStrip");
     if(!strip) return;
     var chip = strip.querySelector(".day-chip");
-    var chipW = chip ? chip.offsetWidth + 8 : 64;
+    var chipW = chip ? chip.getBoundingClientRect().width + 8 : 64;
     // листаем почти на экран, оставляя один день внахлёст — чтобы не терять место
     var step = Math.max(chipW * 3, strip.clientWidth - chipW);
     if(strip.scrollBy){ strip.scrollBy({left:dir * step, behavior:"smooth"}); }
@@ -4826,8 +4903,8 @@
       var chip = strip.querySelector(".day-chip.is-today");
       var visible = false;
       if(chip){
-        var l = chip.offsetLeft - strip.scrollLeft;
-        visible = (l >= -1 && l + chip.offsetWidth <= strip.clientWidth + 1);
+        var cr = chip.getBoundingClientRect(), sr = strip.getBoundingClientRect();
+        visible = (cr.left >= sr.left - 1 && cr.right <= sr.right + 1);
       }
       todayBtn.hidden = visible;
     }
@@ -4861,6 +4938,16 @@
       }, {passive:false});
     }
     window.addEventListener("resize", function(){ updateStripControls(); });
+    if(document.fonts && document.fonts.ready && document.fonts.ready.then){
+      document.fonts.ready.then(function(){ updateStripControls(); });
+    }
+    window.addEventListener("load", function(){ updateStripControls(); });
+    /* Самая надёжная страховка: следим за самой лентой. Любое изменение её
+       размеров — догрузились шрифты, сменился масштаб, повернули телефон —
+       пересчитывает и стрелки, и кнопку «Сегодня». */
+    if(window.ResizeObserver && strip){
+      try{ new ResizeObserver(function(){ updateStripControls(); }).observe(strip); }catch(e){}
+    }
   })();
 
   /* ================= Сборка эфира (только редактор) =================
@@ -4950,6 +5037,9 @@
 
   function syncAirDayPicker(){
     updatePlanNote();
+    // итог сборки показывается только сразу после «Готово»
+    var sm = document.getElementById("airSummary");
+    if(sm) sm.hidden = true;
     var pick = document.getElementById("airDayPick");
     if(pick && airDay && pick.value !== airDay) pick.value = airDay;
     var sel = document.getElementById("repeatPick");
@@ -4977,6 +5067,23 @@
         ". Слушателям этот день пока не показывается — ни в ленте, ни в календаре, " +
         "ни в поиске. Он появится у них сам, когда наступит " + humanDay(airDay) + ".";
     }
+  }
+
+  /* Ждём, пока все правки долетят до GitHub. */
+  function waitSaves(){
+    return new Promise(function(resolve){
+      var waited = 0;
+      (function tick(){
+        if(!pendingSaves || waited > 20000) return resolve(!pendingSaves);
+        waited += 200;
+        setTimeout(tick, 200);
+      })();
+    });
+  }
+  function humanMinutes(sec){
+    var m = Math.round((sec || 0) / 60);
+    if(m < 1) return "меньше минуты";
+    return m + " " + plural(m, "минута", "минуты", "минут");
   }
 
   (function airToolsUi(){
@@ -5087,6 +5194,61 @@
                '</div>';
       }).join("");
     }
+
+    /* «Готово» ничего не публикует — публикация происходит сама, на каждом
+       действии. Кнопка дожидается, пока все правки долетят до GitHub, и
+       говорит редактору, что получилось и когда это увидят слушатели. */
+    var doneBtn = document.getElementById("airDone");
+    var clearBtn = document.getElementById("airClear");
+    var summary = document.getElementById("airSummary");
+
+    doneBtn.addEventListener("click", function(){
+      var day = airDay || todayStr();
+      doneBtn.disabled = true;
+      doneBtn.textContent = pendingSaves ? "Сохраняю…" : "Готово, эфир собран";
+      waitSaves().then(function(ok){
+        doneBtn.disabled = false;
+        doneBtn.textContent = "Готово, эфир собран";
+        panel.hidden = true;
+        libBtn.textContent = "+ Взять из фонотеки";
+        var list = tracksOfDay(day);
+        var total = list.reduce(function(a, t){ return a + (t.dur || 0); }, 0);
+        var future = day > todayStr();
+        summary.hidden = false;
+        if(!ok){
+          summary.textContent = "Часть правок не удалось сохранить — проверьте подключение к GitHub и повторите.";
+          return;
+        }
+        summary.textContent = list.length
+          ? "Эфир на " + humanDay(day) + " собран: " + list.length + " " +
+            plural(list.length, "запись", "записи", "записей") +
+            (total ? ", " + humanMinutes(total) : "") + ". " +
+            (future ? "Слушатели увидят его " + humanDay(day) + ", когда день наступит."
+                    : "Он уже звучит у всех.")
+          : "В эфире " + humanDay(day) + " пока пусто — ни одной записи.";
+      });
+    });
+
+    clearBtn.addEventListener("click", function(){
+      var day = airDay || todayStr();
+      var own = allTracks.filter(function(t){ return t.day === day; }).length;
+      var text = own
+        ? "Убрать ручную сборку эфира " + humanDay(day) + "? День вернётся к автоматическому виду: " +
+          "в нём снова окажутся " + own + " " + plural(own, "запись", "записи", "записей") +
+          ", загруженные этой датой. Сами файлы не трогаем."
+        : "Очистить эфир " + humanDay(day) + "? День станет пустым и пропадёт из ленты и календаря. " +
+          "Записи останутся в фонотеке — удаляется только сборка.";
+      askChoice("Очистить день", text, [
+        {key:"yes", label:"Очистить", primary:true},
+        {key:null,  label:"Отмена"}
+      ]).then(function(c){
+        if(c !== "yes") return;
+        clearProgram(day).then(function(){
+          summary.hidden = true;
+          renderLibrary();
+        });
+      });
+    });
 
     document.addEventListener("voiceai:library-changed", renderLibrary);
     syncAirDayPicker();
