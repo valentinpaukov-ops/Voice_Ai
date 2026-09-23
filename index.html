@@ -2513,7 +2513,7 @@
       var repeatNote = (!tr.demo && tr.day && airDay && tr.day < airDay)
         ? " · повтор от " + humanDay(tr.day) : "";
       tagEl.textContent = tr.broken
-        ? tr.tag + " · файл не читается"
+        ? tr.tag + " · " + ((isAdmin && tr.brokenWhy) ? tr.brokenWhy : "файл не читается")
         : tr.tag + (tr.demo ? (tr.src ? " · демо-джингл" : " · без звука") : "")
                  + repeatNote
                  // редактору подсказываем, что запись выпадет из архива
@@ -3749,10 +3749,67 @@
      помечает такую запись и переходит к следующей. Счётчик не даёт уйти
      в бесконечный круг, если не читается вообще ничего. */
   var failStreak = 0;
+
+  /* Прежде чем объявить запись нечитаемой, пробуем остальные написания
+     её имени: файл мог быть сохранён с другой формой кириллицы, и тогда
+     сервер отдаёт «нет такого файла» на внешне правильный адрес. */
+  function retrySpelling(tr){
+    if(!tr || !tr.file || tr.demo) return false;
+    var list = tr.srcList || (tr.srcList = srcVariants(tr.file));
+    var next = (tr.srcTry || 0) + 1;
+    if(next >= list.length){ tr.src = list[0]; return false; }
+    tr.srcTry = next;
+    tr.src = list[next];
+    audioEl.src = tr.src;
+    audioEl.load();
+    if(state.playing){ var pr = audioEl.play(); if(pr && pr.catch) pr.catch(function(){}); }
+    return true;
+  }
+
+  /* Одна общая проверка на все случаи: обходим написания имени и смотрим,
+     отзывается ли хоть одно. Заодно чиним адрес записи на тот, что работает.
+     Ответ — пустая строка, если всё хорошо, иначе причина человеческими
+     словами: файла нет, файл обрезан или файл на месте, но не звучит. */
+  function probeTrack(tr){
+    if(!tr || !tr.file || tr.demo || tr.placeholder || !window.fetch) return Promise.resolve("");
+    var urls = srcVariants(tr.file), i = 0, offline = false;
+    function step(){
+      if(i >= urls.length){
+        tr.src = urls[0];
+        return offline ? "файл не скачался — нет связи" : "файла нет в папке audio";
+      }
+      var url = urls[i++];
+      return fetch(url, { method: "GET", headers: { "Range": "bytes=0-1" }, cache: "no-store" })
+        .then(function(r){
+          if(r.status >= 400) return step();
+          tr.src = url;
+          var range = r.headers.get("Content-Range") || "";
+          var total = /\/(\d+)\s*$/.exec(range);
+          // ни одна настоящая запись не весит меньше пары килобайт
+          if(total && +total[1] < 2048) return "файл почти пустой — загрузился не до конца";
+          return tr.broken ? "файл на месте, но не звучит" : "";
+        })
+        .catch(function(){ offline = true; return step(); });
+    }
+    return Promise.resolve().then(step);
+  }
+
+  function diagnoseTrack(tr){
+    if(!tr || tr.probing) return;
+    tr.probing = true;
+    probeTrack(tr).then(function(why){
+      tr.probing = false;
+      tr.brokenWhy = why || "файл не читается";
+      renderQueue();
+    });
+  }
+
   audioEl.addEventListener("error", function(){
     var tr = getTrack(state.currentId);
     if(tr && tr.src){
+      if(retrySpelling(tr)) return;
       tr.broken = true;
+      diagnoseTrack(tr);
       renderQueue();
       if(failStreak < tracks.length - 1){
         failStreak++;
@@ -3768,7 +3825,7 @@
   audioEl.addEventListener("playing", function(){
     failStreak = 0;
     var tr = getTrack(state.currentId);
-    if(tr && tr.broken){ tr.broken = false; renderQueue(); }
+    if(tr && tr.broken){ tr.broken = false; tr.brokenWhy = ""; renderQueue(); }
   });
 
   renderQueue();
@@ -5302,7 +5359,6 @@
     var loaded = [];
     data.tracks.forEach(function(t){
       if(!t || !t.file) return;
-      var src = /^https?:\/\//i.test(t.file) ? t.file : MANIFEST_URL.replace(/manifest\.json$/, "") + t.file;
       loaded.push({
         id: mkId(),
         file: t.file,
@@ -5315,7 +5371,7 @@
         placeholder: !!t.placeholder,
         desc: t.desc || "",
         dur: (typeof t.duration === "number" && t.duration > 0) ? t.duration : null,
-        src: t.placeholder ? null : encodeURI(src),
+        src: t.placeholder ? null : mediaSrc(t.file),
         demo: false
       });
     });
@@ -5352,6 +5408,34 @@
      влияет: иначе запись, намеренно загруженную без даты, выдавала бы в эфир
      дата в её имени. Файлам, брошенным в папку мимо формы, дату проставляет
      робот — по имени, но один раз и явно. */
+  /* ---- Адрес записи и разные написания одного имени --------------------
+     Кириллица в имени файла записывается двумя способами: «й» одним знаком
+     или как «и» + надстрочная дужка. На вид имена неотличимы, для сервера
+     это разные файлы — и запись перестаёт читаться. Так бывает, когда файл
+     приехал с Mac, а имя в манифесте набрали руками. Поэтому держим не один
+     адрес, а список написаний: первым идёт привычный, остальные — запас,
+     который плеер спокойно пробует, если основной не открылся. */
+  function encodePath(name){
+    return String(name).split("/").map(encodeURIComponent).join("/");
+  }
+  function srcVariants(file){
+    if(!file) return [];
+    if(/^https?:\/\//i.test(file)) return [file];
+    var base = MANIFEST_URL.replace(/manifest\.json$/, "");
+    var names = [file], out = [], seen = {};
+    if(file.normalize){ names.push(file.normalize("NFC"), file.normalize("NFD")); }
+    names.forEach(function(n){
+      [encodeURI(n), encodePath(n)].forEach(function(enc){
+        var url = base + enc;
+        if(!seen[url]){ seen[url] = 1; out.push(url); }
+      });
+    });
+    return out;
+  }
+  function mediaSrc(file){
+    var v = srcVariants(file);
+    return v.length ? v[0] : null;
+  }
   function parseTrackDate(t){
     return (t.date && /^\d{4}-\d{2}-\d{2}$/.test(t.date)) ? t.date : "";
   }
@@ -6202,6 +6286,19 @@
       }).join("");
     }
 
+  /* Проверка перед выходом в эфир: каждая запись дня должна реально
+     открываться по своему адресу. Если имя написано иначе, чем файл
+     назван в репозитории, — находим верное написание сами и говорим,
+     какие записи не отзываются, пока эфир ещё можно поправить. */
+  function checkAirFiles(list){
+    return Promise.all(list.map(function(tr){
+      return probeTrack(tr).then(function(why){
+        if(!why){ if(tr) tr.brokenWhy = ""; return null; }
+        return { title: (tr && tr.title) || "запись", why: why };
+      });
+    })).then(function(res){ return res.filter(Boolean); });
+  }
+
     /* «Готово» ничего не публикует — публикация происходит сама, на каждом
        действии. Кнопка дожидается, пока все правки долетят до GitHub, и
        говорит редактору, что получилось и когда это увидят слушатели. */
@@ -6226,6 +6323,14 @@
           summary.textContent = "Часть правок не удалось сохранить — проверьте подключение к GitHub и повторите.";
           return;
         }
+        checkAirFiles(list).then(function(bad){
+          if(!bad.length) return;
+          renderQueue();
+          summary.textContent += " " +
+            (bad.length === 1 ? "Не отзывается 1 запись: " : "Не отзываются " + bad.length + " " +
+              plural(bad.length, "запись", "записи", "записей") + ": ") +
+            bad.map(function(t){ return "«" + t.title + "» — " + t.why; }).join(", ") + ".";
+        });
         summary.textContent = list.length
           ? "Эфир на " + humanDay(day) + " собран: " + list.length + " " +
             plural(list.length, "запись", "записи", "записей") +
@@ -6275,7 +6380,6 @@
       if(!i || !i.file) return;
       var exists = allTracks.some(function(t){ return t.file === i.file; });
       if(exists) return;
-      var src = /^https?:\/\//i.test(i.file) ? i.file : MANIFEST_URL.replace(/manifest\.json$/, "") + i.file;
       var t = {
         id: mkId(), file: i.file, date: i.date || "",
         title: i.title || i.file, host: i.host || "Voice Ai",
@@ -6283,7 +6387,7 @@
         cover: i.cover || "", desc: i.desc || "",
         dur: (typeof i.duration === "number" && i.duration > 0) ? i.duration : null,
         placeholder: !!i.placeholder,
-        src: i.placeholder ? null : encodeURI(src), demo: false
+        src: i.placeholder ? null : mediaSrc(i.file), demo: false
       };
       t.day = parseTrackDate(t);
       allTracks.push(t);
