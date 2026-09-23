@@ -911,17 +911,25 @@
   /* Галерея уже загруженных обложек: узкая лента миниатюр под полем. */
   .cov-gallery{margin-top:12px;}
   .cov-gal-head{font-size:11px;color:var(--text-dim);margin-bottom:7px;}
+  .cov-gal-nav{display:flex;align-items:center;gap:8px;}
+  .cov-gal-nav .day-arrow{height:74px;}
   .cov-gal-strip{
-    display:flex;gap:9px;overflow-x:auto;padding-bottom:6px;
-    scrollbar-width:thin;
+    display:flex;gap:9px;flex-wrap:nowrap;
+    /* без этого лента растягивается по содержимому и вылезает из формы
+       вместо того, чтобы прокручиваться внутри неё */
+    flex:1 1 0;min-width:0;
+    overflow-x:auto;scroll-behavior:smooth;
+    scrollbar-width:none;-ms-overflow-style:none;
+    padding:2px 0;
   }
+  .cov-gal-strip::-webkit-scrollbar{display:none;}
   .cov-gal-item{
     flex:0 0 auto;width:74px;height:74px;padding:0;cursor:pointer;
     border-radius:10px;overflow:hidden;border:2px solid var(--border);
     background:var(--surface);transition:border-color .15s,transform .15s;
   }
   .cov-gal-item img{width:100%;height:100%;object-fit:cover;display:block;}
-  .cov-gal-item:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .cov-gal-item:hover{border-color:var(--accent);transform:translateY(-2px) scale(1.06);}
   .cov-gal-item.is-on{border-color:var(--accent);}
   .au-convert{
     display:flex;flex-wrap:wrap;align-items:center;gap:14px;
@@ -1825,7 +1833,11 @@
               </div>
               <div class="cov-gallery" id="covGallery" hidden>
                 <div class="cov-gal-head" id="covGalHead"></div>
-                <div class="cov-gal-strip" id="covGalStrip"></div>
+                <div class="cov-gal-nav">
+                  <button type="button" class="day-arrow" id="covGalPrev" aria-label="Предыдущие обложки">‹</button>
+                  <div class="cov-gal-strip" id="covGalStrip"></div>
+                  <button type="button" class="day-arrow" id="covGalNext" aria-label="Следующие обложки">›</button>
+                </div>
               </div>
             </div>
           </div>
@@ -4680,7 +4692,73 @@
                escapeHtml(c.path) + '" title="' + escapeHtml(c.title) + '">' +
                '<img src="' + escapeHtml(c.path) + '" alt="" loading="lazy"></button>';
       }).join("");
+      // ширина ленты известна только после вёрстки — считаем стрелки следующим кадром
+      requestAnimationFrame(updateCovGalControls);
     }
+    /* Лента обложек живёт по тем же правилам, что лента дней: всегда один
+       ряд, листается стрелками, на краях они гаснут, а если всё уместилось —
+       исчезают совсем. */
+    function covGalPage(dir){
+      var strip = document.getElementById("covGalStrip");
+      if(!strip) return;
+      var item = strip.querySelector(".cov-gal-item");
+      var w = (item ? item.getBoundingClientRect().width : 74) + 9;
+      var step = Math.max(w, strip.clientWidth - w);   // почти на ширину, одна внахлёст
+      if(strip.scrollBy){ strip.scrollBy({left:dir * step, behavior:"smooth"}); }
+      else { strip.scrollLeft += dir * step; }
+    }
+    function updateCovGalControls(){
+      var strip = document.getElementById("covGalStrip");
+      var prev = document.getElementById("covGalPrev");
+      var next = document.getElementById("covGalNext");
+      if(!strip || !prev || !next) return;
+      var max = strip.scrollWidth - strip.clientWidth;
+      var fits = max <= 1;
+      prev.hidden = fits;
+      next.hidden = fits;
+      prev.disabled = strip.scrollLeft <= 1;
+      next.disabled = strip.scrollLeft >= max - 1;
+    }
+    document.getElementById("covGalPrev").addEventListener("click", function(){ covGalPage(-1); });
+    document.getElementById("covGalNext").addEventListener("click", function(){ covGalPage(1); });
+    /* Миниатюра в 74 точки мелковата, чтобы узнать картинку наверняка.
+       При наведении показываем её крупно в том же окне превью, где видна
+       выбранная обложка, а когда мышь ушла — возвращаем прежнее. */
+    var covHoverSaved = null;
+    function covHoverShow(path){
+      var box = document.getElementById("covPreview");
+      if(!box) return;
+      if(covHoverSaved === null){ covHoverSaved = box.innerHTML; }
+      box.innerHTML = '<img src="' + escapeHtml(path) + '" alt="">';
+    }
+    function covHoverRestore(){
+      var box = document.getElementById("covPreview");
+      if(box && covHoverSaved !== null){ box.innerHTML = covHoverSaved; }
+      covHoverSaved = null;
+    }
+    document.getElementById("covGalStrip").addEventListener("mouseover", function(e){
+      var item = e.target.closest ? e.target.closest(".cov-gal-item") : null;
+      if(item){ covHoverShow(item.getAttribute("data-cover")); }
+    });
+    document.getElementById("covGalStrip").addEventListener("mouseout", function(e){
+      var item = e.target.closest ? e.target.closest(".cov-gal-item") : null;
+      if(!item) return;
+      var to = e.relatedTarget;
+      // переход на соседнюю миниатюру — не возвращаем, просто покажем другую
+      if(to && to.closest && to.closest(".cov-gal-item")) return;
+      covHoverRestore();
+    });
+
+    document.getElementById("covGalStrip").addEventListener("scroll", function(){
+      if(covGalRaf) return;
+      covGalRaf = requestAnimationFrame(function(){ covGalRaf = 0; updateCovGalControls(); });
+    });
+    var covGalRaf = 0;
+    try{
+      new ResizeObserver(function(){ updateCovGalControls(); })
+        .observe(document.getElementById("covGalStrip"));
+    }catch(e){}
+
     document.getElementById("covFromLib").addEventListener("click", function(){
       galleryOpen = !galleryOpen;
       renderCoverGallery();
@@ -4689,6 +4767,7 @@
       var item = e.target.closest ? e.target.closest(".cov-gal-item") : null;
       if(!item) return;
       var path = item.getAttribute("data-cover");
+      covHoverSaved = null;      // выбрали — возвращать прежнее превью уже не нужно
       document.getElementById("covNote").textContent = "Беру обложку…";
       fetch(path, {cache:"no-store"}).then(function(r){
         if(!r.ok) throw new Error("Эта обложка не читается — возможно, файл удалили.");
