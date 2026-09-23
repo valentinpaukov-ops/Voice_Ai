@@ -1,64 +1,9 @@
 {
-  "updated": "2026-09-23T18:37:23Z",
-  "tracks": [
-    {
-      "file": "2026-09-22_01_Voice_Ai_intro.MP3",
-      "date": "2026-09-22",
-      "title": "Voice Ai intro",
-      "host": "Voice Ai",
-      "tag": "INTRO",
-      "size": 914544,
-      "desc": "Кто такой VOICE Ai",
-      "duration": 57.2
-    },
-    {
-      "file": "2026-09-22_Therr_Maitz_-_My_Love_Is_Like_47846439.mp3",
-      "date": "2026-09-22",
-      "title": "Therr Maitz My Love Is Like",
-      "host": "Voice Ai",
-      "tag": "MUSIC",
-      "size": 8364849,
-      "desc": "Музыкальная пауза. Отдыхаем ушками",
-      "duration": 206.9
-    },
-    {
-      "file": "2026_09_20_FURA.MP3",
-      "date": "2026-09-20",
-      "title": "09 20 FURA",
-      "host": "Voice Ai",
-      "tag": "Эфир",
-      "duration": 99.3,
-      "size": 1588712,
-      "cover": "covers/2026_09_20_FURA.webp"
-    },
-    {
-      "file": "Ti2_MASTER_RUS_2k_1302.mp3",
-      "title": "Ti2 MASTER RUS",
-      "host": "Voice Ai",
-      "tag": "Подкаст",
-      "size": 2916456,
-      "tags": [
-        "Voice Ai",
-        "Фирма"
-      ],
-      "desc": "Tedo Intelligence. Корпоративная платформа для работы с ИИ ассистентами. Выбирайте подходящего под свои запросы или пользуйтесь Тедорой",
-      "date": "2026-09-22",
-      "cover": "covers/Ti2_MASTER_RUS_2k_1302.webp",
-      "duration": 182.3
-    }
-  ],
+  "updated": "2026-09-23T20:08:39Z",
+  "tracks": [],
   "air": {
-    "2026-09-20": [
-      "2026_09_20_FURA.MP3"
-    ],
-    "2026-09-22": [
-      "2026-09-22_01_Voice_Ai_intro.MP3",
-      "2026-09-22_Therr_Maitz_-_My_Love_Is_Like_47846439.mp3"
-    ],
-    "2026-09-23": [
-      "2026-09-22_01_Voice_Ai_intro.MP3",
-      "2026_09_20_FURA.MP3",
-      "2026-09-22_Therr_Maitz_-_My_Love_Is_Like_47846439.mp3"
-    ]
+    "2026-09-20": [],
+    "2026-09-22": [],
+    "2026-09-23": []
   }
 }
