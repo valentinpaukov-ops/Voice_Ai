@@ -74,6 +74,14 @@
   }
 
   *{box-sizing:border-box;}
+  /* Когда содержимого становится меньше экрана — например, отфильтровали
+     список по тегу, — полоса прокрутки исчезает, окно делается шире, и вся
+     страница вместе с шапкой и плеером прыгает вправо. Держим под полосу
+     постоянное место, чтобы ширина не менялась никогда. */
+  html{overflow-y:scroll;}
+  @supports (scrollbar-gutter: stable){
+    html{overflow-y:auto;scrollbar-gutter:stable;}
+  }
   body{
     margin:0;
     background:var(--bg);
@@ -5355,7 +5363,11 @@
   }
 
   function applyManifest(data){
-    if(!data || !Array.isArray(data.tracks) || !data.tracks.length) return false;
+    /* Пустая фонотека — это законное состояние, а не сбой: записи могли
+       удалить, чтобы залить заново. Отказываемся от манифеста только если
+       его вообще нет или он испорчен, иначе страница подсунет демо-джинглы
+       поверх настоящей пустоты и спрячет ленту дней. */
+    if(!data || !Array.isArray(data.tracks)) return false;
     var loaded = [];
     data.tracks.forEach(function(t){
       if(!t || !t.file) return;
@@ -5375,7 +5387,6 @@
         demo: false
       });
     });
-    if(!loaded.length) return false;
     loaded.forEach(function(t){ t.day = parseTrackDate(t); });
     allTracks = loaded;
     allTracks = allTracks.concat(placeholderTracks());
@@ -5385,11 +5396,17 @@
     var day = pickDefaultDay();
     if(day && setAirDay(day, false)) return true;
 
-    // ни у одной записи нет даты — работаем как раньше, одной общей очередью
+    /* Ни у одной записи нет даты — или фонотека пуста. Работаем одной общей
+       очередью, но ленту дней всё равно рисуем: дни живут не только эфирами,
+       в них выходят ещё и новости. Пустая фонотека — не повод прятать ленту,
+       календарь и архив. */
     tracks = loaded;
-    state.currentId = tracks[0].id;
+    state.currentId = tracks.length ? tracks[0].id : null;
     renderQueue();
     renderNowPlaying();
+    renderAirDayLabel();
+    renderDayStrip();
+    syncAirDayPicker();
     return true;
   }
 
