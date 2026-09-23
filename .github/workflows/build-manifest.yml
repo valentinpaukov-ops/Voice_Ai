@@ -33,15 +33,22 @@ jobs:
       - name: Пересобрать список эфира
         run: |
           python - <<'PYTHON'
-          import json, os, re
+          import json, os, re, unicodedata
           from datetime import datetime, timezone
 
           AUDIO_DIR = "audio"
           MANIFEST = os.path.join(AUDIO_DIR, "manifest.json")
           AUDIO_EXT = {".mp3", ".m4a", ".aac", ".wav", ".ogg", ".oga",
                        ".opus", ".flac", ".webm", ".mp4"}
-          PREFIX_RE = re.compile(r"^(\d{4}[-.]\d{2}[-.]\d{2}|\d{1,4})[ _.\-]+")
-          DATE_RE = re.compile(r"^(\d{4})[-.](\d{2})[-.](\d{2})")
+          PREFIX_RE = re.compile(r"^(\d{4}[-._]\d{2}[-._]\d{2}|\d{1,4})[ _.\-]+")
+          DATE_RE = re.compile(r"^(\d{4})[-._](\d{2})[-._](\d{2})")
+
+          # Кириллица в имени файла пишется двумя способами: «й» одним знаком
+          # или как «и» с надстрочной дужкой. На вид не отличить, а для сервера
+          # это разные файлы — и запись перестаёт играть. Сводим имена к одной
+          # форме, чтобы сверять их по смыслу, а не побайтно.
+          def nkey(name):
+              return unicodedata.normalize("NFC", name)
 
           def title_from_filename(stem):
               name = PREFIX_RE.sub("", stem).replace("_", " ").replace("-", " ")
@@ -101,14 +108,29 @@ jobs:
           # ПОРЯДОК ЭФИРА ЗАДАЁТ РЕДАКТОР, а не алфавит: сохраняем порядок из
           # манифеста как есть, новые файлы дописываем в конец.
           have = set(found)
-          files = [f for f in existing.keys() if f in have]
-          files += [f for f in found if f not in existing]
+          disk_by_key = {}
+          for f in found:
+              disk_by_key.setdefault(nkey(f), f)
+
+          # имя из манифеста -> имя, под которым файл реально лежит на диске
+          resolved = {}
+          for f in existing:
+              real = f if f in have else disk_by_key.get(nkey(f))
+              if real:
+                  resolved[f] = real
+                  if real != f:
+                      print("  ~ %s: имя выправлено по файлу на диске" % f)
+
+          files = [resolved[f] for f in existing if f in resolved]
+          taken = set(files)
+          files += [f for f in found if f not in taken]
+          prev_by_disk = dict((resolved[f], existing[f]) for f in resolved)
 
           tracks, added, kept = [], 0, 0
           for fn in files:
               path = os.path.join(AUDIO_DIR, fn)
               stem = os.path.splitext(fn)[0]
-              prev = existing.get(fn)
+              prev = prev_by_disk.get(fn)
               if prev:
                   e = dict(prev); e["file"] = fn
                   if not e.get("duration"):
@@ -134,17 +156,25 @@ jobs:
               tracks.append(e)
 
           for f in existing:
-              if f not in set(files):
+              if f not in resolved:
                   print("  - %s (файла больше нет)" % f)
 
           # из программы дней вычищаем ссылки на файлы, которых уже нет,
           # иначе в дне останется запись-призрак, которая не играет
           alive = set(files)
-          clean_air, dropped = {}, 0
+          clean_air, dropped, fixed = {}, 0, 0
           for day in sorted(air.keys()):
-              alive_files = [f for f in air[day] if f in alive]
-              dropped += len(air[day]) - len(alive_files)
+              alive_files = []
+              for f in air[day]:
+                  real = f if f in alive else disk_by_key.get(nkey(f))
+                  if real:
+                      if real != f: fixed += 1
+                      alive_files.append(real)
+                  else:
+                      dropped += 1
               clean_air[day] = alive_files
+          if fixed:
+              print("  в программе дней выправлено имён: %d" % fixed)
           if dropped:
               print("  из программы дней убрано ссылок на удалённые файлы: %d" % dropped)
 
