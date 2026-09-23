@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T23:10:24Z",
+  "updated": "2026-09-23T23:10:26Z",
   "tracks": [
     {
       "file": "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
@@ -230,7 +230,8 @@
       "2026-09-24_2026-09-23_Ti2_intro_rus.mp3"
     ],
     "2026-09-26": [
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3"
+      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3"
     ]
   }
 }
