@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-23T22:35:42Z",
+  "updated": "2026-09-23T22:43:12Z",
   "tracks": [
     {
       "file": "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
@@ -93,6 +93,22 @@
       ],
       "cover": "covers/2026-09-24_2026-09-23_Omania_intro.webp",
       "desc": "Презентация Omania — многоязычного AI-гида для музеев и путешествий. Узнайте, как технология адаптирует экскурсии под интересы и устраняет языковые барьеры."
+    },
+    {
+      "file": "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
+      "title": "Therr Maitz — My Love Is Like",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 3311490,
+      "duration": 206.9,
+      "date": "2026-09-22",
+      "tags": [
+        "Музыка",
+        "Культура",
+        "Voice Ai"
+      ],
+      "cover": "covers/2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.webp",
+      "desc": "Музыкальный трек от Therr Maitz — My Love Is Like. Для тех, кто ценит современную музыку и атмосферу в рабочем пространстве."
     }
   ],
   "air": {
