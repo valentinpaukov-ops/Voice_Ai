@@ -2972,6 +2972,21 @@
 
   /* Оттенок обложки выводим из названия: одинаковое название — одинаковый вид,
      разные — заметно разные. Никаких файлов и никакого места в репозитории. */
+  /* Карандаш на карточке: неброский, всплывает при наведении. */
+  (function addMediaEditStyle(){
+    var css = document.createElement("style");
+    css.textContent =
+      ".media-card{position:relative;}" +
+      ".media-edit{position:absolute;top:10px;right:10px;z-index:3;width:30px;height:30px;" +
+        "display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;" +
+        "border-radius:9px;border:1px solid var(--border);background:var(--bg-elevated);" +
+        "color:var(--text-dim);opacity:.55;transition:opacity .15s,color .15s,border-color .15s;}" +
+      ".media-edit svg{width:15px;height:15px;}" +
+      ".media-card:hover .media-edit,.media-edit:focus-visible{opacity:1;}" +
+      ".media-edit:hover{color:var(--accent);border-color:var(--accent);}";
+    document.head.appendChild(css);
+  })();
+
   function coverHue(text){
     var h = 0, str = String(text || "Voice Ai");
     for(var i = 0; i < str.length; i++){ h = (h * 31 + str.charCodeAt(i)) % 360; }
@@ -2998,6 +3013,16 @@
       '<article class="media-card'+(item.draft ? " is-draft" : "")+'" data-id="'+escapeHtml(item.id)+'">'+
         coverHtml(item)+
         '<span class="media-tag">'+escapeHtml(item.tag)+'</span>'+
+        /* Правка прямо с карточки: иначе до подкаста или шоу приходилось
+           идти на главную и искать его в фонотеке — а обложку и описание
+           правят именно отсюда, глядя на карточку. */
+        ((isAdmin && item.file)
+          ? '<button type="button" class="media-edit" data-edit="'+escapeHtml(item.file)+
+            '" title="Изменить эту карточку" aria-label="Изменить">'+
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+                '<path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>'+
+            '</button>'
+          : "")+
         (item.draft ? '<span class="draft-badge">черновик · виден только вам</span>' : "")+
         '<h3>'+escapeHtml(item.title)+'</h3>'+
         '<p>'+linkify(item.snippet)+'</p>'+
@@ -3057,7 +3082,14 @@
 
   // one delegated listener covers every media-play-btn, home or library page
   document.addEventListener("click", function(e){
-    var btn = e.target.closest ? e.target.closest(".media-play-btn") : null;
+    if(!e.target.closest) return;
+    var pencil = e.target.closest(".media-edit");
+    if(pencil){
+      document.dispatchEvent(new CustomEvent("voiceai:edit-track",
+        {detail:{file: pencil.getAttribute("data-edit")}}));
+      return;
+    }
+    var btn = e.target.closest(".media-play-btn");
     if(!btn) return;
     // кнопка есть только у записей с настоящим файлом — у заготовок её нет
     playFromLibrary(btn.getAttribute("data-file"));
@@ -4192,7 +4224,7 @@
       body.hidden = false;
       fillForm(item);
       setEditing(item);
-      document.getElementById("newsComposer").scrollIntoView({behavior:"smooth", block:"center"});
+      revealComposer("newsComposer");
       say("Правим «" + item.title + "»");
     });
 
@@ -4774,7 +4806,7 @@
       toggle.textContent = "− Свернуть";
       setEditingTrack(null);
       choose(f);
-      document.getElementById("audioComposer").scrollIntoView({behavior:"smooth", block:"center"});
+      revealComposer("audioComposer");
       if(!GH.connected()){ say("Сначала подключите GitHub — в форме новостей", true); }
     });
 
@@ -4842,7 +4874,14 @@
       var tr = null;
       for(var i=0;i<allTracks.length;i++){ if(allTracks[i].file === file){ tr = allTracks[i]; break; } }
       if(!tr) return;
-      if(!GH.connected()){ window.alert("Сначала подключите GitHub — в форме новостей."); return; }
+      /* Правку могли начать с карточки раздела, где формы не видно вовсе.
+         Тогда молчаливый отказ выглядит как сломанная кнопка — отводим
+         человека туда, где подключение и живёт. */
+      if(!GH.connected()){
+        revealComposer("newsComposer");
+        showHint("Сначала подключите GitHub — форма подключения в блоке новостей.");
+        return;
+      }
       body.hidden = false;
       document.getElementById("auTitle").value = tr.title || "";
       document.getElementById("auHost").value = tr.host || "";
@@ -4856,7 +4895,7 @@
       picked.hidden = false;
       picked.textContent = "Файл: " + file;
       setEditingTrack(file);
-      document.getElementById("audioComposer").scrollIntoView({behavior:"smooth", block:"center"});
+      revealComposer("audioComposer");
       say("Правим «" + (tr.title || file) + "»");
     });
 
@@ -5451,6 +5490,20 @@
       });
     });
     return out;
+  }
+  /* Формы правки — и новостей, и записей — живут на главной. Если правку
+     начали со страницы «Все новости» или раздела, форма там просто скрыта:
+     человек жмёт «изменить», и ничего не происходит. Поэтому сначала
+     возвращаемся на главную, а прокручиваем к форме уже после того, как
+     она появилась. */
+  function revealComposer(id){
+    var box = document.getElementById(id);
+    if(!box) return;
+    var hidden = !box.offsetParent;
+    if(hidden){ location.hash = "#air"; }
+    setTimeout(function(){
+      box.scrollIntoView({behavior:"smooth", block:"center"});
+    }, hidden ? 160 : 0);
   }
   function mediaSrc(file){
     var v = srcVariants(file);
