@@ -908,6 +908,21 @@
   .cov-empty{font-size:11px;color:var(--text-dim);line-height:1.35;padding:0 8px;}
   .cov-side{flex:1 1 220px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;}
   .cov-side .nc-note{padding-top:0;}
+  /* Галерея уже загруженных обложек: узкая лента миниатюр под полем. */
+  .cov-gallery{margin-top:12px;}
+  .cov-gal-head{font-size:11px;color:var(--text-dim);margin-bottom:7px;}
+  .cov-gal-strip{
+    display:flex;gap:9px;overflow-x:auto;padding-bottom:6px;
+    scrollbar-width:thin;
+  }
+  .cov-gal-item{
+    flex:0 0 auto;width:74px;height:74px;padding:0;cursor:pointer;
+    border-radius:10px;overflow:hidden;border:2px solid var(--border);
+    background:var(--surface);transition:border-color .15s,transform .15s;
+  }
+  .cov-gal-item img{width:100%;height:100%;object-fit:cover;display:block;}
+  .cov-gal-item:hover{border-color:var(--accent);transform:translateY(-2px);}
+  .cov-gal-item.is-on{border-color:var(--accent);}
   .au-convert{
     display:flex;flex-wrap:wrap;align-items:center;gap:14px;
     margin-top:12px;padding:11px 13px;border-radius:10px;
@@ -1801,11 +1816,16 @@
                 </div>
                 <div class="cov-side">
                   <button type="button" class="nc-ghost" id="covPick">Выбрать картинку</button>
+                  <button type="button" class="nc-ghost" id="covFromLib" hidden>Из уже загруженных</button>
                   <button type="button" class="nc-ghost nc-danger" id="covClear" hidden>Убрать обложку</button>
                   <span class="nc-note" id="covNote">Любая картинка: страница сама уменьшит её и сожмёт,
                     чтобы не забивать репозиторий. Если не выбрать — обложка рисуется из названия.</span>
                   <input type="file" id="covFile" accept="image/*" hidden>
                 </div>
+              </div>
+              <div class="cov-gallery" id="covGallery" hidden>
+                <div class="cov-gal-head" id="covGalHead"></div>
+                <div class="cov-gal-strip" id="covGalStrip"></div>
               </div>
             </div>
           </div>
@@ -4602,8 +4622,10 @@
     }
     function resetCover(){
       coverBlob = null; coverUrl = ""; coverRemove = false;
+      galleryOpen = false;
       showCover("", "Любая картинка: страница сама уменьшит её и сожмёт, чтобы не забивать репозиторий. " +
                     "Если не выбрать — обложка рисуется из названия.");
+      renderCoverGallery();
     }
 
     document.getElementById("covPick").addEventListener("click", function(){
@@ -4623,6 +4645,69 @@
         document.getElementById("covNote").textContent = err.message;
       });
     });
+    /* ============ Галерея уже загруженных обложек ============
+       Одну и ту же картинку часто ставят на несколько записей — например,
+       на все музыкальные треки. Перезагружать её каждый раз с компьютера
+       глупо, поэтому показываем то, что уже лежит в репозитории: нажали на
+       миниатюру — страница берёт этот файл и кладёт его копию под именем
+       текущей записи. Копия нужна, чтобы потом можно было заменить обложку
+       у одной записи, не задев остальные; картинки лёгкие, места не жаль. */
+    function knownCovers(){
+      var seen = {}, out = [];
+      (allTracks || []).forEach(function(t){
+        var c = t && t.cover;
+        if(c && !seen[c]){ seen[c] = true; out.push({path:c, title:t.title || ""}); }
+      });
+      return out;
+    }
+    var galleryOpen = false;
+    function renderCoverGallery(){
+      var box = document.getElementById("covGallery");
+      var strip = document.getElementById("covGalStrip");
+      var head = document.getElementById("covGalHead");
+      var btn = document.getElementById("covFromLib");
+      if(!box || !strip || !btn) return;
+      var list = knownCovers();
+      btn.hidden = !list.length;
+      btn.textContent = galleryOpen ? "Скрыть загруженные" : "Из уже загруженных";
+      if(!list.length || !galleryOpen){ box.hidden = true; return; }
+      box.hidden = false;
+      head.textContent = "Нажмите на обложку — она станет обложкой этой записи. " +
+                         "Файл скопируется, у остальных записей ничего не изменится.";
+      strip.innerHTML = list.map(function(c){
+        return '<button type="button" class="cov-gal-item' +
+               (coverUrl === c.path ? " is-on" : "") + '" data-cover="' +
+               escapeHtml(c.path) + '" title="' + escapeHtml(c.title) + '">' +
+               '<img src="' + escapeHtml(c.path) + '" alt="" loading="lazy"></button>';
+      }).join("");
+    }
+    document.getElementById("covFromLib").addEventListener("click", function(){
+      galleryOpen = !galleryOpen;
+      renderCoverGallery();
+    });
+    document.getElementById("covGalStrip").addEventListener("click", function(e){
+      var item = e.target.closest ? e.target.closest(".cov-gal-item") : null;
+      if(!item) return;
+      var path = item.getAttribute("data-cover");
+      document.getElementById("covNote").textContent = "Беру обложку…";
+      fetch(path, {cache:"no-store"}).then(function(r){
+        if(!r.ok) throw new Error("Эта обложка не читается — возможно, файл удалили.");
+        return r.blob();
+      }).then(function(blob){
+        // отдаём дальше как обычную выбранную картинку: при сохранении она
+        // ляжет в covers/ под именем этой записи — получится честная копия
+        var ext = (/\.([a-z0-9]+)$/i.exec(path) || [,"webp"])[1].toLowerCase();
+        blob.ext = ext === "jpeg" ? "jpg" : ext;
+        coverBlob = blob; coverRemove = false;
+        showCover(URL.createObjectURL(blob),
+          "Обложка выбрана из загруженных — " + human(blob.size) +
+          ". При сохранении получит отдельный файл.");
+        renderCoverGallery();
+      })["catch"](function(err){
+        document.getElementById("covNote").textContent = err.message;
+      });
+    });
+
     document.getElementById("covClear").addEventListener("click", function(){
       coverBlob = null;
       coverRemove = !!coverUrl;      // если обложка была в репозитории — уберём её
@@ -4689,7 +4774,7 @@
       return (document.getElementById("auTags").value || "")
         .split(",").map(function(x){ return x.trim(); }).filter(Boolean);
     }
-    document.addEventListener("voiceai:library-changed", function(){ fillTagBank(); });
+    document.addEventListener("voiceai:library-changed", function(){ fillTagBank(); renderCoverGallery(); });
 
     /* Видео и тяжёлые файлы предлагаем сжать сразу, MP3 поменьше — не трогаем. */
     function updateConvertBox(file){
@@ -4889,6 +4974,7 @@
       fillTagBank();
       resetCover();
       if(tr.cover){ coverUrl = tr.cover; showCover(tr.cover, "Обложка уже загружена. Можно заменить или убрать."); }
+      renderCoverGallery();
       document.getElementById("auTags").value = (tr.tags || []).join(", ");
       document.getElementById("auDesc").value = tr.desc || "";
       document.getElementById("auDate").value = tr.day || "";
@@ -5434,6 +5520,9 @@
     allTracks = allTracks.concat(placeholderTracks());
     airProgram = readProgram(data.air);
     refreshSections();     // подкасты, шоу и гайды собираются из этой же фонотеки
+    // фонотека приезжает позже, чем строятся формы: сообщаем, что она готова,
+    // иначе списки рубрик, тегов и обложек так и останутся пустыми до первой правки
+    document.dispatchEvent(new CustomEvent("voiceai:library-changed"));
 
     var day = pickDefaultDay();
     if(day && setAirDay(day, false)) return true;
