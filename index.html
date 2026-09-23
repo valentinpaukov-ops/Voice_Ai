@@ -146,6 +146,9 @@
     font-size:12px;
     color:var(--accent);
     letter-spacing:.05em;
+    /* .brand поднимает всё в верхний регистр, а подпись должна остаться
+       строчной — это адрес, а не заголовок */
+    text-transform:none;
   }
   nav.mainnav{
     display:flex;
@@ -1573,7 +1576,7 @@
     .btn-add{justify-content:center;}
   }
   @media (max-width:560px){
-    .brand .freq{display:none;}          /* «98.6 INTERNAL FM» — декор, на телефоне мешает */
+    .brand .freq{display:none;}          /* «202.6 tedointernal.fm» — декор, на телефоне мешает */
     .topbar-right{gap:8px;}
   }
 
@@ -1592,7 +1595,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">VOICE<span style="color:var(--accent)">AI</span><span class="freq">98.6 INTERNAL FM</span></div>
+  <div class="brand">VOICE<span style="color:var(--accent)">AI</span><span class="freq">202.6 tedointernal.fm</span></div>
   <nav class="mainnav" id="mainnav">
     <a href="#air">Эфир</a>
     <a href="#/news">Новости</a>
