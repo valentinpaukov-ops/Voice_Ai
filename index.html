@@ -771,6 +771,50 @@
   .day-today-btn:hover{background:color-mix(in srgb, var(--accent) 24%, transparent);}
 
   /* Карусель дней: полоса прокручивается, стрелки листают её по экрану. */
+  /* ====== Согласование материалов от агента ====== */
+  .inbox-badge{
+    flex:0 0 auto;display:flex;align-items:center;gap:7px;cursor:pointer;
+    padding:7px 12px;border-radius:999px;font:600 12px/1 var(--font-body);
+    color:var(--accent-ink);background:var(--accent);border:1px solid var(--accent);
+    white-space:nowrap;
+  }
+  .inbox-badge:hover{background:var(--accent-strong);border-color:var(--accent-strong);}
+  .ib-dot{
+    width:7px;height:7px;border-radius:50%;background:currentColor;
+    animation:ibPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes ibPulse{0%,100%{opacity:1}50%{opacity:.25}}
+  @media (max-width:900px){ .inbox-badge span:last-child{display:none;} .inbox-badge{padding:9px;} }
+
+  .inbox-panel{
+    margin:18px 0 6px;padding:15px 16px;border-radius:14px;
+    border:1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+    background:color-mix(in srgb, var(--accent) 7%, var(--bg-elevated));
+  }
+  .inbox-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+  .inbox-head h3{margin:0;font-size:17px;}
+  .inbox-sub{font-size:12px;color:var(--text-dim);}
+  .inbox-list{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+  .inbox-item{
+    display:flex;gap:13px;align-items:flex-start;flex-wrap:wrap;
+    padding:12px 13px;border-radius:11px;
+    border:1px solid var(--border);background:var(--bg-elevated);
+  }
+  .inbox-item.is-stale{border-color:var(--live);}
+  .ii-main{flex:1 1 260px;min-width:0;}
+  .ii-kind{
+    display:inline-block;font:600 10px/1 var(--font-mono);letter-spacing:.08em;
+    text-transform:uppercase;padding:4px 7px;border-radius:6px;margin-bottom:6px;
+    background:var(--surface-2);color:var(--text-dim);
+  }
+  .ii-title{font-weight:600;margin:0 0 3px;overflow-wrap:anywhere;}
+  .ii-meta{font-size:12px;color:var(--text-dim);overflow-wrap:anywhere;}
+  .ii-text{font-size:13px;color:var(--text-dim);margin-top:6px;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+  .ii-audio{width:100%;margin-top:9px;height:34px;}
+  .ii-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .ii-warn{font-size:12px;color:var(--live);margin-top:6px;}
+
   .day-nav{display:flex;align-items:center;gap:8px;}
   .day-arrow{
     flex:0 0 auto;width:28px;height:52px;border-radius:9px;cursor:pointer;
@@ -1634,6 +1678,10 @@
       <input type="text" id="searchInput" class="search-input" placeholder="Искать в эфире и материалах…" autocomplete="off">
       <div class="search-results" id="searchResults" hidden></div>
     </div>
+    <button type="button" class="inbox-badge admin-only" id="inboxBadge" hidden
+            title="Материалы от агента ждут вашего согласования">
+      <span class="ib-dot"></span><span id="inboxBadgeText">на согласовании</span>
+    </button>
     <button type="button" id="themeBtn" class="theme-btn" aria-label="Переключить тему" title="Светлая / тёмная тема">
       <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
         <circle cx="12" cy="12" r="4"/>
@@ -1778,6 +1826,16 @@
           <button type="button" class="day-arrow" id="dayNext" aria-label="Следующие дни">›</button>
         </div>
       </div>
+
+      <!-- Материалы, которые прислал агент. Живут отдельно от эфира: пока
+           редактор не нажал «Опубликовать», их нет нигде на сайте. -->
+      <section class="inbox-panel admin-only" id="inboxPanel" hidden>
+        <div class="inbox-head">
+          <h3>На согласовании</h3>
+          <span class="inbox-sub" id="inboxSub"></span>
+        </div>
+        <div class="inbox-list" id="inboxList"></div>
+      </section>
 
       <div class="news-composer admin-only" id="audioComposer">
         <button type="button" class="nc-toggle" id="auToggle">+ Загрузить запись в фонотеку</button>
@@ -4014,6 +4072,21 @@
       });
     }
 
+    /* Содержимое папки репозитория. Нужен для inbox: если папки ещё нет,
+       это не ошибка, а обычное «пока ничего не прислали». */
+    function listDir(path){
+      var c = cfg();
+      return fetch(apiUrl(path) + "?ref=" + encodeURIComponent(c.branch) + "&t=" + Date.now(), {
+        headers: headers(), cache: "no-store"
+      }).then(function(res){
+        if(res.status === 404) return [];
+        return res.json().catch(function(){ return null; }).then(function(data){
+          if(!res.ok) throw new Error(errorText(res, data));
+          return Array.isArray(data) ? data : [];
+        });
+      });
+    }
+
     // проверка: токен рабочий и репозиторий доступен на запись
     function check(){
       var c = cfg();
@@ -4111,7 +4184,8 @@
       cfg: cfg, saveCfg: saveCfg, token: token, setToken: setToken,
       connected: connected, check: check,
       editNews: editNews, editJson: editJson, editDoc: editDoc,
-      uploadFile: uploadFile, deleteFile: deleteFile
+      uploadFile: uploadFile, deleteFile: deleteFile,
+      listDir: listDir, getFile: getFile
     };
   })();
 
@@ -5578,6 +5652,12 @@
     var loaded = [];
     data.tracks.forEach(function(t){
       if(!t || !t.file) return;
+      /* Запись, которую прислал агент и которую ещё не согласовали, в
+         фонотеку не попадает совсем: её нет ни в эфире, ни в разделах, ни в
+         поиске, ни в архиве — ни у слушателя, ни у редактора. Она живёт
+         только в панели согласования, и это самая надёжная защита от того,
+         чтобы непроверенное случайно вышло в эфир. */
+      if(t.pending) return;
       loaded.push({
         id: mkId(),
         file: t.file,
@@ -6607,11 +6687,172 @@
     syncAirDayPicker();
   })();
 
+  /* ================= Материалы от агента (папка inbox) =================
+     Агент кладёт в inbox по файлу JSON на каждый материал: отдельно на
+     запись, отдельно на новость. Аудиофайл при этом сразу лежит в audio/,
+     но в манифесте помечен как несогласованный — и поэтому его нет нигде
+     на сайте. Платформа показывает такие материалы только редактору, и
+     лишь после его «Опубликовать» запись попадает в фонотеку, а новость в
+     ленту. Смысл в том, что автоматизация физически не может выпустить в
+     эфир ничего, чего человек не видел. */
+  var INBOX_DIR = "inbox";
+  var INBOX_TTL_DAYS = 7;          // столько же стоит в роботе-уборщике
+  var inboxItems = [];
+  var inboxBusy = false;
+
+  function inboxDaysLeft(item){
+    var t = Date.parse((item && item.created) || "");
+    if(!t) return null;
+    return Math.ceil(INBOX_TTL_DAYS - (Date.now() - t) / 86400000);
+  }
+
+  function inboxRefresh(){
+    if(!isAdmin || !GH.connected()){ inboxItems = []; inboxRender(); return Promise.resolve([]); }
+    return GH.listDir(INBOX_DIR).then(function(files){
+      var jsons = files.filter(function(f){
+        return f && f.type === "file" && /\.json$/i.test(f.name);
+      });
+      return Promise.all(jsons.map(function(f){
+        return GH.getFile(INBOX_DIR + "/" + f.name).then(function(doc){
+          var data = null;
+          try{ data = JSON.parse(doc.text); }catch(e){ return null; }
+          if(!data || typeof data !== "object") return null;
+          data.__path = INBOX_DIR + "/" + f.name;
+          return data;
+        })["catch"](function(){ return null; });
+      }));
+    }).then(function(list){
+      inboxItems = list.filter(Boolean).sort(function(a, b){
+        return String(a.created || "").localeCompare(String(b.created || ""));
+      });
+      inboxRender();
+      return inboxItems;
+    })["catch"](function(){ inboxRender(); return []; });
+  }
+
+  function inboxRender(){
+    var panel = document.getElementById("inboxPanel");
+    var list = document.getElementById("inboxList");
+    var badge = document.getElementById("inboxBadge");
+    var badgeText = document.getElementById("inboxBadgeText");
+    var sub = document.getElementById("inboxSub");
+    if(!panel || !list) return;
+    var n = isAdmin ? inboxItems.length : 0;
+    panel.hidden = !n;
+    if(badge) badge.hidden = !n;
+    if(!n) return;
+    if(badgeText) badgeText.textContent = "на согласовании: " + n;
+    sub.textContent = n + " " + plural(n, "материал", "материала", "материалов") +
+      " от агента. Пока не опубликуете — их нет ни в эфире, ни в ленте, ни в поиске.";
+    list.innerHTML = inboxItems.map(function(it, i){
+      var news = it.kind === "news";
+      var left = inboxDaysLeft(it);
+      var stale = (left !== null && left <= 1);
+      var meta = [];
+      if(it.date) meta.push(humanDay(it.date) + (it.time ? ", " + it.time : ""));
+      if(!news && it.host) meta.push(it.host);
+      if(news && it.author) meta.push(it.author);
+      if(!news && it.tag) meta.push(it.tag);
+      if(it.agent) meta.push("от " + it.agent);
+      return '<div class="inbox-item' + (stale ? " is-stale" : "") + '">' +
+        '<div class="ii-main">' +
+          '<span class="ii-kind">' + (news ? "новость" : "запись") + '</span>' +
+          '<p class="ii-title">' + escapeHtml(it.title || "без названия") + '</p>' +
+          '<div class="ii-meta">' + escapeHtml(meta.join(" · ")) + '</div>' +
+          (news
+            ? '<div class="ii-text">' + escapeHtml(it.text || "") + '</div>'
+            : (it.desc ? '<div class="ii-text">' + escapeHtml(it.desc) + '</div>' : "")) +
+          (!news && it.file
+            ? '<audio class="ii-audio" controls preload="none" src="' +
+              escapeHtml(mediaSrc(it.file) || "") + '"></audio>'
+            : "") +
+          (stale
+            ? '<div class="ii-warn">Скоро удалится: ' +
+              (left <= 0 ? "срок хранения вышел" : "остался день") + '</div>'
+            : "") +
+        '</div>' +
+        '<div class="ii-acts">' +
+          '<button type="button" class="btn-add" data-inbox-open="' + i + '">Проверить</button>' +
+          '<button type="button" class="nc-ghost nc-danger" data-inbox-drop="' + i + '">Отклонить</button>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  /* «Проверить» открывает обычную форму, заполненную данными агента.
+     Дальше редактор работает как всегда — и публикует тем же движением. */
+  function inboxOpen(i){
+    var it = inboxItems[i];
+    if(!it) return;
+    document.dispatchEvent(new CustomEvent(
+      it.kind === "news" ? "voiceai:approve-news" : "voiceai:approve-audio",
+      {detail:{item: it}}
+    ));
+  }
+
+  /* Отклонение. У новости достаточно убрать описание: в ленту она так и не
+     попала. У записи вместе с описанием уходит и сам аудиофайл, и его
+     несогласованная строка в манифесте — иначе он останется висеть навсегда. */
+  function inboxDrop(i){
+    var it = inboxItems[i];
+    if(!it || inboxBusy) return;
+    var news = it.kind === "news";
+    var what = news
+      ? "Отклонить новость «" + (it.title || "без названия") + "»?\n\nОна не выходила в ленту, удалится только описание от агента."
+      : "Отклонить запись «" + (it.title || "без названия") + "»?\n\nУдалим и описание, и сам аудиофайл из папки audio. В эфире её не было.";
+    if(!window.confirm(what)) return;
+    inboxBusy = true;
+    showHint("Отклоняю…");
+    var chain = GH.deleteFile(it.__path, "Отклонено: " + (it.title || it.__path));
+    if(!news && it.file){
+      chain = chain.then(function(){
+        return GH.deleteFile("audio/" + it.file, "Отклонена запись: " + (it.title || it.file))
+          ["catch"](function(){ return null; });   // файла могло и не быть
+      }).then(function(){
+        return GH.editDoc("audio/manifest.json", function(doc){
+          doc.tracks = (doc.tracks || []).filter(function(t){ return t && t.file !== it.file; });
+          return doc;
+        }, "Убрана несогласованная запись: " + (it.title || it.file))
+          ["catch"](function(){ return null; });
+      });
+    }
+    chain.then(function(){
+      showHint("Отклонено");
+      inboxBusy = false;
+      return inboxRefresh();
+    })["catch"](function(err){
+      inboxBusy = false;
+      showHint(err.message || "Не получилось отклонить");
+    });
+  }
+
+  document.addEventListener("click", function(e){
+    if(!e.target.closest) return;
+    var open = e.target.closest("[data-inbox-open]");
+    if(open){ inboxOpen(+open.getAttribute("data-inbox-open")); return; }
+    var drop = e.target.closest("[data-inbox-drop]");
+    if(drop){ inboxDrop(+drop.getAttribute("data-inbox-drop")); return; }
+    var badge = e.target.closest("#inboxBadge");
+    if(badge){
+      location.hash = "#air";
+      setTimeout(function(){
+        var p = document.getElementById("inboxPanel");
+        if(p && !p.hidden) p.scrollIntoView({behavior:"smooth", block:"center"});
+      }, 140);
+    }
+  });
+
+  // после публикации материал из inbox исчезает — перерисовываем список
+  document.addEventListener("voiceai:inbox-changed", function(){ inboxRefresh(); });
+
   /* После правки, загрузки или удаления записи обновляем всё на странице
      сразу, не дожидаясь пересборки сайта и не прерывая воспроизведение. */
   function refreshAirAfterEdit(list){
+    // несогласованное в фонотеку не пускаем и здесь — иначе оно всплывёт
+    // после первой же правки любой другой записи
+    list = (list || []).filter(function(i){ return i && !i.pending; });
     var byFile = {};
-    (list || []).forEach(function(i){ if(i && i.file) byFile[i.file] = i; });
+    list.forEach(function(i){ if(i && i.file) byFile[i.file] = i; });
 
     // удалённые записи убираем из памяти
     allTracks = allTracks.filter(function(t){ return !t.file || byFile[t.file]; });
@@ -6715,6 +6956,14 @@
     LIB_CONFIG.news.data = visibleNewsItems();   // страница «Новости» берёт данные отсюда
     renderHomePreviews();
     if(location.hash === "#/news"){ renderLibraryFilters("news"); renderLibraryList("news"); }
+    /* Дни в ленте и в календаре размечаются точками в том числе по
+       новостям, а новости приезжают отдельным файлом и почти всегда позже
+       ленты. Без этой перерисовки день с новостью оставался без бирюзовой
+       точки до первого же действия редактора — ровно то, что выглядело как
+       «в архиве новость есть, а в ленте не помечена». */
+    renderDayStrip();
+    var arch = document.getElementById("viewArchive");
+    if(arch && !arch.hidden){ renderCalendar(); renderArchiveDay(calPicked); }
     // форма новостей пересоберёт банк тегов, услышав это событие
     try{ document.dispatchEvent(new CustomEvent("voiceai:news-updated")); }catch(e){}
     return true;
