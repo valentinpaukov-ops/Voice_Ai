@@ -118,24 +118,26 @@
     ".fab:hover{transform:translateY(-2px);box-shadow:0 14px 34px -8px rgba(0,0,0,.6),0 0 0 1px rgba(244,167,48,.75);}",
     ".fab b{font:800 17px/1 'Big Shoulders Display','Arial Narrow',Impact,sans-serif;",
     "  letter-spacing:.03em;transform:translateY(-3px);}",
-    ".fab b i{margin-left:.12em;}",
-    ".fab b i{font-style:normal;color:#f4a730;}",
-    /* волны, когда играет */
+    ".fab b i{font-style:normal;color:#f4a730;margin-left:.12em;}",
     ".fab .eq{position:absolute;bottom:13px;display:flex;gap:2px;align-items:flex-end;height:9px;}",
     ".fab .eq span{width:2px;background:#f4a730;border-radius:1px;animation:eq .9s ease-in-out infinite;}",
     ".fab .eq span:nth-child(2){animation-delay:.15s}.fab .eq span:nth-child(3){animation-delay:.3s}",
     "@keyframes eq{0%,100%{height:3px}50%{height:9px}}",
-    ".fab .dot{position:absolute;top:6px;" + SIDE + ":6px;width:9px;height:9px;border-radius:50%;background:#ff6b5e;}",
     /* панель */
     ".panel{",
-    "  position:absolute;bottom:74px;" + SIDE + ":0;width:330px;max-width:calc(100vw - 32px);",
+    "  position:absolute;bottom:74px;" + SIDE + ":0;width:340px;max-width:calc(100vw - 32px);",
     "  background:#1c1a24;border:1px solid #3a3747;border-radius:16px;overflow:hidden;",
     "  box-shadow:0 26px 60px -20px rgba(0,0,0,.75);",
     "  opacity:0;transform:translateY(10px) scale(.98);pointer-events:none;",
     "  transition:opacity .18s ease,transform .18s ease;",
     "}",
     ".panel.on{opacity:1;transform:none;pointer-events:auto;}",
-    ".head{display:flex;align-items:center;gap:10px;padding:13px 14px;border-bottom:1px solid #3a3747;}",
+    ".panel.moved{position:fixed;left:0;top:0;bottom:auto;right:auto;}",
+    /* шапка — она же ручка для перетаскивания */
+    ".head{display:flex;align-items:center;gap:10px;padding:12px 13px;border-bottom:1px solid #3a3747;",
+    "  cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;}",
+    ".head.drag{cursor:grabbing;}",
+    ".head .grip{color:#585566;letter-spacing:-2px;font-size:15px;line-height:1;}",
     ".head .nm{font:800 17px/1 'Big Shoulders Display','Arial Narrow',Impact,sans-serif;",
     "  text-transform:uppercase;letter-spacing:.02em;}",
     ".head .nm i{font-style:normal;color:#f4a730;margin-left:.3em;}",
@@ -143,43 +145,60 @@
     "  letter-spacing:.1em;text-transform:uppercase;color:#a19cae;}",
     ".x{background:none;border:none;color:#a19cae;cursor:pointer;font-size:19px;line-height:1;padding:2px 4px;}",
     ".x:hover{color:#f3f1ec;}",
-    ".now{display:flex;gap:13px;padding:15px 14px 12px;}",
+    /* что играет */
+    ".now{display:flex;gap:13px;padding:15px 14px 10px;}",
     ".art{width:74px;height:74px;border-radius:50%;flex:none;overflow:hidden;position:relative;",
     "  display:flex;align-items:center;justify-content:center;",
     "  background:linear-gradient(140deg,hsl(var(--h,35) 55% 42%),hsl(var(--h,35) 45% 24%));}",
     ".art img{width:100%;height:100%;object-fit:cover;display:block;}",
     ".art span{font:800 30px/1 'Big Shoulders Display','Arial Narrow',Impact,sans-serif;color:rgba(255,255,255,.92);}",
     ".art:after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(244,167,48,.45);}",
+    ".meta{min-width:0;flex:1;}",
     ".tag{display:inline-block;font:600 9px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.1em;",
     "  text-transform:uppercase;color:#f4a730;margin-bottom:5px;}",
-    ".d{font-size:12px;color:#a19cae;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;",
-    "  -webkit-box-orient:vertical;overflow:hidden;}",
-    ".nx{display:flex;gap:7px;align-items:center;padding:9px 14px 0;font-size:12px;color:#a19cae;",
-    "  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}",
-    ".nx b{color:#f4a730;font:600 9px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.1em;",
-    "  text-transform:uppercase;flex:none;}",
-    ".meta{min-width:0;flex:1;}",
     ".t{font-weight:600;margin:0 0 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
     ".s{font-size:12px;color:#a19cae;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
-    ".time{font:11px/1 'IBM Plex Mono',ui-monospace,monospace;color:#a19cae;margin-top:8px;}",
-    ".bar{height:4px;border-radius:2px;background:#292734;margin:0 14px;overflow:hidden;}",
-    ".bar i{display:block;height:100%;width:0;background:#f4a730;border-radius:2px;}",
-    ".ctrl{display:flex;align-items:center;justify-content:center;gap:14px;padding:12px 14px 6px;}",
+    ".d{font-size:12px;color:#a19cae;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;",
+    "  -webkit-box-orient:vertical;overflow:hidden;}",
+    /* перемотка */
+    ".seek{padding:2px 14px 0;}",
+    ".seek .bar{height:16px;display:flex;align-items:center;cursor:pointer;touch-action:none;}",
+    ".seek .bar i{display:block;height:4px;width:100%;border-radius:2px;background:#292734;position:relative;}",
+    ".seek .bar i u{position:absolute;inset:0;width:0;background:#f4a730;border-radius:2px;display:block;}",
+    ".seek .bar i u:after{content:'';position:absolute;right:-5px;top:50%;width:10px;height:10px;",
+    "  margin-top:-5px;border-radius:50%;background:#f4a730;opacity:0;transition:opacity .15s;}",
+    ".seek .bar:hover i u:after{opacity:1;}",
+    ".time{display:flex;justify-content:space-between;font:11px/1 'IBM Plex Mono',ui-monospace,monospace;",
+    "  color:#a19cae;margin-top:3px;}",
+    /* кнопки и громкость */
+    ".ctrl{display:flex;align-items:center;gap:12px;padding:10px 14px 4px;}",
+    ".ctrl .sp{flex:1;}",
     ".ctrl button{background:#292734;border:1px solid #3a3747;color:#f3f1ec;cursor:pointer;",
     "  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;",
-    "  font-size:13px;line-height:1;padding:0;}",
+    "  font-size:12px;line-height:1;padding:0;flex:none;}",
     ".ctrl button:hover{border-color:#f4a730;}",
-    ".ctrl .play{width:46px;height:46px;background:#f4a730;border-color:#f4a730;color:#231400;font-size:16px;}",
+    ".ctrl .play{width:46px;height:46px;background:#f4a730;border-color:#f4a730;color:#231400;font-size:15px;}",
     ".ctrl .play:hover{background:#ffc158;}",
-    ".list{max-height:190px;overflow-y:auto;border-top:1px solid #3a3747;margin-top:8px;}",
-    ".row{display:flex;gap:9px;align-items:center;padding:9px 14px;cursor:pointer;border:none;",
-    "  background:none;color:inherit;width:100%;text-align:left;font:inherit;}",
-    ".row:hover{background:#231f2e;}",
-    ".row.on{background:#231f2e;}",
-    ".row .n{font:11px/1 'IBM Plex Mono',ui-monospace,monospace;color:#a19cae;width:16px;flex:none;}",
-    ".row.on .n{color:#f4a730;}",
-    ".row .rt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;}",
-    ".row .rd{font:11px/1 'IBM Plex Mono',ui-monospace,monospace;color:#a19cae;flex:none;}",
+    ".vol{display:flex;align-items:center;gap:7px;flex:none;}",
+    ".vol button{width:26px;height:26px;font-size:12px;background:none;border:none;color:#a19cae;}",
+    ".vol button:hover{color:#f4a730;}",
+    ".vol input{-webkit-appearance:none;appearance:none;width:66px;height:4px;border-radius:2px;",
+    "  background:#292734;outline:none;cursor:pointer;}",
+    ".vol input::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;",
+    "  background:#f4a730;cursor:pointer;}",
+    ".vol input::-moz-range-thumb{width:12px;height:12px;border:none;border-radius:50%;background:#f4a730;}",
+    /* просмотр эфира: одна строка вместо длинного списка */
+    ".peek{display:flex;align-items:center;gap:8px;padding:11px 10px;margin-top:8px;",
+    "  border-top:1px solid #3a3747;}",
+    ".peek button.nav{background:none;border:1px solid #3a3747;color:#a19cae;cursor:pointer;",
+    "  width:28px;height:28px;border-radius:8px;flex:none;font-size:11px;line-height:1;padding:0;}",
+    ".peek button.nav:hover{border-color:#f4a730;color:#f4a730;}",
+    ".peek .mid{flex:1;min-width:0;background:none;border:none;color:inherit;cursor:pointer;",
+    "  text-align:left;font:inherit;padding:0 2px;}",
+    ".peek .mid b{display:block;font:600 9px/1 'IBM Plex Mono',ui-monospace,monospace;",
+    "  letter-spacing:.1em;text-transform:uppercase;color:#f4a730;margin-bottom:4px;}",
+    ".peek .mid span{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+    ".peek .mid:hover span{color:#f4a730;}",
     ".foot{padding:11px 14px;border-top:1px solid #3a3747;}",
     ".foot a{display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;",
     "  background:#292734;border:1px solid #3a3747;border-radius:10px;padding:9px;",
@@ -188,7 +207,7 @@
     ".msg{padding:20px 16px;text-align:center;color:#a19cae;font-size:13px;}",
     "@media (max-width:420px){",
     "  .panel{width:calc(100vw - 32px);}",
-    "  .list{max-height:150px;}",
+    "  .vol input{width:48px;}",
     "}"
   ].join("\n");
 
@@ -199,7 +218,8 @@
   wrap.className = "wrap";
   wrap.innerHTML =
     '<div class="panel" id="panel" role="dialog" aria-label="' + esc(TITLE) + '">' +
-      '<div class="head">' +
+      '<div class="head" id="head">' +
+        '<span class="grip" aria-hidden="true">⣿</span>' +
         '<span class="nm">VOICE<i>AI</i></span>' +
         '<span class="live" id="live"></span>' +
         '<button class="x" id="close" aria-label="Закрыть">×</button>' +
@@ -215,6 +235,7 @@
 
   root.appendChild(style);
   root.appendChild(wrap);
+
   /* Вешаем на корень страницы, а не внутрь body: на порталах body часто
      лежит в контейнере с обрезкой и своими слоями, и виджет там прячется. */
   function lift() {
@@ -229,10 +250,21 @@
   var $ = function (id) { return root.getElementById ? root.getElementById(id) : document.getElementById(id); };
   var panel = $("panel"), fab = $("fab"), body = $("body"), eq = $("eq"), live = $("live");
 
+  /* ------------------------- память между заходами ---------------------- */
+  function remember(key, val) {
+    try { localStorage.setItem("voiceAiWidget." + key, val); } catch (e) {}
+  }
+  function recall(key) {
+    try { return localStorage.getItem("voiceAiWidget." + key); } catch (e) { return null; }
+  }
+
   /* --------------------------------- данные ----------------------------- */
   var audio = new Audio();
   audio.preload = "none";
-  var queue = [], idx = -1, day = "", opened = false;
+  var savedVol = parseFloat(recall("volume"));
+  audio.volume = isFinite(savedVol) ? Math.min(1, Math.max(0, savedVol)) : 0.8;
+
+  var queue = [], idx = -1, peek = 0, day = "", opened = false, started = false;
 
   function pickDay(air, tracks) {
     var t = todayStr();
@@ -242,7 +274,6 @@
     if (air && air[t] && air[t].length) return t;
     var past = days.filter(function (d) { return d <= t; });
     if (past.length) return past[past.length - 1];
-    // эфира нет вовсе — берём последний день, за который есть записи
     var withDate = tracks.filter(function (x) { return x.date && x.date <= t; })
                          .map(function (x) { return x.date; }).sort();
     return withDate.length ? withDate[withDate.length - 1] : "";
@@ -250,24 +281,23 @@
 
   /* Виджет живёт на чужом домене, а браузер разрешает читать чужой JSON
      только если сервер прямо это позволил. Заголовки нам неподконтрольны,
-     поэтому есть запасной путь: тот же манифест, выложенный отдельным
-     файлом-скриптом. Скрипты с чужого домена грузятся без разрешений, и
-     виджет работает даже там, где fetch запрещён. */
+     поэтому есть запасной путь: тот же манифест отдельным файлом-скриптом —
+     скрипты с чужого домена грузятся без разрешений. */
   function loadViaScript() {
     return new Promise(function (resolve, reject) {
-      var s = document.createElement("script");
-      s.src = MANIFEST_JS + "?t=" + Date.now();
-      s.async = true;
-      s.onload = function () {
-        s.parentNode && s.parentNode.removeChild(s);
+      var sc = document.createElement("script");
+      sc.src = MANIFEST_JS + "?t=" + Date.now();
+      sc.async = true;
+      sc.onload = function () {
+        sc.parentNode && sc.parentNode.removeChild(sc);
         if (window.__voiceAiManifest) resolve(window.__voiceAiManifest);
         else reject(new Error("пустой манифест"));
       };
-      s.onerror = function () {
-        s.parentNode && s.parentNode.removeChild(s);
+      sc.onerror = function () {
+        sc.parentNode && sc.parentNode.removeChild(sc);
         reject(new Error("манифест не загрузился"));
       };
-      (document.head || document.documentElement).appendChild(s);
+      (document.head || document.documentElement).appendChild(sc);
     });
   }
 
@@ -292,10 +322,10 @@
         if (!queue.length) queue = tracks.slice(-8);
 
         idx = queue.length ? 0 : -1;
+        peek = queue.length > 1 ? 1 : 0;
         render();
       })
       ["catch"](function () {
-        // радио недостижимо — виджет остаётся ссылкой, а не пустой коробкой
         body.innerHTML = '<div class="msg">Эфир сейчас не загрузился.<br>' +
                          'Откройте Voice Ai — там он точно есть.</div>';
       });
@@ -308,6 +338,8 @@
     return '<span class="art" style="--h:' + hueOf(t && t.title) + '">' +
            '<span>' + esc(letterOf(t && t.title)) + '</span></span>';
   }
+
+  function volIcon() { return audio.muted || !audio.volume ? "🔇" : (audio.volume < 0.5 ? "🔈" : "🔊"); }
 
   function render() {
     if (idx < 0) {
@@ -323,51 +355,124 @@
           '<p class="t">' + esc(t.title || t.file) + '</p>' +
           '<div class="s">' + esc(t.host || "Voice Ai") + '</div>' +
           (t.desc ? '<div class="d">' + esc(t.desc) + '</div>' : "") +
-          '<div class="time" id="tm">00:00</div>' +
         '</div>' +
       '</div>' +
-      '<div class="bar"><i id="fill"></i></div>' +
-      '<div class="ctrl">' +
-        '<button id="prev" aria-label="Предыдущая запись" title="Предыдущая">◀</button>' +
-        '<button class="play" id="play" aria-label="Слушать">▶</button>' +
-        '<button id="next" aria-label="Следующая запись" title="Следующая">▶</button>' +
+      '<div class="seek">' +
+        '<div class="bar" id="bar" role="slider" aria-label="Перемотка"><i><u id="fill"></u></i></div>' +
+        '<div class="time"><span id="tm">00:00</span><span id="tr">—:—</span></div>' +
       '</div>' +
-      (queue.length > 1
-        ? '<div class="nx"><b>далее</b> ' +
-          esc(queue[(idx + 1) % queue.length].title || "") + '</div>'
-        : "") +
-      '<div class="list" id="list">' +
-        queue.map(function (x, i) {
-          return '<button class="row' + (i === idx ? " on" : "") + '" data-i="' + i + '">' +
-                   '<span class="n">' + (i + 1 < 10 ? "0" : "") + (i + 1) + '</span>' +
-                   '<span class="rt">' + esc(x.title || x.file) + '</span>' +
-                   '<span class="rd">' + (x.duration ? fmt(x.duration) : "—:—") + '</span>' +
-                 '</button>';
-        }).join("") +
-      '</div>';
+      '<div class="ctrl">' +
+        '<button id="prev" title="Предыдущая запись" aria-label="Предыдущая">◀</button>' +
+        '<button class="play" id="play" aria-label="Слушать">▶</button>' +
+        '<button id="next" title="Следующая запись" aria-label="Следующая">▶</button>' +
+        '<span class="sp"></span>' +
+        '<span class="vol">' +
+          '<button id="mute" title="Звук" aria-label="Звук">' + volIcon() + '</button>' +
+          '<input type="range" id="vol" min="0" max="100" step="1" aria-label="Громкость" ' +
+                 'value="' + Math.round((audio.muted ? 0 : audio.volume) * 100) + '">' +
+        '</span>' +
+      '</div>' +
+      (queue.length > 1 ? peekHtml() : "");
 
     $("play").addEventListener("click", toggle);
     $("prev").addEventListener("click", function () { step(-1); });
     $("next").addEventListener("click", function () { step(1); });
-    $("list").addEventListener("click", function (e) {
-      var row = e.target.closest ? e.target.closest(".row") : null;
-      if (row) select(+row.getAttribute("data-i"), true);
+    $("mute").addEventListener("click", function () {
+      audio.muted = !audio.muted;
+      $("mute").textContent = volIcon();
+      $("vol").value = Math.round((audio.muted ? 0 : audio.volume) * 100);
     });
+    $("vol").addEventListener("input", function () {
+      audio.volume = (+this.value) / 100;
+      audio.muted = audio.volume === 0;
+      $("mute").textContent = volIcon();
+      remember("volume", String(audio.volume));
+    });
+    bindSeek();
+    bindPeek();
     syncPlay();
+    paint();
   }
 
+  /* Вместо длинного списка с прокруткой — одна строка «далее» со стрелками:
+     ими листают выпуск вперёд и назад, а нажатие на название включает эту
+     запись. Панель от этого не растёт, сколько бы записей ни было в эфире. */
+  function peekHtml() {
+    var t = queue[peek] || queue[0];
+    var label = peek === (idx + 1) % queue.length ? "далее" :
+                (peek === idx ? "сейчас играет" : "в этом эфире · " + (peek + 1) + " из " + queue.length);
+    return '<div class="peek">' +
+        '<button class="nav" id="up" title="Предыдущая в списке" aria-label="Выше">▲</button>' +
+        '<button class="mid" id="jump" title="Включить эту запись">' +
+          '<b>' + esc(label) + '</b>' +
+          '<span>' + esc(t.title || t.file) + '</span>' +
+        '</button>' +
+        '<button class="nav" id="down" title="Следующая в списке" aria-label="Ниже">▼</button>' +
+      '</div>';
+  }
+  function bindPeek() {
+    var up = $("up"), down = $("down"), jump = $("jump");
+    if (!up) return;
+    up.addEventListener("click", function () { movePeek(-1); });
+    down.addEventListener("click", function () { movePeek(1); });
+    jump.addEventListener("click", function () { select(peek, true); });
+  }
+  function movePeek(d) {
+    peek = (peek + d + queue.length) % queue.length;
+    var box = $("body").querySelector(".peek");
+    if (box) { box.outerHTML = peekHtml(); bindPeek(); }
+  }
+
+  /* ------------------------------- перемотка ---------------------------- */
+  function duration() {
+    return isFinite(audio.duration) && audio.duration > 0
+      ? audio.duration : ((queue[idx] && queue[idx].duration) || 0);
+  }
+  function bindSeek() {
+    var bar = $("bar");
+    if (!bar) return;
+    var dragging = false;
+    function at(e) {
+      var r = bar.getBoundingClientRect();
+      var x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+      return Math.min(1, Math.max(0, x / (r.width || 1)));
+    }
+    function seekTo(e) {
+      var d = duration();
+      if (!d) return;
+      if (!audio.src) audio.src = audioUrl(queue[idx].file);
+      audio.currentTime = at(e) * d;
+      paint();
+    }
+    bar.addEventListener("mousedown", function (e) { dragging = true; seekTo(e); e.preventDefault(); });
+    document.addEventListener("mousemove", function (e) { if (dragging) seekTo(e); });
+    document.addEventListener("mouseup", function () { dragging = false; });
+    bar.addEventListener("touchstart", function (e) { dragging = true; seekTo(e); }, { passive: true });
+    bar.addEventListener("touchmove", function (e) { if (dragging) seekTo(e); }, { passive: true });
+    bar.addEventListener("touchend", function () { dragging = false; });
+  }
+  function paint() {
+    var tm = $("tm"), tr = $("tr"), fill = $("fill");
+    if (!tm || !fill) return;
+    var d = duration();
+    tm.textContent = fmt(audio.currentTime);
+    if (tr) tr.textContent = d ? fmt(d) : "—:—";
+    fill.style.width = (d ? Math.min(100, audio.currentTime / d * 100) : 0) + "%";
+  }
+
+  /* ------------------------------ воспроизведение ------------------------ */
   function select(i, play) {
     if (i < 0 || i >= queue.length) return;
     idx = i;
+    peek = queue.length > 1 ? (i + 1) % queue.length : 0;
     audio.src = audioUrl(queue[i].file);
     render();
-    if (play) { var p = audio.play(); if (p && p["catch"]) p["catch"](function () {}); }
+    if (play) { started = true; var p = audio.play(); if (p && p["catch"]) p["catch"](function () {}); }
   }
   function step(d) {
     if (!queue.length) return;
     select((idx + d + queue.length) % queue.length, !audio.paused || started);
   }
-  var started = false;
   function toggle() {
     if (!audio.src) audio.src = audioUrl(queue[idx].file);
     if (audio.paused) {
@@ -384,18 +489,12 @@
   audio.addEventListener("play", syncPlay);
   audio.addEventListener("pause", syncPlay);
   audio.addEventListener("ended", function () { step(1); });
-  audio.addEventListener("timeupdate", function () {
-    var tm = $("tm"), fill = $("fill");
-    if (!tm || !fill) return;
-    var dur = isFinite(audio.duration) && audio.duration > 0
-      ? audio.duration : (queue[idx] && queue[idx].duration) || 0;
-    tm.textContent = fmt(audio.currentTime) + (dur ? " / " + fmt(dur) : "");
-    fill.style.width = (dur ? Math.min(100, audio.currentTime / dur * 100) : 0) + "%";
-  });
+  audio.addEventListener("timeupdate", paint);
+  audio.addEventListener("loadedmetadata", paint);
+
   /* Одна нечитаемая запись не должна останавливать эфир — переходим к
      следующей. Но если не открывается вообще ничего, перебор превращается в
-     бесконечный круг с запросами каждую секунду: считаем неудачи подряд и,
-     пройдя очередь целиком, честно останавливаемся. */
+     бесконечный круг: считаем неудачи подряд и, пройдя очередь, замолкаем. */
   var fails = 0;
   audio.addEventListener("playing", function () { fails = 0; });
   audio.addEventListener("error", function () {
@@ -406,9 +505,78 @@
     audio.removeAttribute("src");
     var b = $("play"); if (b) b.textContent = "▶";
     if (eq) eq.hidden = true;
-    var tm = $("tm");
-    if (tm) tm.textContent = "записи не читаются";
+    var tm = $("tm"); if (tm) tm.textContent = "записи не читаются";
   });
+
+  /* ---- переход на сайт: эфир должен продолжиться, а не начаться заново --- */
+  $("open").addEventListener("click", function () {
+    var t = queue[idx];
+    var url = SITE;
+    if (t && t.file) {
+      url += "?play=" + encodeURIComponent(t.file) +
+             "&at=" + Math.floor(audio.currentTime || 0) + "#air";
+    }
+    this.href = url;
+    audio.pause();       // чтобы две вкладки не играли хором
+  });
+
+  /* ------------------------- перетаскивание панели ---------------------- */
+  (function draggable() {
+    var head = $("head"), sx = 0, sy = 0, ox = 0, oy = 0, on = false;
+    function point(e) {
+      return e.touches && e.touches[0] ? e.touches[0] : e;
+    }
+    function down(e) {
+      if (e.target.closest && e.target.closest("#close")) return;
+      var r = panel.getBoundingClientRect();
+      panel.classList.add("moved");
+      panel.style.left = r.left + "px";
+      panel.style.top = r.top + "px";
+      var p = point(e);
+      sx = p.clientX; sy = p.clientY; ox = r.left; oy = r.top; on = true;
+      head.classList.add("drag");
+      if (e.cancelable) e.preventDefault();
+    }
+    function move(e) {
+      if (!on) return;
+      var p = point(e);
+      var w = panel.offsetWidth, h = panel.offsetHeight;
+      var x = Math.min(window.innerWidth - w - 4, Math.max(4, ox + p.clientX - sx));
+      var y = Math.min(window.innerHeight - h - 4, Math.max(4, oy + p.clientY - sy));
+      panel.style.left = x + "px";
+      panel.style.top = y + "px";
+    }
+    function up() {
+      if (!on) return;
+      on = false;
+      head.classList.remove("drag");
+      remember("pos", panel.style.left + "|" + panel.style.top);
+    }
+    head.addEventListener("mousedown", down);
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", up);
+    head.addEventListener("touchstart", down, { passive: false });
+    document.addEventListener("touchmove", move, { passive: false });
+    document.addEventListener("touchend", up);
+
+    // вернуть на место, где человек оставил панель в прошлый раз
+    var saved = recall("pos");
+    if (saved && /^\d+px\|\d+px$/.test(saved)) {
+      var p = saved.split("|");
+      panel.classList.add("moved");
+      panel.style.left = p[0];
+      panel.style.top = p[1];
+    }
+    // окно уменьшили — не даём панели уехать за край
+    window.addEventListener("resize", function () {
+      if (!panel.classList.contains("moved")) return;
+      var w = panel.offsetWidth, h = panel.offsetHeight;
+      panel.style.left = Math.min(parseInt(panel.style.left, 10) || 0,
+                                  Math.max(4, window.innerWidth - w - 4)) + "px";
+      panel.style.top = Math.min(parseInt(panel.style.top, 10) || 0,
+                                 Math.max(4, window.innerHeight - h - 4)) + "px";
+    });
+  })();
 
   /* ------------------------------- открытие ----------------------------- */
   function open(on) {
@@ -419,12 +587,11 @@
   fab.addEventListener("click", function () { open(!opened); });
   $("close").addEventListener("click", function () { open(false); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && opened) open(false); });
-  // клик мимо виджета закрывает панель — привычное поведение для таких окон
   document.addEventListener("click", function (e) {
     if (!opened) return;
     if (e.composedPath && e.composedPath().indexOf(host) !== -1) return;
     open(false);
   });
 
-  load();   // данные тянем сразу, чтобы панель открывалась уже заполненной
+  load();
 })();
