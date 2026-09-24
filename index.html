@@ -107,6 +107,15 @@
   /* Длительность выпуска рядом с «Эфир сегодня»: та же строка, но тише,
      чтобы читалось как уточнение, а не как часть заголовка. */
   .adl-len{color:var(--accent);letter-spacing:.06em;}
+  .air-progress{
+    height:5px;border-radius:3px;overflow:hidden;margin:0 0 14px;
+    background:color-mix(in srgb, var(--text-dim) 22%, transparent);
+  }
+  .air-progress i{
+    display:block;height:100%;width:0;border-radius:3px;
+    background:linear-gradient(90deg, var(--accent), var(--accent-strong));
+    transition:width .35s linear;
+  }
   .eyebrow{
     font-family:var(--font-mono);
     font-size:12px;
@@ -1460,11 +1469,14 @@
   .back-link:hover{color:var(--accent-strong);}
   /* фильтры слева, порядок сортировки справа */
   .lib-controls{
-    display:flex;align-items:center;justify-content:space-between;
+    /* Теги нередко переносятся на вторую строку, и при выравнивании по
+       центру «Порядок» повисал между строками. Прижимаем к верху — тогда
+       он всегда стоит на одной линии с первым рядом тегов. */
+    display:flex;align-items:flex-start;justify-content:space-between;
     gap:18px;flex-wrap:wrap;margin:18px 0 26px;
   }
   .lib-controls .filter-row{margin:0;flex:1;min-width:0;}
-  .sort-wrap{display:inline-flex;align-items:center;gap:9px;flex:none;}
+  .sort-wrap{display:inline-flex;align-items:center;gap:9px;flex:none;min-height:34px;}
   .sort-wrap > span{
     font-family:var(--font-mono);font-size:10px;text-transform:uppercase;
     letter-spacing:.06em;color:var(--text-dim);
@@ -1770,6 +1782,12 @@
 
   <section class="queue-wrap">
     <div class="wrap">
+      <!-- Полоса всего выпуска: сколько эфира уже позади. Не перемотка —
+           просто картина дня, поэтому она не кликается. -->
+      <div class="air-progress" id="airProgress" hidden
+           title="Сколько эфира этого дня уже прозвучало">
+        <i id="airProgressFill"></i>
+      </div>
       <div class="section-head">
         <div>
           <span class="eyebrow" id="airDayLabel">Очередь эфира</span>
@@ -2713,6 +2731,30 @@
 
   var dialLeft = document.getElementById("dialLeft");
 
+  /* Полоса всего выпуска. Прошедшее — это длительности всех записей до
+     текущей плюс позиция внутри неё. Если слушают что-то мимо эфира —
+     подкаст со своей страницы, — полосу не трогаем: она про эфир дня, а не
+     про то, что сейчас в наушниках. */
+  function updateAirProgress(){
+    var bar = document.getElementById("airProgress");
+    var fill = document.getElementById("airProgressFill");
+    if(!bar || !fill) return;
+    var total = 0;
+    (tracks || []).forEach(function(t){ if(t && t.dur > 0) total += t.dur; });
+    if(!(total > 0)){ bar.hidden = true; return; }
+    bar.hidden = false;
+    var idx = currentIndex();
+    if(idx < 0) return;                       // играет не эфир — оставляем как было
+    var done = 0;
+    for(var i = 0; i < idx; i++){ if(tracks[i] && tracks[i].dur > 0) done += tracks[i].dur; }
+    var tr = tracks[idx];
+    var cur = (tr && tr.src) ? (audioEl.currentTime || 0) : 0;
+    var dur = (tr && tr.src && isFinite(audioEl.duration) && audioEl.duration > 0)
+      ? audioEl.duration : (tr && tr.dur) || 0;
+    if(dur > 0) done += Math.min(cur, dur);
+    fill.style.width = (Math.max(0, Math.min(1, done / total)) * 100).toFixed(2) + "%";
+  }
+
   function updateProgressFromAudio(){
     var tr = getTrack(state.currentId);
     if(!tr){
@@ -2736,6 +2778,7 @@
       seek.style.setProperty("--p", (pct*100)+"%");
       seek.value = Math.round(pct*1000);
     }
+    updateAirProgress();
   }
 
   /* Текст под заголовком, когда у записи нет своего описания. */
@@ -6951,6 +6994,7 @@
     (tracks || []).forEach(function(t){
       if(t && t.dur > 0){ known += t.dur; } else if(t && !t.demo){ unknown++; }
     });
+    updateAirProgress();
     el.innerHTML = escapeHtml(dayLabel(airDay)) +
       (known > 0
         ? ' <span class="adl-len">(' + (unknown ? "около " : "") +
