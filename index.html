@@ -104,6 +104,9 @@
   a{color:inherit;}
   audio{display:none;}
   .wrap{max-width:1080px;margin:0 auto;padding-inline:20px;}
+  /* Длительность выпуска рядом с «Эфир сегодня»: та же строка, но тише,
+     чтобы читалось как уточнение, а не как часть заголовка. */
+  .adl-len{color:var(--accent);letter-spacing:.06em;}
   .eyebrow{
     font-family:var(--font-mono);
     font-size:12px;
@@ -3877,6 +3880,7 @@
     if(tr && tr.src && isFinite(audioEl.duration)){ tr.dur = audioEl.duration; }
     updateDurationDisplays();
     renderQueue();
+    renderAirDayLabel();   // общая длительность выпуска подросла на эту запись
   });
   /* Битый или недокачанный файл не должен останавливать эфир: радио
      помечает такую запись и переходит к следующей. Счётчик не даёт уйти
@@ -6463,6 +6467,17 @@
       })();
     });
   }
+  /* «1 час 30 мин». Часы без минут и минуты без часов выглядят живее
+     жёсткого формата, поэтому лишнее опускаем. */
+  function humanLength(sec){
+    var total = Math.round(sec || 0);
+    if(total < 60) return "меньше минуты";
+    var h = Math.floor(total / 3600), m = Math.round((total % 3600) / 60);
+    if(m === 60){ h += 1; m = 0; }
+    if(!h) return m + " мин";
+    return h + " " + plural(h, "час", "часа", "часов") + (m ? " " + m + " мин" : "");
+  }
+
   function humanMinutes(sec){
     var m = Math.round((sec || 0) / 60);
     if(m < 1) return "меньше минуты";
@@ -6928,7 +6943,19 @@
     var el = document.getElementById("airDayLabel");
     if(!el) return;
     var isToday = airDay === todayStr();
-    el.textContent = dayLabel(airDay);
+    /* Длительность считаем по тем записям, у которых она известна. У части
+       записей её может не быть — например, файл только что загрузили и
+       браузер ещё не дочитал заголовок. Тогда честнее показать «около»,
+       чем уверенно занизить цифру. */
+    var known = 0, unknown = 0;
+    (tracks || []).forEach(function(t){
+      if(t && t.dur > 0){ known += t.dur; } else if(t && !t.demo){ unknown++; }
+    });
+    el.innerHTML = escapeHtml(dayLabel(airDay)) +
+      (known > 0
+        ? ' <span class="adl-len">(' + (unknown ? "около " : "") +
+          escapeHtml(humanLength(known)) + ')</span>'
+        : "");
     el.classList.toggle("is-archive", !!airDay && !isToday);
     var back = document.getElementById("airDayBack");
     if(back){
