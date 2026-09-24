@@ -93,6 +93,273 @@
     return (t.charAt(0) || "V").toUpperCase();
   }
 
+  /* Минимальный кодировщик QR: байтовый режим, уровень коррекции L,
+     версии 1–10 (до 271 байта). Больше нам и не нужно: ссылка на запись
+     с секундой укладывается в сотню символов.
+     Таблицы здесь только две — сколько данных влезает в версию и где стоят
+     выравнивающие квадраты. Всё остальное считается, а не берётся из памяти:
+     и служебные биты формата, и биты версии — это обычный полиномиальный
+     остаток, его надёжнее вычислить, чем выписать. */
+  function qrMatrix(text) {
+    /* ---------- байты ---------- */
+    var data = [];
+    var str = unescape(encodeURIComponent(String(text)));
+    for (var i = 0; i < str.length; i++) data.push(str.charCodeAt(i) & 255);
+
+    /* ---------- выбор версии ---------- */
+    var CAP = [17, 32, 53, 78, 106, 134, 154, 192, 230, 271];   // байт при уровне L
+    var ECC = [7, 10, 15, 20, 26, 18, 20, 24, 30, 18];          // проверочных на блок
+    var BLK = [                                                  // [сколько блоков, данных в блоке]
+      [[1, 19]], [[1, 34]], [[1, 55]], [[1, 80]], [[1, 108]],
+      [[2, 68]], [[2, 78]], [[2, 97]], [[2, 116]], [[2, 68], [2, 69]]
+    ];
+    var ver = 0;
+    for (var v = 0; v < CAP.length; v++) if (data.length <= CAP[v]) { ver = v + 1; break; }
+    if (!ver) return null;
+    var size = 17 + ver * 4;
+    var ecPerBlock = ECC[ver - 1];
+    var groups = BLK[ver - 1];
+    var totalData = 0;
+    groups.forEach(function (g) { totalData += g[0] * g[1]; });
+
+    /* ---------- поток бит ---------- */
+    var bits = [];
+    function push(val, len) { for (var i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); }
+    push(4, 4);                                   // байтовый режим
+    push(data.length, ver < 10 ? 8 : 16);
+    data.forEach(function (b) { push(b, 8); });
+    for (var i = 0; i < 4 && bits.length < totalData * 8; i++) bits.push(0);   // терминатор
+    while (bits.length % 8) bits.push(0);
+    var codewords = [];
+    for (var i = 0; i < bits.length; i += 8) {
+      var b = 0;
+      for (var k = 0; k < 8; k++) b = (b << 1) | bits[i + k];
+      codewords.push(b);
+    }
+    var pad = [0xEC, 0x11], pi = 0;
+    while (codewords.length < totalData) codewords.push(pad[pi++ % 2]);
+
+    /* ---------- Рид—Соломон ---------- */
+    var EXP = new Array(512), LOG = new Array(256);
+    (function () {
+      var x = 1;
+      for (var i = 0; i < 255; i++) {
+        EXP[i] = x; LOG[x] = i;
+        x <<= 1; if (x & 256) x ^= 0x11D;
+      }
+      for (var i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+    })();
+    function mul(a, b) { return (a && b) ? EXP[LOG[a] + LOG[b]] : 0; }
+    function rsGen(n) {
+      var poly = [1];
+      for (var i = 0; i < n; i++) {
+        var next = poly.concat([0]);
+        for (var j = 0; j < poly.length; j++) next[j + 1] ^= mul(poly[j], EXP[i]);
+        poly = next;
+      }
+      return poly;
+    }
+    function rsEnc(block, n) {
+      var gen = rsGen(n);
+      var res = block.concat(new Array(n).fill(0));
+      for (var i = 0; i < block.length; i++) {
+        var factor = res[i];
+        if (!factor) continue;
+        for (var j = 0; j < gen.length; j++) res[i + j] ^= mul(gen[j], factor);
+      }
+      return res.slice(block.length);
+    }
+
+    /* ---------- блоки и перемешивание ---------- */
+    var dataBlocks = [], ecBlocks = [], at = 0;
+    groups.forEach(function (g) {
+      for (var n = 0; n < g[0]; n++) {
+        var chunk = codewords.slice(at, at + g[1]); at += g[1];
+        dataBlocks.push(chunk);
+        ecBlocks.push(rsEnc(chunk, ecPerBlock));
+      }
+    });
+    var out = [], maxLen = 0;
+    dataBlocks.forEach(function (b) { maxLen = Math.max(maxLen, b.length); });
+    for (var i = 0; i < maxLen; i++)
+      for (var b = 0; b < dataBlocks.length; b++)
+        if (i < dataBlocks[b].length) out.push(dataBlocks[b][i]);
+    for (var i = 0; i < ecPerBlock; i++)
+      for (var b = 0; b < ecBlocks.length; b++) out.push(ecBlocks[b][i]);
+
+    var finalBits = [];
+    out.forEach(function (b) { for (var i = 7; i >= 0; i--) finalBits.push((b >> i) & 1); });
+    var tailBits = (ver >= 2 && ver <= 6) ? 7 : 0;   // добивка до конца области данных
+    for (var i = 0; i < tailBits; i++) finalBits.push(0);
+
+    /* ---------- сетка ---------- */
+    var m = [], reserved = [];
+    for (var r = 0; r < size; r++) {
+      m.push(new Array(size).fill(0));
+      reserved.push(new Array(size).fill(false));
+    }
+    function set(r, c, val) { m[r][c] = val ? 1 : 0; reserved[r][c] = true; }
+    function finder(r, c) {
+      for (var dr = -1; dr <= 7; dr++) for (var dc = -1; dc <= 7; dc++) {
+        var rr = r + dr, cc = c + dc;
+        if (rr < 0 || cc < 0 || rr >= size || cc >= size) continue;
+        var on = (dr >= 0 && dr <= 6 && (dc === 0 || dc === 6)) ||
+                 (dc >= 0 && dc <= 6 && (dr === 0 || dr === 6)) ||
+                 (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4);
+        set(rr, cc, on);
+      }
+    }
+    finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+    for (var i = 8; i < size - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+
+    var ALIGN = [[], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34],
+                 [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]][ver - 1];
+    var lastAl = ALIGN[ALIGN.length - 1];
+    for (var a = 0; a < ALIGN.length; a++) for (var b = 0; b < ALIGN.length; b++) {
+      var ar = ALIGN[a], ac = ALIGN[b];
+      /* Пропускаем только три угла, где стоят большие поисковые квадраты.
+         Остальные рисуем всегда — в том числе поверх линии синхронизации:
+         там выравнивающий квадрат главнее. Раньше проверка была «занято ли
+         место», и квадраты на этой линии терялись, из-за чего версии от
+         седьмой и выше переставали читаться. */
+      if ((ar === 6 && ac === 6) || (ar === 6 && ac === lastAl) ||
+          (ar === lastAl && ac === 6)) continue;
+      for (var dr = -2; dr <= 2; dr++) for (var dc = -2; dc <= 2; dc++)
+        set(ar + dr, ac + dc, Math.max(Math.abs(dr), Math.abs(dc)) !== 1);
+    }
+    set(size - 8, 8, 1);                                   // обязательный тёмный модуль
+
+    // места под служебные биты формата
+    for (var i = 0; i < 9; i++) {
+      if (!reserved[8][i]) reserved[8][i] = true;
+      if (!reserved[i][8]) reserved[i][8] = true;
+    }
+    for (var i = 0; i < 8; i++) { reserved[8][size - 1 - i] = true; reserved[size - 1 - i][8] = true; }
+    if (ver >= 7) for (var i = 0; i < 6; i++) for (var j = 0; j < 3; j++) {
+      reserved[size - 11 + j][i] = true; reserved[i][size - 11 + j] = true;
+    }
+
+    /* ---------- укладка данных змейкой ---------- */
+    var bi = 0, up = true;
+    for (var col = size - 1; col > 0; col -= 2) {
+      if (col === 6) col--;                                // столбец синхрополосы пропускаем
+      for (var n = 0; n < size; n++) {
+        var row = up ? size - 1 - n : n;
+        for (var c = 0; c < 2; c++) {
+          var cc = col - c;
+          if (reserved[row][cc]) continue;
+          m[row][cc] = bi < finalBits.length ? finalBits[bi++] : 0;
+        }
+      }
+      up = !up;
+    }
+
+    /* ---------- маски и выбор лучшей ---------- */
+    function maskBit(k, r, c) {
+      switch (k) {
+        case 0: return (r + c) % 2 === 0;
+        case 1: return r % 2 === 0;
+        case 2: return c % 3 === 0;
+        case 3: return (r + c) % 3 === 0;
+        case 4: return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+        case 5: return (r * c) % 2 + (r * c) % 3 === 0;
+        case 6: return ((r * c) % 2 + (r * c) % 3) % 2 === 0;
+        default: return ((r + c) % 2 + (r * c) % 3) % 2 === 0;
+      }
+    }
+    function penalty(g) {
+      var p = 0, i, j, run, dark = 0;
+      for (i = 0; i < size; i++) {
+        run = 1;
+        for (j = 1; j < size; j++) {
+          if (g[i][j] === g[i][j - 1]) { run++; } else { if (run >= 5) p += run - 2; run = 1; }
+        }
+        if (run >= 5) p += run - 2;
+        run = 1;
+        for (j = 1; j < size; j++) {
+          if (g[j][i] === g[j - 1][i]) { run++; } else { if (run >= 5) p += run - 2; run = 1; }
+        }
+        if (run >= 5) p += run - 2;
+      }
+      for (i = 0; i < size - 1; i++) for (j = 0; j < size - 1; j++)
+        if (g[i][j] === g[i][j + 1] && g[i][j] === g[i + 1][j] && g[i][j] === g[i + 1][j + 1]) p += 3;
+      var pat = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0];
+      function look(line) {
+        var c = 0;
+        for (var k = 0; k + 11 <= size; k++) {
+          var ok = true, ok2 = true;
+          for (var t = 0; t < 11; t++) {
+            if (line[k + t] !== pat[t]) ok = false;
+            if (line[k + t] !== pat[10 - t]) ok2 = false;
+          }
+          if (ok || ok2) c++;
+        }
+        return c * 40;
+      }
+      for (i = 0; i < size; i++) {
+        p += look(g[i]);
+        var colArr = [];
+        for (j = 0; j < size; j++) colArr.push(g[j][i]);
+        p += look(colArr);
+      }
+      for (i = 0; i < size; i++) for (j = 0; j < size; j++) if (g[i][j]) dark++;
+      p += Math.floor(Math.abs(dark * 100 / (size * size) - 50) / 5) * 10;
+      return p;
+    }
+
+    /* биты формата и версии считаем полиномиальным остатком — так надёжнее,
+       чем держать в коде таблицы, в которых легко ошибиться */
+    /* Служебные биты — обычный остаток от деления на образующий многочлен.
+       Считаем, а не держим таблицей: в таблице из восьми пятнадцатибитных
+       строк ошибиться проще, чем в четырёх строках кода. */
+    function blen(x) { return x === 0 ? 0 : x.toString(2).length; }
+    function polyRem(dataShifted, gen) {
+      var v = dataShifted, g = blen(gen);
+      while (blen(v) >= g) v ^= gen << (blen(v) - g);
+      return v;
+    }
+    function formatBits(mask) {
+      var v = (0x01 << 3) | mask;                       // уровень L = 01, затем маска
+      return (((v << 10) | polyRem(v << 10, 0x537)) ^ 0x5412);
+    }
+    function versionBits(version) {
+      return (version << 12) | polyRem(version << 12, 0x1F25);
+    }
+
+    var best = null, bestScore = Infinity, bestMask = 0;
+    for (var mask = 0; mask < 8; mask++) {
+      var g = m.map(function (row) { return row.slice(); });
+      for (var r = 0; r < size; r++) for (var c = 0; c < size; c++)
+        if (!reserved[r][c] && maskBit(mask, r, c)) g[r][c] ^= 1;
+      // служебные биты влияют на штраф, поэтому вписываем их до оценки
+      var f = formatBits(mask);
+      for (var i = 0; i < 15; i++) {
+        var bit = (f >> i) & 1;
+        // первая копия: вертикальная полоса у левого верхнего квадрата
+        if (i < 6) g[i][8] = bit;
+        else if (i === 6) g[7][8] = bit;
+        else if (i === 7) g[8][8] = bit;
+        else if (i === 8) g[8][7] = bit;
+        else g[8][14 - i] = bit;
+        // вторая копия: у правого верхнего и левого нижнего
+        if (i < 8) g[8][size - 1 - i] = bit;
+        else g[size - 15 + i][8] = bit;
+      }
+      g[size - 8][8] = 1;
+      if (ver >= 7) {
+        var vb = versionBits(ver);
+        for (var i = 0; i < 18; i++) {
+          var bit = (vb >> i) & 1;
+          g[Math.floor(i / 3)][size - 11 + (i % 3)] = bit;
+          g[size - 11 + (i % 3)][Math.floor(i / 3)] = bit;
+        }
+      }
+      var sc = penalty(g);
+      if (sc < bestScore) { bestScore = sc; best = g; bestMask = mask; }
+    }
+    return best;
+  }
+
   /* --------------------------------- вёрстка ---------------------------- */
   var host = document.createElement("div");
   host.id = "voice-ai-widget";
@@ -199,11 +466,26 @@
     "  letter-spacing:.1em;text-transform:uppercase;color:#f4a730;margin-bottom:4px;}",
     ".peek .mid span{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
     ".peek .mid:hover span{color:#f4a730;}",
-    ".foot{padding:11px 14px;border-top:1px solid #3a3747;}",
-    ".foot a{display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;",
-    "  background:#292734;border:1px solid #3a3747;border-radius:10px;padding:9px;",
-    "  color:#f3f1ec;font-size:13px;font-weight:600;}",
+    ".foot{padding:11px 14px;border-top:1px solid #3a3747;display:flex;gap:9px;}",
+    ".foot a{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:7px;",
+    "  text-decoration:none;background:#292734;border:1px solid #3a3747;border-radius:10px;",
+    "  padding:9px;color:#f3f1ec;font-size:13px;font-weight:600;white-space:nowrap;",
+    "  overflow:hidden;text-overflow:ellipsis;}",
     ".foot a:hover{border-color:#f4a730;color:#f4a730;}",
+    ".foot .qrbtn{flex:none;width:42px;background:#292734;border:1px solid #3a3747;",
+    "  border-radius:10px;color:#f3f1ec;cursor:pointer;display:flex;align-items:center;",
+    "  justify-content:center;padding:0;}",
+    ".foot .qrbtn:hover{border-color:#f4a730;color:#f4a730;}",
+    ".foot .qrbtn svg{width:18px;height:18px;}",
+    /* окно с кодом поверх панели */
+    ".qrview{position:absolute;inset:0;background:#1c1a24;z-index:5;display:flex;",
+    "  flex-direction:column;align-items:center;justify-content:center;gap:11px;padding:18px;}",
+    ".qrview canvas{background:#fff;border-radius:10px;display:block;}",
+    ".qrview .cap{font-size:12px;color:#a19cae;text-align:center;line-height:1.45;",
+    "  max-width:100%;overflow:hidden;text-overflow:ellipsis;}",
+    ".qrview .back{background:#292734;border:1px solid #3a3747;border-radius:9px;",
+    "  color:#f3f1ec;cursor:pointer;padding:7px 15px;font:inherit;font-size:13px;}",
+    ".qrview .back:hover{border-color:#f4a730;color:#f4a730;}",
     ".msg{padding:20px 16px;text-align:center;color:#a19cae;font-size:13px;}",
     "@media (max-width:420px){",
     "  .panel{width:calc(100vw - 32px);}",
@@ -225,8 +507,14 @@
         '<button class="x" id="close" aria-label="Закрыть">×</button>' +
       '</div>' +
       '<div id="body"><div class="msg">Загружаю эфир…</div></div>' +
-      '<div class="foot"><a id="open" href="' + esc(SITE) + '" target="_blank" rel="noopener">' +
-        'Открыть Voice Ai →</a></div>' +
+      '<div class="foot">' +
+        '<a id="open" href="' + esc(SITE) + '" target="_blank" rel="noopener">Открыть Voice Ai →</a>' +
+        '<button class="qrbtn" id="qrbtn" title="Продолжить на телефоне" aria-label="Продолжить на телефоне">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor">' +
+          '<path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm8-2h3v3h-3v-3zm5 0h3v3h-3v-3zm-5 5h3v3h-3v-3zm5 0h3v3h-3v-3z"/>' +
+          '</svg>' +
+        '</button>' +
+      '</div>' +
     '</div>' +
     '<button class="fab" id="fab" aria-label="' + esc(TITLE) + ' — слушать эфир">' +
       '<b>V<i>AI</i></b>' +
@@ -508,17 +796,54 @@
     var tm = $("tm"); if (tm) tm.textContent = "записи не читаются";
   });
 
+  /* ---- код для телефона: та же ссылка, только картинкой ---------------- */
+  function resumeUrl() {
+    var t = queue[idx];
+    if (!t || !t.file) return SITE;
+    return SITE + "?play=" + encodeURIComponent(t.file) +
+           "&at=" + Math.floor(audio.currentTime || 0) + "#air";
+  }
+  function showQr() {
+    var t = queue[idx];
+    if (!t) return;
+    var url = resumeUrl();
+    var m = qrMatrix(url);
+    var box = document.createElement("div");
+    box.className = "qrview";
+    if (!m) {
+      box.innerHTML = '<div class="cap">Ссылка слишком длинная для кода.</div>';
+    } else {
+      var n = m.length, quiet = 4;
+      var box2 = Math.max(3, Math.floor(230 / (n + quiet * 2)));
+      var side = (n + quiet * 2) * box2;
+      var cv = document.createElement("canvas");
+      cv.width = side; cv.height = side;
+      var ctx = cv.getContext("2d");
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, side, side);
+      ctx.fillStyle = "#15141c";
+      for (var r = 0; r < n; r++) for (var c = 0; c < n; c++)
+        if (m[r][c]) ctx.fillRect((c + quiet) * box2, (r + quiet) * box2, box2, box2);
+      box.appendChild(cv);
+      var cap = document.createElement("div");
+      cap.className = "cap";
+      cap.textContent = "Наведите камеру телефона — откроется «" +
+        (t.title || "запись") + "» с " + fmt(audio.currentTime || 0) + ".";
+      box.appendChild(cap);
+    }
+    var back = document.createElement("button");
+    back.className = "back";
+    back.textContent = "Назад";
+    back.addEventListener("click", function () { box.parentNode && box.parentNode.removeChild(box); });
+    box.appendChild(back);
+    panel.appendChild(box);
+  }
+
   /* ---- переход на сайт: эфир должен продолжиться, а не начаться заново --- */
   $("open").addEventListener("click", function () {
-    var t = queue[idx];
-    var url = SITE;
-    if (t && t.file) {
-      url += "?play=" + encodeURIComponent(t.file) +
-             "&at=" + Math.floor(audio.currentTime || 0) + "#air";
-    }
-    this.href = url;
+    this.href = resumeUrl();
     audio.pause();       // чтобы две вкладки не играли хором
   });
+  $("qrbtn").addEventListener("click", showQr);
 
   /* ------------------------- перетаскивание панели ---------------------- */
   (function draggable() {
