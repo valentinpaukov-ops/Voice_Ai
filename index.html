@@ -1676,6 +1676,11 @@
     .brand .freq{display:none;}   /* декоративная подпись съедала ~100px */
   }
   @media (max-width:860px){
+    /* Плеер в шапке: четыре кнопки и полоски в один ряд по центру —
+       прижатые влево они выглядели случайно брошенными. */
+    .hero-controls{justify-content:center;gap:14px;}
+    .hero-nav-group{justify-content:center;}
+    .vu{justify-content:center;width:100%;}
     .topbar .search-wrap{display:none;}
     .menu-btn{display:flex;}
     .hero-grid{grid-template-columns:1fr;}
@@ -1683,17 +1688,42 @@
     .media-grid,.ann-grid{grid-template-columns:1fr;}
     .list-row{grid-template-columns:1fr;gap:4px;}
     .list-date{padding-top:0;}
-    .pb-right .vol-wrap{display:none;}
-    .player-inner{grid-template-columns:auto 1fr;}
-    .pb-track{display:none;}
+    .pb-right{display:none;}
+    /* Слева управление, справа — что играет. Раньше название пряталось, и
+       при прокрутке было не понять, что звучит: плеер уехал, заголовок тоже. */
+    .player-inner{grid-template-columns:auto minmax(0,1fr);gap:12px;}
+    .pb-controls{order:1;}
+    .pb-track{order:2;min-width:0;text-align:right;}
+    .pb-track .t{font-size:13px;}
+    .pb-track .s{font-size:11px;}
+    .pb-seek-row{width:100%;}
     .section-head{align-items:stretch;}
     .queue-actions{align-items:stretch;width:100%;}
     .btn-add{justify-content:center;}
   }
   @media (max-width:560px){
-    .brand .freq{display:none;}          /* «202.6 tedointernal.fm» — декор, на телефоне мешает */
+    /* Название радио показываем целиком и на телефоне — просто мельче:
+       без частоты «VOICE AI» выглядит обрубком. «VOICE» и «AI» должны
+       остаться в одной строке, а частота переносится под них — поэтому
+       перенос по ширине, а не колонка. */
+    .brand{flex-wrap:wrap;gap:0 7px;font-size:18px;line-height:1;}
+    .brand .freq{display:block;flex:0 0 100%;font-size:9px;letter-spacing:.02em;
+      line-height:1.2;margin-top:2px;}
     .topbar-right{gap:8px;}
   }
+
+  /* Кнопка возврата к началу: на длинной ленте эфира прокрутка вверх
+     пальцем занимает неприлично долго. */
+  .to-top{
+    position:fixed;z-index:60;right:16px;
+    bottom:calc(var(--player-h) + 18px + env(safe-area-inset-bottom,0px));
+    width:42px;height:42px;border-radius:50%;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-dim);
+    box-shadow:var(--shadow);
+  }
+  .to-top svg{width:19px;height:19px;}
+  .to-top:hover{border-color:var(--accent);color:var(--accent);}
 
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{
@@ -2160,6 +2190,10 @@
 </div>
 
 <!-- Передача эфира на телефон: код с ссылкой на текущую запись и секунду. -->
+<button type="button" class="to-top" id="toTop" hidden aria-label="Наверх" title="К началу страницы">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l7 7-1.4 1.4L13 8.8V20h-2V8.8l-4.6 4.6L5 12z"/></svg>
+</button>
+
 <div class="hand-back" id="handBack" hidden>
   <div class="hand-card" role="dialog" aria-label="Продолжить на телефоне">
     <button type="button" class="hand-x" id="handClose" aria-label="Закрыть">×</button>
@@ -5866,6 +5900,16 @@
     audioEl.addEventListener("timeupdate", seek);
     seek();
     setTimeout(off, 5200);
+
+    /* На телефоне браузер не включит звук, пока экрана не коснулись, —
+       переход по коду для него не считается действием человека. Спорить с
+       этим бесполезно, но можно не оставлять человека в тишине гадать:
+       если через секунду эфир так и не пошёл, честно пишем, что делать,
+       и называем секунду, с которой продолжим. */
+    setTimeout(function(){
+      if(!audioEl.paused) return;
+      showInlineHint("Нажмите в любом месте — продолжим с " + fmt(at));
+    }, 1000);
   }
 
   /* Минимальный кодировщик QR: байтовый режим, уровень коррекции L,
@@ -6211,6 +6255,22 @@
         document.body.removeChild(ta);
       }
     });
+  })();
+
+  /* Кнопка «наверх»: появляется, когда шапка эфира ушла из виду, и только
+     там, где прокрутка длинная. Прячем её, пока листать нечего. */
+  (function toTopUi(){
+    var btn = document.getElementById("toTop");
+    if(!btn) return;
+    function sync(){
+      btn.hidden = window.scrollY < 600;
+    }
+    window.addEventListener("scroll", sync, {passive:true});
+    window.addEventListener("resize", sync);
+    btn.addEventListener("click", function(){
+      window.scrollTo({top:0, behavior:"smooth"});
+    });
+    sync();
   })();
 
   function startAir(){ playCurrent(true); }
