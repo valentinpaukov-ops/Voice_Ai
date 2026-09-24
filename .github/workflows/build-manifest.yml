@@ -189,6 +189,15 @@ jobs:
               json.dump(out, fh, ensure_ascii=False, indent=2)
               fh.write("\n")
 
+          # Тот же манифест отдельным файлом-скриптом: виджет на чужом сайте
+          # не всегда может прочитать чужой JSON — браузер требует на это
+          # разрешения сервера, а заголовки GitHub Pages нам неподвластны.
+          # Скрипт же грузится с любого домена без разрешений.
+          with open(os.path.join(AUDIO_DIR, "manifest.js"), "w", encoding="utf-8") as fh:
+              fh.write("window.__voiceAiManifest=")
+              json.dump(out, fh, ensure_ascii=False, separators=(",", ":"))
+              fh.write(";\n")
+
           mb = sum(t.get("size", 0) for t in tracks) / 1e6
           print("Готово: %d записей (новых %d, сохранено %d), %.1f МБ" % (len(tracks), added, kept, mb))
           if mb > 700:
@@ -202,7 +211,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add audio/manifest.json
+          git add audio/manifest.json audio/manifest.js
           if git diff --staged --quiet; then
             echo "Манифест не изменился — коммит не нужен."
           else
