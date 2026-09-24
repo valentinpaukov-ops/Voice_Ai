@@ -110,6 +110,26 @@
   /* Длительность выпуска рядом с «Эфир сегодня»: та же строка, но тише,
      чтобы читалось как уточнение, а не как часть заголовка. */
   .adl-len{color:var(--accent);letter-spacing:.06em;}
+  .hand-btn svg{width:17px;height:17px;}
+  .hand-back{
+    position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
+    background:rgba(8,8,12,.72);padding:20px;
+  }
+  .hand-card{
+    position:relative;width:340px;max-width:100%;text-align:center;
+    background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;
+    padding:22px 20px 20px;box-shadow:var(--shadow);
+  }
+  .hand-card h3{margin:0 0 6px;font-size:19px;}
+  .hand-sub{margin:0 0 14px;font-size:13px;color:var(--text-dim);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .hand-card canvas{border-radius:10px;background:#fff;display:block;margin:0 auto;}
+  .hand-note{font-size:12px;color:var(--text-dim);margin:13px 0 12px;}
+  .hand-x{
+    position:absolute;top:8px;right:10px;background:none;border:none;cursor:pointer;
+    color:var(--text-dim);font-size:22px;line-height:1;padding:2px 6px;
+  }
+  .hand-x:hover{color:var(--text);}
   .air-progress{
     height:5px;border-radius:3px;overflow:hidden;margin:0 0 14px;
     background:color-mix(in srgb, var(--text-dim) 22%, transparent);
@@ -1770,6 +1790,12 @@
             <button class="skip-btn" id="heroNext" type="button" aria-label="Следующий материал в эфире" title="Следующий материал">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg>
             </button>
+            <button class="skip-btn hand-btn" id="heroHandoff" type="button"
+                    aria-label="Продолжить на телефоне" title="Продолжить на телефоне">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm8-2h3v3h-3v-3zm5 0h3v3h-3v-3zm-5 5h3v3h-3v-3zm5 0h3v3h-3v-3z"/>
+              </svg>
+            </button>
           </div>
           <div class="vu" id="heroVu">
             <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
@@ -2130,6 +2156,19 @@
     </div>
     <p class="lib-count" id="libCount"></p>
     <div id="libraryList"></div>
+  </div>
+</div>
+
+<!-- Передача эфира на телефон: код с ссылкой на текущую запись и секунду. -->
+<div class="hand-back" id="handBack" hidden>
+  <div class="hand-card" role="dialog" aria-label="Продолжить на телефоне">
+    <button type="button" class="hand-x" id="handClose" aria-label="Закрыть">×</button>
+    <h3>Продолжить на телефоне</h3>
+    <p class="hand-sub" id="handSub"></p>
+    <canvas id="handQr" width="280" height="280"></canvas>
+    <p class="hand-note">Наведите камеру телефона — эфир откроется на этой же
+      записи и с этой же секунды.</p>
+    <button type="button" class="nc-ghost" id="handCopy">Скопировать ссылку</button>
   </div>
 </div>
 
@@ -5828,6 +5867,351 @@
     seek();
     setTimeout(off, 5200);
   }
+
+  /* Минимальный кодировщик QR: байтовый режим, уровень коррекции L,
+     версии 1–10 (до 271 байта). Больше нам и не нужно: ссылка на запись
+     с секундой укладывается в сотню символов.
+     Таблицы здесь только две — сколько данных влезает в версию и где стоят
+     выравнивающие квадраты. Всё остальное считается, а не берётся из памяти:
+     и служебные биты формата, и биты версии — это обычный полиномиальный
+     остаток, его надёжнее вычислить, чем выписать. */
+  function qrMatrix(text) {
+    /* ---------- байты ---------- */
+    var data = [];
+    var str = unescape(encodeURIComponent(String(text)));
+    for (var i = 0; i < str.length; i++) data.push(str.charCodeAt(i) & 255);
+
+    /* ---------- выбор версии ---------- */
+    var CAP = [17, 32, 53, 78, 106, 134, 154, 192, 230, 271];   // байт при уровне L
+    var ECC = [7, 10, 15, 20, 26, 18, 20, 24, 30, 18];          // проверочных на блок
+    var BLK = [                                                  // [сколько блоков, данных в блоке]
+      [[1, 19]], [[1, 34]], [[1, 55]], [[1, 80]], [[1, 108]],
+      [[2, 68]], [[2, 78]], [[2, 97]], [[2, 116]], [[2, 68], [2, 69]]
+    ];
+    var ver = 0;
+    for (var v = 0; v < CAP.length; v++) if (data.length <= CAP[v]) { ver = v + 1; break; }
+    if (!ver) return null;
+    var size = 17 + ver * 4;
+    var ecPerBlock = ECC[ver - 1];
+    var groups = BLK[ver - 1];
+    var totalData = 0;
+    groups.forEach(function (g) { totalData += g[0] * g[1]; });
+
+    /* ---------- поток бит ---------- */
+    var bits = [];
+    function push(val, len) { for (var i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); }
+    push(4, 4);                                   // байтовый режим
+    push(data.length, ver < 10 ? 8 : 16);
+    data.forEach(function (b) { push(b, 8); });
+    for (var i = 0; i < 4 && bits.length < totalData * 8; i++) bits.push(0);   // терминатор
+    while (bits.length % 8) bits.push(0);
+    var codewords = [];
+    for (var i = 0; i < bits.length; i += 8) {
+      var b = 0;
+      for (var k = 0; k < 8; k++) b = (b << 1) | bits[i + k];
+      codewords.push(b);
+    }
+    var pad = [0xEC, 0x11], pi = 0;
+    while (codewords.length < totalData) codewords.push(pad[pi++ % 2]);
+
+    /* ---------- Рид—Соломон ---------- */
+    var EXP = new Array(512), LOG = new Array(256);
+    (function () {
+      var x = 1;
+      for (var i = 0; i < 255; i++) {
+        EXP[i] = x; LOG[x] = i;
+        x <<= 1; if (x & 256) x ^= 0x11D;
+      }
+      for (var i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+    })();
+    function mul(a, b) { return (a && b) ? EXP[LOG[a] + LOG[b]] : 0; }
+    function rsGen(n) {
+      var poly = [1];
+      for (var i = 0; i < n; i++) {
+        var next = poly.concat([0]);
+        for (var j = 0; j < poly.length; j++) next[j + 1] ^= mul(poly[j], EXP[i]);
+        poly = next;
+      }
+      return poly;
+    }
+    function rsEnc(block, n) {
+      var gen = rsGen(n);
+      var res = block.concat(new Array(n).fill(0));
+      for (var i = 0; i < block.length; i++) {
+        var factor = res[i];
+        if (!factor) continue;
+        for (var j = 0; j < gen.length; j++) res[i + j] ^= mul(gen[j], factor);
+      }
+      return res.slice(block.length);
+    }
+
+    /* ---------- блоки и перемешивание ---------- */
+    var dataBlocks = [], ecBlocks = [], at = 0;
+    groups.forEach(function (g) {
+      for (var n = 0; n < g[0]; n++) {
+        var chunk = codewords.slice(at, at + g[1]); at += g[1];
+        dataBlocks.push(chunk);
+        ecBlocks.push(rsEnc(chunk, ecPerBlock));
+      }
+    });
+    var out = [], maxLen = 0;
+    dataBlocks.forEach(function (b) { maxLen = Math.max(maxLen, b.length); });
+    for (var i = 0; i < maxLen; i++)
+      for (var b = 0; b < dataBlocks.length; b++)
+        if (i < dataBlocks[b].length) out.push(dataBlocks[b][i]);
+    for (var i = 0; i < ecPerBlock; i++)
+      for (var b = 0; b < ecBlocks.length; b++) out.push(ecBlocks[b][i]);
+
+    var finalBits = [];
+    out.forEach(function (b) { for (var i = 7; i >= 0; i--) finalBits.push((b >> i) & 1); });
+    var tailBits = (ver >= 2 && ver <= 6) ? 7 : 0;   // добивка до конца области данных
+    for (var i = 0; i < tailBits; i++) finalBits.push(0);
+
+    /* ---------- сетка ---------- */
+    var m = [], reserved = [];
+    for (var r = 0; r < size; r++) {
+      m.push(new Array(size).fill(0));
+      reserved.push(new Array(size).fill(false));
+    }
+    function set(r, c, val) { m[r][c] = val ? 1 : 0; reserved[r][c] = true; }
+    function finder(r, c) {
+      for (var dr = -1; dr <= 7; dr++) for (var dc = -1; dc <= 7; dc++) {
+        var rr = r + dr, cc = c + dc;
+        if (rr < 0 || cc < 0 || rr >= size || cc >= size) continue;
+        var on = (dr >= 0 && dr <= 6 && (dc === 0 || dc === 6)) ||
+                 (dc >= 0 && dc <= 6 && (dr === 0 || dr === 6)) ||
+                 (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4);
+        set(rr, cc, on);
+      }
+    }
+    finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+    for (var i = 8; i < size - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+
+    var ALIGN = [[], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34],
+                 [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]][ver - 1];
+    var lastAl = ALIGN[ALIGN.length - 1];
+    for (var a = 0; a < ALIGN.length; a++) for (var b = 0; b < ALIGN.length; b++) {
+      var ar = ALIGN[a], ac = ALIGN[b];
+      /* Пропускаем только три угла, где стоят большие поисковые квадраты.
+         Остальные рисуем всегда — в том числе поверх линии синхронизации:
+         там выравнивающий квадрат главнее. Раньше проверка была «занято ли
+         место», и квадраты на этой линии терялись, из-за чего версии от
+         седьмой и выше переставали читаться. */
+      if ((ar === 6 && ac === 6) || (ar === 6 && ac === lastAl) ||
+          (ar === lastAl && ac === 6)) continue;
+      for (var dr = -2; dr <= 2; dr++) for (var dc = -2; dc <= 2; dc++)
+        set(ar + dr, ac + dc, Math.max(Math.abs(dr), Math.abs(dc)) !== 1);
+    }
+    set(size - 8, 8, 1);                                   // обязательный тёмный модуль
+
+    // места под служебные биты формата
+    for (var i = 0; i < 9; i++) {
+      if (!reserved[8][i]) reserved[8][i] = true;
+      if (!reserved[i][8]) reserved[i][8] = true;
+    }
+    for (var i = 0; i < 8; i++) { reserved[8][size - 1 - i] = true; reserved[size - 1 - i][8] = true; }
+    if (ver >= 7) for (var i = 0; i < 6; i++) for (var j = 0; j < 3; j++) {
+      reserved[size - 11 + j][i] = true; reserved[i][size - 11 + j] = true;
+    }
+
+    /* ---------- укладка данных змейкой ---------- */
+    var bi = 0, up = true;
+    for (var col = size - 1; col > 0; col -= 2) {
+      if (col === 6) col--;                                // столбец синхрополосы пропускаем
+      for (var n = 0; n < size; n++) {
+        var row = up ? size - 1 - n : n;
+        for (var c = 0; c < 2; c++) {
+          var cc = col - c;
+          if (reserved[row][cc]) continue;
+          m[row][cc] = bi < finalBits.length ? finalBits[bi++] : 0;
+        }
+      }
+      up = !up;
+    }
+
+    /* ---------- маски и выбор лучшей ---------- */
+    function maskBit(k, r, c) {
+      switch (k) {
+        case 0: return (r + c) % 2 === 0;
+        case 1: return r % 2 === 0;
+        case 2: return c % 3 === 0;
+        case 3: return (r + c) % 3 === 0;
+        case 4: return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+        case 5: return (r * c) % 2 + (r * c) % 3 === 0;
+        case 6: return ((r * c) % 2 + (r * c) % 3) % 2 === 0;
+        default: return ((r + c) % 2 + (r * c) % 3) % 2 === 0;
+      }
+    }
+    function penalty(g) {
+      var p = 0, i, j, run, dark = 0;
+      for (i = 0; i < size; i++) {
+        run = 1;
+        for (j = 1; j < size; j++) {
+          if (g[i][j] === g[i][j - 1]) { run++; } else { if (run >= 5) p += run - 2; run = 1; }
+        }
+        if (run >= 5) p += run - 2;
+        run = 1;
+        for (j = 1; j < size; j++) {
+          if (g[j][i] === g[j - 1][i]) { run++; } else { if (run >= 5) p += run - 2; run = 1; }
+        }
+        if (run >= 5) p += run - 2;
+      }
+      for (i = 0; i < size - 1; i++) for (j = 0; j < size - 1; j++)
+        if (g[i][j] === g[i][j + 1] && g[i][j] === g[i + 1][j] && g[i][j] === g[i + 1][j + 1]) p += 3;
+      var pat = [1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0];
+      function look(line) {
+        var c = 0;
+        for (var k = 0; k + 11 <= size; k++) {
+          var ok = true, ok2 = true;
+          for (var t = 0; t < 11; t++) {
+            if (line[k + t] !== pat[t]) ok = false;
+            if (line[k + t] !== pat[10 - t]) ok2 = false;
+          }
+          if (ok || ok2) c++;
+        }
+        return c * 40;
+      }
+      for (i = 0; i < size; i++) {
+        p += look(g[i]);
+        var colArr = [];
+        for (j = 0; j < size; j++) colArr.push(g[j][i]);
+        p += look(colArr);
+      }
+      for (i = 0; i < size; i++) for (j = 0; j < size; j++) if (g[i][j]) dark++;
+      p += Math.floor(Math.abs(dark * 100 / (size * size) - 50) / 5) * 10;
+      return p;
+    }
+
+    /* биты формата и версии считаем полиномиальным остатком — так надёжнее,
+       чем держать в коде таблицы, в которых легко ошибиться */
+    /* Служебные биты — обычный остаток от деления на образующий многочлен.
+       Считаем, а не держим таблицей: в таблице из восьми пятнадцатибитных
+       строк ошибиться проще, чем в четырёх строках кода. */
+    function blen(x) { return x === 0 ? 0 : x.toString(2).length; }
+    function polyRem(dataShifted, gen) {
+      var v = dataShifted, g = blen(gen);
+      while (blen(v) >= g) v ^= gen << (blen(v) - g);
+      return v;
+    }
+    function formatBits(mask) {
+      var v = (0x01 << 3) | mask;                       // уровень L = 01, затем маска
+      return (((v << 10) | polyRem(v << 10, 0x537)) ^ 0x5412);
+    }
+    function versionBits(version) {
+      return (version << 12) | polyRem(version << 12, 0x1F25);
+    }
+
+    var best = null, bestScore = Infinity, bestMask = 0;
+    for (var mask = 0; mask < 8; mask++) {
+      var g = m.map(function (row) { return row.slice(); });
+      for (var r = 0; r < size; r++) for (var c = 0; c < size; c++)
+        if (!reserved[r][c] && maskBit(mask, r, c)) g[r][c] ^= 1;
+      // служебные биты влияют на штраф, поэтому вписываем их до оценки
+      var f = formatBits(mask);
+      for (var i = 0; i < 15; i++) {
+        var bit = (f >> i) & 1;
+        // первая копия: вертикальная полоса у левого верхнего квадрата
+        if (i < 6) g[i][8] = bit;
+        else if (i === 6) g[7][8] = bit;
+        else if (i === 7) g[8][8] = bit;
+        else if (i === 8) g[8][7] = bit;
+        else g[8][14 - i] = bit;
+        // вторая копия: у правого верхнего и левого нижнего
+        if (i < 8) g[8][size - 1 - i] = bit;
+        else g[size - 15 + i][8] = bit;
+      }
+      g[size - 8][8] = 1;
+      if (ver >= 7) {
+        var vb = versionBits(ver);
+        for (var i = 0; i < 18; i++) {
+          var bit = (vb >> i) & 1;
+          g[Math.floor(i / 3)][size - 11 + (i % 3)] = bit;
+          g[size - 11 + (i % 3)][Math.floor(i / 3)] = bit;
+        }
+      }
+      var sc = penalty(g);
+      if (sc < bestScore) { bestScore = sc; best = g; bestMask = mask; }
+    }
+    return best;
+  }
+
+  /* ============ Передача эфира на телефон ============
+     Место хранится в памяти браузера и на другое устройство не переезжает —
+     ни сервера, ни учётных записей у нас нет. Зато есть ссылка, которая
+     открывает конкретную запись на конкретной секунде: та самая, что делает
+     виджет на портале. Показываем её кодом — телефон наводит камеру и
+     подхватывает эфир ровно с того места. */
+  function handoffUrl(){
+    var tr = getTrack(state.currentId);
+    var base = location.origin + location.pathname;
+    if(!tr || !tr.file) return base + "#air";
+    return base + "?play=" + encodeURIComponent(tr.file) +
+           "&at=" + Math.floor(audioEl.currentTime || 0) + "#air";
+  }
+  function drawQr(canvas, text){
+    var m = qrMatrix(text);
+    var ctx = canvas.getContext("2d");
+    if(!m){
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return false;
+    }
+    var n = m.length, quiet = 4, box = Math.max(3, Math.floor(280 / (n + quiet * 2)));
+    var side = (n + quiet * 2) * box;
+    canvas.width = side; canvas.height = side;
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, side, side);
+    ctx.fillStyle = "#15141c";
+    for(var r = 0; r < n; r++) for(var c = 0; c < n; c++){
+      if(m[r][c]) ctx.fillRect((c + quiet) * box, (r + quiet) * box, box, box);
+    }
+    return true;
+  }
+  (function handoffUi(){
+    var btn = document.getElementById("heroHandoff");
+    var back = document.getElementById("handBack");
+    if(!btn || !back) return;
+    var canvas = document.getElementById("handQr");
+    var sub = document.getElementById("handSub");
+    var copy = document.getElementById("handCopy");
+    var note = back.querySelector(".hand-note");
+    var link = "";
+
+    function open(){
+      var tr = getTrack(state.currentId);
+      if(!tr || !tr.src){
+        showHint("Сначала включите запись — тогда будет что передавать.");
+        return;
+      }
+      link = handoffUrl();
+      sub.textContent = (tr.title || "Запись") + " · " + fmt(audioEl.currentTime || 0);
+      if(drawQr(canvas, link)){
+        note.textContent = "Наведите камеру телефона — эфир откроется на этой же " +
+                           "записи и с этой же секунды.";
+      } else {
+        // ссылка получилась слишком длинной для кода — остаётся копирование
+        note.textContent = "Код не помещается для такой длинной ссылки — скопируйте её кнопкой ниже.";
+      }
+      back.hidden = false;
+    }
+    function close(){ back.hidden = true; }
+
+    btn.addEventListener("click", open);
+    document.getElementById("handClose").addEventListener("click", close);
+    back.addEventListener("click", function(e){ if(e.target === back) close(); });
+    document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !back.hidden) close(); });
+    copy.addEventListener("click", function(){
+      if(!link) return;
+      var done = function(){ copy.textContent = "Скопировано"; setTimeout(function(){ copy.textContent = "Скопировать ссылку"; }, 1600); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(link).then(done)["catch"](function(){ fallback(); });
+      } else { fallback(); }
+      function fallback(){
+        var ta = document.createElement("textarea");
+        ta.value = link; document.body.appendChild(ta); ta.select();
+        try{ document.execCommand("copy"); done(); }catch(e){}
+        document.body.removeChild(ta);
+      }
+    });
+  })();
 
   function startAir(){ playCurrent(true); }
 
