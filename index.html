@@ -30,6 +30,7 @@
     --accent-ink:#ffffff;
     --live:#c73a30;
     --wave:#0d8f80;
+    --pub:#5a3fc0;
     --shadow:0 1px 2px rgba(20,20,30,.05), 0 10px 28px -16px rgba(20,20,30,.22);
     --pin:#8a1f1f;
     --font-display:'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif;
@@ -52,6 +53,7 @@
       --accent-ink:#231400;
       --live:#ff6b5e;
       --wave:#3fe4cf;
+      --pub:#a78bfa;
       --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 32px -16px rgba(0,0,0,.65);
       --pin:#e0564a;
     }
@@ -69,6 +71,7 @@
     --accent-ink:#231400;
     --live:#ff6b5e;
     --wave:#3fe4cf;
+    --pub:#a78bfa;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 32px -16px rgba(0,0,0,.65);
     --pin:#e0564a;
   }
@@ -615,12 +618,21 @@
     letter-spacing:.06em;color:var(--accent-strong);margin-bottom:12px;font-weight:600;
   }
   /* заголовок колонки новостей — в цвет её кружочка в календаре */
+  .media-date{
+    margin-top:9px;padding-top:9px;border-top:1px solid var(--border);
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;
+    color:var(--text-dim);
+  }
   .arch-col-h.is-news{color:var(--wave);}
+  /* публикации разделов — в цвет своего кружочка */
+  .arch-col-h.is-pub{color:var(--pub);}
   /* на светлом фоне тот же бирюзовый в мелком шрифте читается плохо —
      берём на полтона темнее, оттенок остаётся прежним */
   :root[data-theme="light"] .arch-col-h.is-news{color:#0a6f63;}
+  :root[data-theme="light"] .arch-col-h.is-pub{color:#4a32a8;}
   @media (prefers-color-scheme: light){
     :root:not([data-theme="dark"]) .arch-col-h.is-news{color:#0a6f63;}
+    :root:not([data-theme="dark"]) .arch-col-h.is-pub{color:#4a32a8;}
   }
   .arch-extra{margin-top:26px;padding-top:20px;border-top:1px solid var(--border);}
   .arch-empty-sm{
@@ -879,6 +891,7 @@
   .dc-dots i{width:5px;height:5px;border-radius:50%;display:block;}
   .dot-air{background:var(--accent);}
   .dot-news{background:var(--wave);}
+  .dot-pub{background:var(--pub);}
 
   .queue-item.is-demo{opacity:.72;}
   .queue-item.is-broken .q-title{text-decoration:line-through;opacity:.6;}
@@ -1890,7 +1903,8 @@
               <div class="nc-tagbank" id="auTagBank"></div>
             </label>
             <label class="nc-field"><span id="auDateLabel">Первый эфир — можно не указывать</span><input type="date" id="auDate"></label>
-            <label class="nc-field"><span>&nbsp;</span><span class="nc-note" id="auDateNote">Без даты запись просто ляжет в фонотеку</span></label>
+            <label class="nc-field"><span>Время публикации — необязательно</span><input type="time" id="auTime"></label>
+            <label class="nc-field nc-wide"><span class="nc-note" id="auDateNote">Без даты запись просто ляжет в фонотеку</span></label>
             <label class="nc-field nc-wide">
               <span>Описание выпуска — показывается в шапке эфира</span>
               <textarea id="auDesc" rows="2" placeholder="О чём этот выпуск и кому он будет полезен"></textarea>
@@ -2141,6 +2155,7 @@
         <div class="cal-grid" id="calGrid"></div>
         <div class="cal-legend">
           <span><i class="dot-air"></i> аудио</span>
+          <span><i class="dot-pub"></i> публикации</span>
           <span><i class="dot-news"></i> новости</span>
         </div>
       </div>
@@ -2353,7 +2368,8 @@
         durSec: t.dur || 0,
         readTime: t.dur ? fmt(t.dur) : "",
         snippet: t.desc || "",
-        date: t.day || ""
+        date: t.day || "",
+        time: t.time || ""
       };
     });
   }
@@ -3123,6 +3139,11 @@
     document.head.appendChild(css);
   })();
 
+  // «22 сентября» — для подписей. Объявляем рано: карточки разделов
+  // рисуются до того, как выполнится код ниже по файлу.
+  var RU_MONTH_GEN = ["января","февраля","марта","апреля","мая","июня",
+                      "июля","августа","сентября","октября","ноября","декабря"];
+
   function coverHue(text){
     var h = 0, str = String(text || "Voice Ai");
     for(var i = 0; i < str.length; i++){ h = (h * 31 + str.charCodeAt(i)) % 360; }
@@ -3173,6 +3194,13 @@
                 '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>'+
               '</span>')+
         '</div>'+
+        /* Дата публикации отдельной строкой под автором и длительностью:
+           в одну строку с ними она их перегружала. Время показываем, если
+           оно указано — у большинства записей его просто нет. */
+        (item.date
+          ? '<div class="media-date">' + escapeHtml(humanDayFull(item.date)) +
+            (item.time ? ', ' + escapeHtml(item.time) : "") + '</div>'
+          : "")+
       '</article>'
     );
   }
@@ -3473,7 +3501,7 @@
        они тоже часть истории дня, хотя в ежедневный выпуск не входили. */
     var extra = sectionsOfDay(day);
     if(extra.length){
-      html += '<div class="arch-extra"><h4 class="arch-col-h">Вышло в этот день</h4>' +
+      html += '<div class="arch-extra"><h4 class="arch-col-h is-pub">Публикации этого дня</h4>' +
         extra.map(function(t){
           return '<div class="arch-track is-playable" data-play-id="' + escapeHtml(String(t.id)) +
                  '" data-day="' + escapeHtml(day) + '" title="Послушать" role="button" tabindex="0">' +
@@ -5141,7 +5169,7 @@
       toggle.textContent = file ? "− Правка записи" : (body.hidden ? "+ Загрузить запись в фонотеку" : "− Свернуть");
     }
     function clearAudioForm(){
-      ["auTitle","auHost","auDesc","auDate","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
+      ["auTitle","auHost","auDesc","auDate","auTime","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
       fillSections("Эфир");
       resetCover();
       chosen = null; picked.hidden = true; fileInp.value = "";
@@ -5178,6 +5206,7 @@
       document.getElementById("auTags").value = (tr.tags || []).join(", ");
       document.getElementById("auDesc").value = tr.desc || "";
       document.getElementById("auDate").value = tr.day || "";
+      document.getElementById("auTime").value = tr.time || "";
       picked.hidden = false;
       picked.textContent = "Файл: " + file;
       setEditingTrack(file);
@@ -5266,6 +5295,8 @@
             if(dsc){ next.desc = dsc; } else { delete next.desc; }
             var dt = document.getElementById("auDate").value.trim();
             if(dt){ next.date = dt; } else { delete next.date; }
+            var tm = document.getElementById("auTime").value.trim();
+            if(tm){ next.time = tm; } else { delete next.time; }
             // обложка: новая — записываем путь, убрали — стираем поле
             if(coverPath){ next.cover = coverPath; }
             else if(coverPath === "" || coverRemove){ delete next.cover; }
@@ -5348,6 +5379,8 @@
           if(lastDuration > 0) entry.duration = lastDuration;
           // дату пишем, только если она задана: пустая дата = запись без эфира
           if(entryDay) entry.date = entryDay;
+          var entryTime = document.getElementById("auTime").value.trim();
+          if(entryTime) entry.time = entryTime;
           var tg = readTags();
           if(tg.length) entry.tags = tg;
           if(savedCover) entry.cover = savedCover;
@@ -5364,7 +5397,7 @@
         chosen = null;
         picked.hidden = true;
         fileInp.value = "";
-        ["auTitle","auHost","auDesc","auDate","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
+        ["auTitle","auHost","auDesc","auDate","auTime","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
         refreshAirAfterEdit(list);     // запись появляется в фонотеке сразу
         /* Дата задана — ставим запись в эфир этого дня явно, дописывая
            в конец программы. Так состав дня всегда виден в манифесте. */
@@ -5714,6 +5747,7 @@
         tag: t.tag || "Эфир",
         tags: Array.isArray(t.tags) ? t.tags.filter(Boolean) : [],
         cover: t.cover || "",
+        time: t.time || "",
         placeholder: !!t.placeholder,
         desc: t.desc || "",
         dur: (typeof t.duration === "number" && t.duration > 0) ? t.duration : null,
@@ -6019,13 +6053,17 @@
     // всё, что есть, — в будущем: редактору показываем, слушателю нет
     return isAdmin ? days[days.length-1] : "";
   }
-  // «22 сентября» — для подписей
-  var RU_MONTH_GEN = ["января","февраля","марта","апреля","мая","июня",
-                      "июля","августа","сентября","октября","ноября","декабря"];
   function humanDay(day){
     var p = String(day).split("-");
     if(p.length !== 3) return day;
     return parseInt(p[2],10) + " " + RU_MONTH_GEN[parseInt(p[1],10)-1];
+  }
+  function humanDayFull(day){
+    var p = String(day).split("-");
+    if(p.length !== 3) return "";
+    var txt = parseInt(p[2],10) + " " + RU_MONTH_GEN[parseInt(p[1],10)-1];
+    var year = new Date().getFullYear();
+    return (parseInt(p[0],10) === year) ? txt : txt + " " + p[0];
   }
   function dayLabel(day){
     if(!day) return "Эфир";
@@ -6064,16 +6102,22 @@
       return d === day;
     });
   }
+  /* Три разных события дня — три кружочка: эфир, отдельные публикации
+     разделов и новости. Раньше подкаст, загруженный мимо эфира, красился
+     тем же оранжевым, что и выпуск, и по ленте нельзя было понять, был ли
+     в этот день эфир вообще. */
   function dayDotsHtml(day){
     var out = "";
-    if(publishedOfDay(day).length) out += '<i class="dot-air"></i>';
+    if(tracksOfDay(day).length) out += '<i class="dot-air"></i>';
+    if(sectionsOfDay(day).length) out += '<i class="dot-pub"></i>';
     if(newsOfDay(day).length) out += '<i class="dot-news"></i>';
     return out;
   }
   function dayTitleAttr(day){
-    var a = publishedOfDay(day).length, n = newsOfDay(day).length;
+    var a = tracksOfDay(day).length, x = sectionsOfDay(day).length, n = newsOfDay(day).length;
     var parts = [];
-    if(a) parts.push(a + " " + plural(a, "запись", "записи", "записей"));
+    if(a) parts.push("эфир: " + a + " " + plural(a, "запись", "записи", "записей"));
+    if(x) parts.push("публикаций: " + x);
     if(n) parts.push(n + " " + plural(n, "новость", "новости", "новостей"));
     return parts.length ? humanDay(day) + ": " + parts.join(", ") : humanDay(day) + ": пусто";
   }
@@ -6924,7 +6968,7 @@
         id: mkId(), file: i.file, date: i.date || "",
         title: i.title || i.file, host: i.host || "Voice Ai",
         tag: i.tag || "Эфир", tags: Array.isArray(i.tags) ? i.tags.filter(Boolean) : [],
-        cover: i.cover || "", desc: i.desc || "",
+        cover: i.cover || "", desc: i.desc || "", time: i.time || "",
         dur: (typeof i.duration === "number" && i.duration > 0) ? i.duration : null,
         placeholder: !!i.placeholder,
         src: i.placeholder ? null : mediaSrc(i.file), demo: false
@@ -6940,6 +6984,7 @@
       t.tag   = i.tag || "Эфир";
       t.tags  = Array.isArray(i.tags) ? i.tags.filter(Boolean) : [];
       t.cover = i.cover || "";
+      t.time  = i.time || "";
       t.placeholder = !!i.placeholder;
       if(t.placeholder) t.src = null;
       t.desc  = i.desc || "";
