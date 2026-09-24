@@ -253,15 +253,16 @@
       "title": "Вакцинация против гриппа для сотрудников ТеДо и их семей",
       "text": "Вакцинация проводится для застрахованных в СПАО «Ингосстрах» сотрудников и членов их семей. В Москве — с 21 сентября по 30 ноября 2026 г., в регионах — с 28 сентября по 30 ноября 2026 г.",
       "author": "Дайджест ТеДо",
-      "important": true,
       "tags": [
         "ТеДо",
         "Компания",
         "HR",
-        "Здоровье"
+        "Здоровье",
+        "Медицина"
       ],
       "sourceName": "Внутренний дайджест ТеДо",
-      "sourceUrl": "https://ruts.tedointernal.ru/sites/tedo/Shared%20Documents/Forms/AllItems.aspx?FolderCTID=0x012000FB6493713A79C148BED3CD134406243B&id=%2Fsites%2Ftedo%2FShared%20Documents%2FInternal%20Communications%2FNews%20for%20Digest%2F%D0%92%D0%B0%D0%BA%D1%86%D0%B8%D0%BD%D0%B0%D1%86%D0%B8%D1%8F%20%D0%BF%D1%80%D0%BE%D1%82%D0%B8%D0%B2%20%D0%B3%D1%80%D0%B8%D0%BF%D0%BF%D0%B0%20%2D%202026"
+      "sourceUrl": "https://ruts.tedointernal.ru/sites/tedo/Shared%20Documents/Forms/AllItems.aspx?FolderCTID=0x012000FB6493713A79C148BED3CD134406243B&id=%2Fsites%2Ftedo%2FShared%20Documents%2FInternal%20Communications%2FNews%20for%20Digest%2F%D0%92%D0%B0%D0%BA%D1%86%D0%B8%D0%BD%D0%B0%D1%86%D0%B8%D1%8F%20%D0%BF%D1%80%D0%BE%D1%82%D0%B8%D0%B2%20%D0%B3%D1%80%D0%B8%D0%BF%D0%BF%D0%B0%20%2D%202026",
+      "important": true
     },
     {
       "id": "n34",
@@ -463,5 +464,5 @@
       ]
     }
   ],
-  "updated": "2026-09-24T15:49:54Z"
+  "updated": "2026-09-24T15:51:12Z"
 }
