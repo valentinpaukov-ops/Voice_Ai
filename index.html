@@ -5510,6 +5510,11 @@
 
   /* ============ Продолжение эфира после обновления страницы ============ */
   var RESUME_KEY = "voiceai_resume";
+  /* Пришли по ссылке из виджета — значит, место нам передали в адресе, и
+     своя сохранённая позиция тут только помешает: она вернула бы на другую
+     запись, которую слушали в браузере в прошлый раз. Считаем признак сразу,
+     пока адрес ещё не очищен. */
+  var cameFromWidget = /[?&]play=/.test(location.search);
   var resumeSaveAt = 0;
   function saveResume(){
     var now = Date.now();
@@ -5525,6 +5530,7 @@
     }catch(e){}
   }
   function applyResume(){
+    if(cameFromWidget) return;
     var saved = null;
     try{ saved = JSON.parse(localStorage.getItem(RESUME_KEY) || "null"); }catch(e){}
     if(!saved || !saved.src) return;
@@ -5765,7 +5771,7 @@
     document.dispatchEvent(new CustomEvent("voiceai:library-changed"));
 
     var day = pickDefaultDay();
-    if(day && setAirDay(day, false)) return true;
+    if(day && setAirDay(day, false)){ applyIncomingPlay(); return true; }
 
     /* Ни у одной записи нет даты — или фонотека пуста. Работаем одной общей
        очередью, но ленту дней всё равно рисуем: дни живут не только эфирами,
@@ -5778,7 +5784,49 @@
     renderAirDayLabel();
     renderDayStrip();
     syncAirDayPicker();
+    applyIncomingPlay();
     return true;
+  }
+
+  /* Переход из виджета, стоящего на другом сайте: в адресе приезжает имя
+     записи и секунда, на которой человек остановился. Подхватываем это —
+     иначе эфир в браузере начнётся с начала, и переход ощущается как потеря
+     места. Адрес после этого чистим, чтобы обновление страницы не возвращало
+     каждый раз в ту же точку. */
+  var incomingDone = false;
+  function applyIncomingPlay(){
+    if(incomingDone) return;
+    var m = /[?&]play=([^&#]*)/.exec(location.search);
+    if(!m) return;
+    incomingDone = true;
+    var file = "";
+    try{ file = decodeURIComponent(m[1].replace(/\+/g, " ")); }catch(e){ file = m[1]; }
+    var am = /[?&]at=(\d+(?:\.\d+)?)/.exec(location.search);
+    var at = am ? parseFloat(am[1]) : 0;
+    try{ history.replaceState(null, "", location.pathname + location.hash); }catch(e){}
+    if(!file || !playFromLibrary(file)) return;
+    if(!(at > 0)) return;
+    /* Поставить позицию с первого раза не выходит: пока запись доезжает,
+       плеер несколько раз переназначает источник и сбрасывает время в ноль.
+       Поэтому возвращаем нужную секунду, пока воспроизведение ещё в начале,
+       и отпускаем через несколько секунд — дальше это уже слушатель, а не мы. */
+    var until = Date.now() + 5000;
+    var seek = function(){
+      if(Date.now() > until){ off(); return; }
+      if(audioEl.readyState >= 1 && audioEl.currentTime < at - 1){
+        try{ audioEl.currentTime = at; }catch(e){}
+      }
+    };
+    var off = function(){
+      audioEl.removeEventListener("loadedmetadata", seek);
+      audioEl.removeEventListener("canplay", seek);
+      audioEl.removeEventListener("timeupdate", seek);
+    };
+    audioEl.addEventListener("loadedmetadata", seek);
+    audioEl.addEventListener("canplay", seek);
+    audioEl.addEventListener("timeupdate", seek);
+    seek();
+    setTimeout(off, 5200);
   }
 
   function startAir(){ playCurrent(true); }
