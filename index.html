@@ -464,7 +464,7 @@
     transform-origin:bottom;
     animation:none;
   }
-  .vu.js-vu i{animation:none;}
+  .vu.js-vu i{animation:none!important;}   /* режим «по звуку»: высоту ведёт скрипт */
   /* Три рисунка движения. Меняются по кругу от записи к записи (см.
      setPlayingUI). Скорость всех трёх задаётся одним числом --vu-k
      (2 = вдвое медленнее исходной; больше — ещё медленнее).
@@ -2733,8 +2733,10 @@
       gainNode = audioCtx.createGain();
       gainNode.gain.value = volInput ? (volInput.value/100) : 0.7;
       analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 64;
-      analyser.smoothingTimeConstant = 0.75;
+      analyser.fftSize = 1024;               // ~43 Гц на ячейку: хватает на семь полосок
+      analyser.smoothingTimeConstant = 0.5;
+      analyser.minDecibels = -90;
+      analyser.maxDecibels = -25;
       freqData = new Uint8Array(analyser.frequencyBinCount);
       // Route volume through an explicit GainNode rather than relying only on
       // audioEl.volume: once the element is captured into the Web Audio graph
@@ -2742,27 +2744,79 @@
       // inconsistently, so the GainNode is the single source of truth for
       // actual loudness (incl. true silence at 0).
       sourceNode.connect(gainNode);
-      gainNode.connect(analyser);
-      analyser.connect(audioCtx.destination);
+      gainNode.connect(audioCtx.destination);
+      // Анализатор слушает сигнал до регулятора громкости: полоски показывают
+      // музыку, а не положение ползунка. Выход гасим нулевым усилением —
+      // анализатору нужно куда-то быть подключённым, но звук он не дублирует.
+      var vuSilent = audioCtx.createGain();
+      vuSilent.gain.value = 0;
+      sourceNode.connect(analyser);
+      analyser.connect(vuSilent);
+      vuSilent.connect(audioCtx.destination);
       return true;
     }catch(e){
       return false;
     }
   }
 
+  /* Полоски эквалайзера по реальному звуку.
+     Спектр делится на семь полос по логарифмической шкале (от басов к верхам).
+     Каждая полоса подстраивается под себя: у неё есть свой «пол» и свой
+     «потолок», которые плавно следуют за музыкой. Так басы не упираются в край,
+     а верха, которых в записи всегда меньше, всё равно двигаются, и тихие
+     треки ничем не хуже громких. Подъём быстрый, спад плавный — движение не
+     дёргается. Пока граф не собран (автозапуск без касания) или звук не идёт
+     через него, полоски живут на CSS-анимации (три рисунка по кругу).
+     Отключить режим «по звуку» целиком: VU_FROM_AUDIO = false. */
+  var VU_FROM_AUDIO = true;
+  var vuBands = null, vuLevel = null, vuFloor = null, vuCeil = null, vuLast = 0;
+  var VU_BARS_MIN = 6, VU_BARS_RANGE = 52;
+
+  function vuSetupBands(n){
+    var nyq = audioCtx.sampleRate / 2, bins = analyser.frequencyBinCount;
+    var lo = 60, hi = Math.min(9000, nyq * 0.9), k = Math.pow(hi / lo, 1 / n);
+    vuBands = []; vuLevel = []; vuFloor = []; vuCeil = [];
+    for(var i=0;i<n;i++){
+      var a = Math.max(1, Math.round(lo * Math.pow(k, i)     / nyq * bins));
+      var b = Math.max(a + 1, Math.round(lo * Math.pow(k, i + 1) / nyq * bins));
+      vuBands.push([a, Math.min(b, bins)]);
+      vuLevel.push(0); vuFloor.push(255); vuCeil.push(0);
+    }
+  }
+
+  function vuReset(bars){
+    heroVu.classList.remove("js-vu");
+    for(var i=0;i<bars.length;i++){ bars[i].style.height = ""; bars[i].style.opacity = ""; }
+  }
+
   function vuLoop(){
-    if(!state.playing){ vuRafId = null; return; }
-    if(analyser){
+    var bars = heroVu.children, n = bars.length;
+    if(!state.playing){ vuReset(bars); vuRafId = null; return; }
+    var live = VU_FROM_AUDIO && analyser && audioCtx && audioCtx.state === "running";
+    if(!live){
+      vuReset(bars);                                   // остаётся CSS-анимация
+    } else {
+      if(!vuBands || vuBands.length !== n) vuSetupBands(n);
+      heroVu.classList.add("js-vu");
       analyser.getByteFrequencyData(freqData);
-      var bars = heroVu.children;
-      var n = bars.length;
-      var bucket = Math.max(1, Math.floor(freqData.length / n));
-      for(var i=0;i<n;i++){
-        var sum=0;
-        for(var j=0;j<bucket;j++){ sum += freqData[i*bucket+j] || 0; }
-        var avg = (sum/bucket)/255;
-        bars[i].style.height = (6 + avg*34) + "px";
-        bars[i].style.opacity = String(0.5 + avg*0.5);
+      var now = performance.now(), dt = vuLast ? Math.min(100, now - vuLast) : 16;
+      vuLast = now;
+      var audible = !gainNode || gainNode.gain.value > 0.01;   // на беззвучии полоски ложатся
+      var i, j;
+      for(i=0;i<n;i++){
+        var s = 0, cnt = 0, a = vuBands[i][0], b = vuBands[i][1];
+        for(j=a;j<b;j++){ s += freqData[j]; cnt++; }
+        var v = cnt ? s / cnt : 0;
+        // потолок: быстро вверх, медленно вниз; пол: быстро вниз, медленно вверх
+        vuCeil[i]  = Math.max(v, vuCeil[i]  - dt * 0.012);
+        vuFloor[i] = Math.min(v, vuFloor[i] + dt * 0.016);
+        var span = Math.max(45, vuCeil[i] - vuFloor[i]);   // не раздуваем ровный звук
+        var t = audible ? Math.max(0, Math.min(1, (v - vuFloor[i]) / span)) : 0;
+        t = Math.pow(t, 1.7);
+        var tau = t > vuLevel[i] ? 55 : 190;           // подъём быстрый, спад плавный
+        vuLevel[i] += (t - vuLevel[i]) * (1 - Math.exp(-dt / tau));
+        bars[i].style.height = (VU_BARS_MIN + VU_BARS_RANGE * vuLevel[i]).toFixed(1) + "px";
+        bars[i].style.opacity = (0.5 + 0.5 * vuLevel[i]).toFixed(2);
       }
     }
     vuRafId = requestAnimationFrame(vuLoop);
