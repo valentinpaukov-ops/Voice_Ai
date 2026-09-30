@@ -47,6 +47,7 @@
     --live:#c73a30;
     --wave:#0d8f80;
     --pub:#5a3fc0;
+    --date:#c25a00;     /* даты и время: новости, лента дней */
     --shadow:0 1px 2px rgba(20,20,30,.05), 0 10px 28px -16px rgba(20,20,30,.22);
     --pin:#8a1f1f;
     --font-display:'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif;
@@ -70,6 +71,7 @@
       --live:#ff6b5e;
       --wave:#3fe4cf;
       --pub:#a78bfa;
+      --date:#ff9a3c;
       --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 32px -16px rgba(0,0,0,.65);
       --pin:#e0564a;
     }
@@ -88,6 +90,7 @@
     --live:#ff6b5e;
     --wave:#3fe4cf;
     --pub:#a78bfa;
+    --date:#ff9a3c;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 32px -16px rgba(0,0,0,.65);
     --pin:#e0564a;
   }
@@ -619,6 +622,7 @@
   }
   .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
   .cal-legend i{width:6px;height:6px;border-radius:50%;display:block;}
+  .day-legend{flex-wrap:wrap;margin-top:12px;padding-top:12px;}
 
   .arch-day h3{
     font-family:var(--font-body);text-transform:none;font-weight:700;
@@ -657,7 +661,7 @@
   .media-date{
     margin-top:9px;padding-top:9px;border-top:1px solid var(--border);
     font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;
-    color:var(--text-dim);
+    color:var(--date);
   }
   .arch-col-h.is-news{color:var(--wave);}
   /* публикации разделов — в цвет своего кружочка */
@@ -911,7 +915,7 @@
     box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
   }
   .day-chip.is-today .dc-dow{color:var(--accent-strong);}
-  .day-chip.is-today .dc-num{color:var(--accent-strong);font-weight:700;}
+  .day-chip.is-today .dc-num{font-weight:700;}
   .day-chip.is-empty{opacity:.4;cursor:default;}
   .day-chip.is-today.is-empty{opacity:.8;}   /* даже пустое сегодня не гасим */
   .day-chip.is-empty:hover{border-color:var(--border);}
@@ -920,9 +924,8 @@
   .day-chip.is-future.is-empty{opacity:.32;}
   /* день впереди, для которого эфир уже собран: пунктир, но живой */
   .day-chip.is-planned{opacity:.95;border-color:color-mix(in srgb, var(--accent) 60%, transparent);}
-  .day-chip.is-planned .dc-num{color:var(--accent-strong);}
   .dc-dow{font-family:var(--font-mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;}
-  .dc-num{font-family:var(--font-mono);font-size:15px;color:var(--text);font-weight:600;}
+  .dc-num{font-family:var(--font-mono);font-size:15px;color:var(--date);font-weight:600;}
   .dc-dots{display:flex;gap:3px;height:5px;}
   .dc-dots i{width:5px;height:5px;border-radius:50%;display:block;}
   .dot-air{background:var(--accent);}
@@ -1185,7 +1188,7 @@
     background:var(--accent);
   }
   .news-row:last-child{border-bottom:none;}
-  .news-when{font-family:var(--font-mono);font-size:12px;color:var(--text-dim);padding-top:3px;white-space:nowrap;}
+  .news-when{font-family:var(--font-mono);font-size:12px;color:var(--date);padding-top:3px;white-space:nowrap;}
   .news-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
   .news-tag{
     font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:.06em;
@@ -1366,7 +1369,7 @@
   .ann-when{
     font-family:var(--font-mono);
     font-size:12px;
-    color:var(--accent-strong);
+    color:var(--date);
     letter-spacing:.04em;
     margin-bottom:8px;
   }
@@ -1931,6 +1934,11 @@
           <div class="day-strip" id="dayStrip"></div>
           <button type="button" class="day-arrow" id="dayNext" aria-label="Следующие дни">›</button>
         </div>
+        <div class="cal-legend day-legend">
+          <span><i class="dot-air"></i> эфир</span>
+          <span><i class="dot-pub"></i> подкасты / шоу</span>
+          <span><i class="dot-news"></i> новости</span>
+        </div>
       </div>
 
       <!-- Материалы, которые прислал агент. Живут отдельно от эфира: пока
@@ -2243,8 +2251,8 @@
         </div>
         <div class="cal-grid" id="calGrid"></div>
         <div class="cal-legend">
-          <span><i class="dot-air"></i> аудио</span>
-          <span><i class="dot-pub"></i> публикации</span>
+          <span><i class="dot-air"></i> эфир</span>
+          <span><i class="dot-pub"></i> подкасты / шоу</span>
           <span><i class="dot-news"></i> новости</span>
         </div>
       </div>
@@ -6625,7 +6633,7 @@
     var a = tracksOfDay(day).length, x = sectionsOfDay(day).length, n = newsOfDay(day).length;
     var parts = [];
     if(a) parts.push("эфир: " + a + " " + plural(a, "запись", "записи", "записей"));
-    if(x) parts.push("публикаций: " + x);
+    if(x) parts.push("подкасты / шоу: " + x);
     if(n) parts.push(n + " " + plural(n, "новость", "новости", "новостей"));
     return parts.length ? humanDay(day) + ": " + parts.join(", ") : humanDay(day) + ": пусто";
   }
