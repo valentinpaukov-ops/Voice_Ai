@@ -5,6 +5,7 @@ on:
     paths:
       - 'audio/**'
       - '!audio/manifest.json'
+      - '!audio/manifest.js'
       - '.github/workflows/build-manifest.yml'
   workflow_dispatch:
 
