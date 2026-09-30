@@ -712,6 +712,8 @@
   .cal-legend span{display:inline-flex;align-items:center;gap:6px;}
   .cal-legend i{width:6px;height:6px;border-radius:50%;display:block;}
   .day-legend{flex-wrap:wrap;margin-top:12px;padding-top:12px;}
+  .day-note{margin-top:10px;font-family:var(--font-mono);font-size:12px;letter-spacing:.02em;color:var(--text-dim);}
+  .day-note b{font-weight:500;color:var(--date);}
 
   .arch-day h3{
     font-family:var(--font-body);text-transform:none;font-weight:700;
@@ -2045,6 +2047,7 @@
           <span><i class="dot-pub"></i> подкасты / шоу</span>
           <span><i class="dot-news"></i> новости</span>
         </div>
+        <div class="day-note" id="dayNote" hidden></div>
       </div>
 
       <!-- Материалы, которые прислал агент. Живут отдельно от эфира: пока
@@ -3677,7 +3680,7 @@
   /* ================= Архив: календарь по дням ================= */
   var RU_MONTH_NOM = ["Январь","Февраль","Март","Апрель","Май","Июнь",
                       "Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-  var calView = new Date();     // какой месяц показан
+  var calView = todayDate();    // какой месяц показан (сегодня — по Москве)
   var calPicked = "";           // выбранный день
 
   function renderCalendar(){
@@ -3833,6 +3836,13 @@
   }
 
   window.addEventListener("hashchange", handleRoute);
+  // Открыли сразу архив по ссылке: данные приезжают позже — дорисовываем календарь и день
+  document.addEventListener("voiceai:library-changed", function(){
+    var av = document.getElementById("viewArchive");
+    if(av && !av.hidden){
+      try{ renderCalendar(); if(calPicked) renderArchiveDay(calPicked); }catch(e){}
+    }
+  });
 
   /* ================= Search ================= */
 
@@ -4313,7 +4323,9 @@
   renderHomePreviews();
   initSearch(document.getElementById("searchInput"), document.getElementById("searchResults"));
   initSearch(document.getElementById("searchInputMobile"), document.getElementById("searchResultsMobile"));
-  handleRoute();
+  // Адрес разбираем в самом конце скрипта (см. низ файла): пока скрипт читается
+  // сверху вниз, фонотека, новости и остальные переменные ещё не созданы, и прямая
+  // ссылка на архив или раздел ломала страницу.
 
   /* ================= Публикация в репозиторий =================
      Страница пишет в news/news.json через GitHub API. Токен вводит
@@ -4787,9 +4799,7 @@
       body.hidden = !body.hidden;
       toggle.textContent = body.hidden ? "+ Добавить новость" : "− Свернуть";
       if(!body.hidden && !val("ncDate")){
-        var d = new Date();
-        document.getElementById("ncDate").value =
-          d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
+        document.getElementById("ncDate").value = todayStr();
       }
     });
 
@@ -5369,8 +5379,7 @@
     }
 
     function datePrefix(){
-      var d = new Date();
-      return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2) + "_";
+      return todayStr() + "_";
     }
 
     toggle.addEventListener("click", function(){
@@ -5951,7 +5960,7 @@
   });
   document.getElementById("calToday").addEventListener("click", function(){
     calPicked = todayStr();
-    calView = new Date();
+    calView = todayDate();
     renderCalendar();
     renderArchiveDay(calPicked);
   });
@@ -6570,9 +6579,32 @@
   function parseTrackDate(t){
     return (t.date && /^\d{4}-\d{2}-\d{2}$/.test(t.date)) ? t.date : "";
   }
+  /* «Сегодня» считаем по Москве — так же, как часы в шапке. Раньше день брался
+     с часов устройства, и у слушателя в другом часовом поясе лента дней и
+     подпись «Эфир сегодня» могли показывать не тот день, что часы рядом. */
+  var MSK_FMT = null;
+  function mskParts(){
+    try{
+      if(!MSK_FMT){
+        MSK_FMT = new Intl.DateTimeFormat("en-CA", {timeZone:"Europe/Moscow",
+          year:"numeric", month:"2-digit", day:"2-digit"});
+      }
+      var parts = MSK_FMT.formatToParts(new Date()), o = {};
+      parts.forEach(function(x){ o[x.type] = x.value; });
+      if(o.year && o.month && o.day) return {y:+o.year, m:+o.month, d:+o.day};
+    }catch(e){}
+    // запасной путь: Москва = UTC+3 круглый год
+    var u = new Date(Date.now() + 3*3600*1000);
+    return {y:u.getUTCFullYear(), m:u.getUTCMonth()+1, d:u.getUTCDate()};
+  }
   function todayStr(){
-    var d = new Date();
-    return d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0"+d.getDate()).slice(-2);
+    var p = mskParts();
+    return p.y + "-" + ("0"+p.m).slice(-2) + "-" + ("0"+p.d).slice(-2);
+  }
+  // сегодняшняя московская дата как обычная Date на полночь (для арифметики по дням)
+  function todayDate(){
+    var p = mskParts();
+    return new Date(p.y, p.m - 1, p.d);
   }
   /* ============ Фонотека и программа эфира по дням ============
      allTracks  — фонотека: всё, что когда-либо загружали, с датой ПЕРВОЙ
@@ -6721,9 +6753,12 @@
 
   function airDays(){
     var seen = {};
-    allTracks.forEach(function(t){ if(t.day && !isSectionOnly(t.tag) && !t.placeholder) seen[t.day] = true; });
-    Object.keys(airProgram).forEach(function(d){
-      if(airProgram[d] && airProgram[d].length) seen[d] = true;
+    /* Адрес разбирается раньше, чем создаётся фонотека (прямая ссылка на архив):
+       тогда обеих переменных ещё нет, и без этой защиты ломалась вся страница. */
+    (allTracks || []).forEach(function(t){ if(t.day && !isSectionOnly(t.tag) && !t.placeholder) seen[t.day] = true; });
+    var prog = airProgram || {};
+    Object.keys(prog).forEach(function(d){
+      if(prog[d] && prog[d].length) seen[d] = true;
       else delete seen[d];         // день намеренно очищен редактором
     });
     return Object.keys(seen).sort();
@@ -6772,10 +6807,10 @@
       return t.day === day && !isSectionOnly(t.tag);
     });
   }
-  function pickDefaultDay(){
+  function pickDefaultDay(forToday){
     var days = airDays();
     if(!days.length) return "";
-    var today = todayStr();
+    var today = forToday || todayStr();
     if(days.indexOf(today) !== -1) return today;
     var past = days.filter(function(d){ return d <= today; });
     if(past.length) return past[past.length-1];
@@ -6791,7 +6826,7 @@
     var p = String(day).split("-");
     if(p.length !== 3) return "";
     var txt = parseInt(p[2],10) + " " + RU_MONTH_GEN[parseInt(p[1],10)-1];
-    var year = new Date().getFullYear();
+    var year = mskParts().y;
     return (parseInt(p[0],10) === year) ? txt : txt + " " + p[0];
   }
   function dayLabel(day){
@@ -6906,7 +6941,7 @@
     // при перерисовке (загрузили запись, поправили дату) не сбрасываем прокрутку
     var keepScroll = strip.getAttribute("data-ready") === "1" ? strip.scrollLeft : null;
 
-    var base = new Date();
+    var base = todayDate();
     var todayKey = keyOfDate(base);
     var range = contentRange();
     var back = STRIP_PAST, fwd = STRIP_FUTURE;
@@ -6958,14 +6993,33 @@
       scrollStripToToday(false);
     }
     updateStripControls();
+    renderDayNote();
+  }
+
+  /* Если на сегодняшнее число эфира нет, лента всё равно стоит на сегодня, а
+     под ней сказано, что играет сейчас — чтобы не казалось, что сайт застрял
+     во вчера. */
+  function renderDayNote(){
+    var el = document.getElementById("dayNote");
+    if(!el) return;
+    var today = todayStr();
+    if(publishedOfDay(today).length > 0){ el.hidden = true; el.textContent = ""; return; }
+    var txt = "На сегодня эфир ещё не собран";
+    if(airDay && airDay !== today){ txt += " — играет эфир от <b>" + escapeHtml(humanDay(airDay)) + "</b>"; }
+    el.innerHTML = txt + ".";
+    el.hidden = false;
   }
 
   /* Ставим сегодняшний день у правого края, оставляя справа пару дней «будущего». */
+  var stripPositioned = false;   // лента уже хоть раз была поставлена на сегодня
+  var stripUserMoved = false;    // человек сам листал ленту — больше её не двигаем
+  function restickStrip(){ if(!stripUserMoved) scrollStripToToday(false); }
   function scrollStripToToday(smooth){
     var strip = document.getElementById("dayStrip");
     if(!strip) return;
     var chip = strip.querySelector(".day-chip.is-today");
     if(!chip || !strip.clientWidth) return;   // скрытую ленту не измерить
+    stripPositioned = true;
     /* Считаем по реальным координатам на экране. offsetLeft тут доверять
        нельзя: он отсчитывается от позиционированного предка, а лента им не
        является, и на другой вёрстке страницы получались чужие числа. */
@@ -6998,6 +7052,10 @@
     // лента скрыта (открыт архив или библиотека) — измерять нечего,
     // оставляем состояние кнопок как есть, иначе получим ложные значения
     if(!strip.clientWidth) return;
+    // первая отрисовка шла, пока лента была скрыта (зашли по ссылке сразу в
+    // архив, а потом вернулись в эфир) — тогда она стояла в начале, на старых
+    // днях. При первом показе ставим её на сегодня.
+    if(!stripPositioned){ scrollStripToToday(false); }
     var max = strip.scrollWidth - strip.clientWidth;
     if(prev) prev.disabled = strip.scrollLeft <= 2;
     if(next) next.disabled = strip.scrollLeft >= max - 2;
@@ -7017,9 +7075,14 @@
     var prev = document.getElementById("dayPrev");
     var next = document.getElementById("dayNext");
     var todayBtn = document.getElementById("dayToday");
-    if(prev) prev.addEventListener("click", function(){ stripPage(-1); });
-    if(next) next.addEventListener("click", function(){ stripPage(1); });
-    if(todayBtn) todayBtn.addEventListener("click", function(){ scrollStripToToday(true); });
+    if(prev) prev.addEventListener("click", function(){ stripUserMoved = true; stripPage(-1); });
+    if(next) next.addEventListener("click", function(){ stripUserMoved = true; stripPage(1); });
+    if(todayBtn) todayBtn.addEventListener("click", function(){ stripUserMoved = true; scrollStripToToday(true); });
+    if(strip){
+      ["wheel","touchstart","pointerdown","keydown"].forEach(function(ev){
+        strip.addEventListener(ev, function(){ stripUserMoved = true; }, {passive:true});
+      });
+    }
     if(strip){
       var raf = 0;
       strip.addEventListener("scroll", function(){
@@ -7039,16 +7102,16 @@
         strip.style.scrollBehavior = "";
       }, {passive:false});
     }
-    window.addEventListener("resize", function(){ updateStripControls(); });
+    window.addEventListener("resize", function(){ restickStrip(); updateStripControls(); });
     if(document.fonts && document.fonts.ready && document.fonts.ready.then){
-      document.fonts.ready.then(function(){ updateStripControls(); });
+      document.fonts.ready.then(function(){ restickStrip(); updateStripControls(); });
     }
-    window.addEventListener("load", function(){ updateStripControls(); });
+    window.addEventListener("load", function(){ restickStrip(); updateStripControls(); });
     /* Самая надёжная страховка: следим за самой лентой. Любое изменение её
        размеров — догрузились шрифты, сменился масштаб, повернули телефон —
        пересчитывает и стрелки, и кнопку «Сегодня». */
     if(window.ResizeObserver && strip){
-      try{ new ResizeObserver(function(){ updateStripControls(); }).observe(strip); }catch(e){}
+      try{ new ResizeObserver(function(){ restickStrip(); updateStripControls(); }).observe(strip); }catch(e){}
     }
   })();
 
@@ -7834,7 +7897,28 @@
   }
 
   // live studio clock (Moscow)
+  /* Страница может простоять открытой за полночь. Когда по Москве наступает
+     новая дата, перерисовываем ленту (подсветка «сегодня» переезжает) и, если
+     ничего не играет и стоял вчерашний эфир, открываем сегодняшний. Играющее
+     не прерываем. */
+  var lastTodayKey = "";
+  function checkDayRollover(){
+    var t = todayStr();
+    if(!lastTodayKey){ lastTodayKey = t; return; }
+    if(t === lastTodayKey) return;
+    var prev = lastTodayKey; lastTodayKey = t;
+    var wasDefault = (airDay && airDay === pickDefaultDay(prev));
+    var next = pickDefaultDay();
+    if(wasDefault && next && next !== airDay && !state.playing){ setAirDay(next, false); }
+    else { renderAirDayLabel(); renderDayStrip(); }
+    stripPositioned = false;
+    stripUserMoved = false;
+    scrollStripToToday(false);
+    if(typeof renderCalendar === "function"){ calView = todayDate(); try{ renderCalendar(); }catch(e){} }
+  }
+
   function tickClock(){
+    checkDayRollover();
     var now = new Date();
     var timeStr = now.toLocaleTimeString("ru-RU", {timeZone:"Europe/Moscow", hour:"2-digit", minute:"2-digit", second:"2-digit"});
     var dateStr = now.toLocaleDateString("ru-RU", {timeZone:"Europe/Moscow", weekday:"short", day:"numeric", month:"long"});
@@ -7843,6 +7927,8 @@
   }
   tickClock();
   setInterval(tickClock, 1000);
+
+  handleRoute();   // первый разбор адреса — когда всё уже создано
 
 })();
 </script>
