@@ -25,8 +25,8 @@
     --border:#d6d9e3;
     --text:#15141c;
     --text-dim:#585a6a;
-    --accent:#c9720a;
-    --accent-strong:#a75d06;
+    --accent:#0048f4;
+    --accent-strong:#0036b8;
     --accent-ink:#ffffff;
     --live:#c73a30;
     --wave:#0d8f80;
@@ -48,9 +48,9 @@
       --border:#3a3747;
       --text:#f3f1ec;
       --text-dim:#a19cae;
-      --accent:#f4a730;
-      --accent-strong:#ffc158;
-      --accent-ink:#231400;
+      --accent:#0048f4;
+      --accent-strong:#7aa2ff;
+      --accent-ink:#ffffff;
       --live:#ff6b5e;
       --wave:#3fe4cf;
       --pub:#a78bfa;
@@ -66,9 +66,9 @@
     --border:#3a3747;
     --text:#f3f1ec;
     --text-dim:#a19cae;
-    --accent:#f4a730;
-    --accent-strong:#ffc158;
-    --accent-ink:#231400;
+    --accent:#0048f4;
+    --accent-strong:#7aa2ff;
+    --accent-ink:#ffffff;
     --live:#ff6b5e;
     --wave:#3fe4cf;
     --pub:#a78bfa;
@@ -109,7 +109,7 @@
   .wrap{max-width:1080px;margin:0 auto;padding-inline:20px;}
   /* Длительность выпуска рядом с «Эфир сегодня»: та же строка, но тише,
      чтобы читалось как уточнение, а не как часть заголовка. */
-  .adl-len{color:var(--accent);letter-spacing:.06em;}
+  .adl-len{color:var(--accent-strong);letter-spacing:.06em;}
   .hand-btn svg{width:17px;height:17px;}
   .hand-back{
     position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;
@@ -179,7 +179,7 @@
   .brand .freq{
     font-family:var(--font-mono);
     font-size:12px;
-    color:var(--accent);
+    color:var(--accent-strong);
     letter-spacing:.05em;
     /* .brand поднимает всё в верхний регистр, а подпись должна остаться
        строчной — это адрес, а не заголовок */
