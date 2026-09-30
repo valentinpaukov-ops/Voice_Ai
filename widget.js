@@ -79,9 +79,14 @@
     if (!file) return "";
     return /^https?:\/\//i.test(file) ? file : SITE + "audio/" + enc(file);
   }
+  /* Метка версии для обложек — та же, что на сайте (см. COVER_REV в
+     index.html): без неё браузер показывает старую картинку, пока не
+     истечёт его кэш. Заменили обложку руками — увеличьте номер и там, и тут. */
+  var COVER_REV = "2", coverStamp = COVER_REV;
   function assetUrl(path) {
     if (!path) return "";
-    return /^https?:\/\//i.test(path) ? path : SITE + enc(path);
+    var url = /^https?:\/\//i.test(path) ? path : SITE + enc(path);
+    return url + (url.indexOf("?") < 0 ? "?" : "&") + "v=" + encodeURIComponent(coverStamp);
   }
   function hueOf(text) {
     var h = 0, s = String(text || "Voice Ai");
@@ -379,10 +384,10 @@
     "  width:60px;height:60px;border-radius:50%;cursor:pointer;border:none;padding:0;",
     "  display:flex;align-items:center;justify-content:center;position:relative;",
     "  background:#131319;color:#f3f1ec;",
-    "  box-shadow:0 10px 30px -8px rgba(0,0,0,.55),0 0 0 1px rgba(244,167,48,.35);",
+    "  box-shadow:0 10px 30px -8px rgba(0,0,0,.55),0 0 0 1px rgba(60,109,244,.45);",
     "  transition:transform .18s ease,box-shadow .18s ease;",
     "}",
-    ".fab:hover{transform:translateY(-2px);box-shadow:0 14px 34px -8px rgba(0,0,0,.6),0 0 0 1px rgba(244,167,48,.75);}",
+    ".fab:hover{transform:translateY(-2px);box-shadow:0 14px 34px -8px rgba(0,0,0,.6),0 0 0 1px rgba(60,109,244,.9);}",
     ".fab b{font:800 17px/1 'Big Shoulders Display','Arial Narrow',Impact,sans-serif;",
     "  letter-spacing:.03em;transform:translateY(-3px);}",
     ".fab b i{font-style:normal;color:#92b6fd;margin-left:.12em;}",
@@ -416,10 +421,10 @@
     ".now{display:flex;gap:13px;padding:15px 14px 10px;}",
     ".art{width:74px;height:74px;border-radius:50%;flex:none;overflow:hidden;position:relative;",
     "  display:flex;align-items:center;justify-content:center;",
-    "  background:linear-gradient(140deg,hsl(var(--h,35) 55% 42%),hsl(var(--h,35) 45% 24%));}",
+    "  background:linear-gradient(140deg,hsl(var(--h,222) 55% 42%),hsl(var(--h,222) 45% 24%));}",
     ".art img{width:100%;height:100%;object-fit:cover;display:block;}",
     ".art span{font:800 30px/1 'Big Shoulders Display','Arial Narrow',Impact,sans-serif;color:rgba(255,255,255,.92);}",
-    ".art:after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(244,167,48,.45);}",
+    ".art:after{content:'';position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(60,109,244,.55);}",
     ".meta{min-width:0;flex:1;}",
     ".tag{display:inline-block;font:600 9px/1 'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.1em;",
     "  text-transform:uppercase;color:#92b6fd;margin-bottom:5px;}",
@@ -596,6 +601,7 @@
       .then(function (data) {
         /* Несогласованное и заготовки в виджет не пускаем — он показывает
            ровно то же, что видит обычный слушатель на сайте. */
+        coverStamp = COVER_REV + "." + String(data.updated || "").replace(/\D/g, "");
         var tracks = (data.tracks || []).filter(function (t) {
           return t && t.file && !t.pending && !t.placeholder;
         });
