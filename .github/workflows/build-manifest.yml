@@ -88,6 +88,7 @@ jobs:
 
           existing = {}
           air = {}
+          repeat_hide = {}
           if os.path.exists(MANIFEST):
               try:
                   with open(MANIFEST, encoding="utf-8") as fh:
@@ -103,6 +104,13 @@ jobs:
                       for day, files in raw_air.items():
                           if isinstance(files, list):
                               air[day] = [f for f in files if isinstance(f, str)]
+                  # ПОДПИСИ «ПОВТОР ОТ …» — настройка редактора: у каких записей
+                  # дня подпись скрыта. Тоже обязаны сохранить как есть.
+                  raw_rh = data.get("repeatHide")
+                  if isinstance(raw_rh, dict):
+                      for day, files in raw_rh.items():
+                          if isinstance(files, list):
+                              repeat_hide[day] = [f for f in files if isinstance(f, str)]
               except Exception as e:
                   print("манифест не прочитан (%s) — собираю заново" % e)
 
@@ -174,6 +182,18 @@ jobs:
                   else:
                       dropped += 1
               clean_air[day] = alive_files
+          # подписи «повтор» держим только для записей, которые в дне ещё стоят
+          clean_rh = {}
+          for day, files in repeat_hide.items():
+              if day not in clean_air:
+                  continue
+              fixed_names = []
+              for f in files:
+                  real = f if f in alive else disk_by_key.get(nkey(f))
+                  if real and real in clean_air[day] and real not in fixed_names:
+                      fixed_names.append(real)
+              if fixed_names:
+                  clean_rh[day] = fixed_names
           if fixed:
               print("  в программе дней выправлено имён: %d" % fixed)
           if dropped:
@@ -181,6 +201,8 @@ jobs:
 
           out = {"updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                  "tracks": tracks}
+          if clean_rh:
+              out["repeatHide"] = clean_rh
           if clean_air:
               out["air"] = clean_air
               print("Программа эфира: %d %s" % (len(clean_air),
