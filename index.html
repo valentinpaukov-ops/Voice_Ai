@@ -817,6 +817,17 @@
   }
   .at-field input:focus, .at-field select:focus{outline:none;border-color:var(--accent);}
   .at-lib-btn{align-self:flex-end;}
+  .at-check{display:flex;align-items:center;gap:7px;padding:9px 4px;cursor:pointer;
+    font-family:var(--font-mono);font-size:12px;letter-spacing:.02em;color:var(--text);}
+  .at-check input{accent-color:var(--accent);width:16px;height:16px;margin:0;cursor:pointer;}
+  .at-check em{font-style:normal;color:var(--text-dim);}
+  .at-check:has(input:disabled){opacity:.6;cursor:default;}
+  .at-check input:disabled{cursor:default;}
+  .q-rep{display:flex;align-items:center;gap:5px;margin-right:6px;padding:0 6px;height:28px;border-radius:7px;
+    cursor:pointer;font-family:var(--font-mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim);}
+  .q-rep:hover{background:var(--surface-2);color:var(--text);}
+  .q-rep input{accent-color:var(--accent);width:14px;height:14px;margin:0;cursor:pointer;}
+  @media (max-width:560px){ .q-rep span{display:none;} }
   .at-save{
     align-self:flex-end;padding-bottom:9px;
     font-family:var(--font-mono);font-size:11px;color:var(--text-dim);
@@ -1036,8 +1047,21 @@
   .q-main{flex:1 1 220px;min-width:0;display:flex;flex-direction:column;gap:2px;}
   .q-main .q-title{font-weight:600;font-size:15px;overflow-wrap:anywhere;}
   .q-main .q-sub{font-size:13px;color:var(--text-dim);overflow-wrap:anywhere;}
-  .q-tag{flex:none;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;}
-  .q-dur{flex:none;width:52px;text-align:right;font-family:var(--font-mono);font-size:13px;color:var(--text-dim);}
+  /* Справа две строки, по правому краю: сверху длительность, под ней рубрика
+     (и, если нужно, «повтор от …»). */
+  .q-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:3px;
+    text-align:right;max-width:min(320px, 45%);margin-left:auto;}
+  .q-tag{font-family:var(--font-mono);font-size:11px;line-height:1.35;color:var(--text-dim);
+    text-transform:uppercase;letter-spacing:.06em;}
+  .q-dur{font-family:var(--font-mono);font-size:13px;line-height:1.2;color:var(--text-dim);}
+  /* На телефоне название ужимается, чтобы правый блок остался справа, а не
+     уехал под него; длинная подпись переносится внутри блока, по правому краю. */
+  @media (max-width:560px){
+    .queue-item{gap:6px 10px;}
+    .q-main{flex-basis:100px;}
+    .q-side{max-width:48%;}
+    .q-tag{font-size:10px;letter-spacing:.04em;}
+  }
   .q-playing{display:inline-flex;gap:2px;align-items:flex-end;height:12px;}
   .q-playing i{width:2px;background:var(--accent);animation:vubar 1s ease-in-out infinite;}
   .q-playing i:nth-child(1){animation-delay:-.6s;}
@@ -1089,6 +1113,10 @@
     border:1px solid color-mix(in srgb, var(--accent) 38%, transparent);
   }
   .media-card.is-draft{border-style:dashed;}
+  .exp-badge{
+    color:var(--live);background:color-mix(in srgb, var(--live) 14%, transparent);
+    border-color:color-mix(in srgb, var(--live) 40%, transparent);margin-left:6px;
+  }
   .cov-row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-top:6px;}
   .cov-preview{
     flex:0 0 auto;width:168px;height:94px;border-radius:11px;overflow:hidden;
@@ -2010,6 +2038,12 @@
             <span>Повторить прошлый эфир</span>
             <select id="repeatPick"><option value="">— выберите день —</option></select>
           </label>
+          <label class="at-check at-lib-btn" id="airRepeatWrap"
+                 title="Писать ли у повторяющихся записей «повтор от …». Можно переключить и у каждой записи отдельно — галочка «повтор» в очереди.">
+            <input type="checkbox" id="airRepeatNotes" checked>
+            <span>Подписывать повторы</span>
+            <em id="airRepeatCount"></em>
+          </label>
           <button type="button" class="nc-ghost at-lib-btn" id="libToggle">+ Взять из фонотеки</button>
           <button type="button" class="btn-add at-lib-btn" id="airDone">Готово, эфир собран</button>
           <button type="button" class="nc-ghost nc-danger at-lib-btn" id="airClear">Очистить день</button>
@@ -2094,6 +2128,9 @@
             <label class="nc-field"><span id="auDateLabel">Первый эфир — можно не указывать</span><input type="date" id="auDate"></label>
             <label class="nc-field"><span>Время публикации — необязательно</span><input type="time" id="auTime"></label>
             <label class="nc-field nc-wide"><span class="nc-note" id="auDateNote">Без даты запись просто ляжет в фонотеку</span></label>
+            <label class="nc-field"><span>Показывать до — необязательно</span><input type="date" id="auExpDate"></label>
+            <label class="nc-field"><span>Время, по Москве</span><input type="time" id="auExpTime"></label>
+            <label class="nc-field nc-wide"><span class="nc-note" id="auExpNote">Без срока запись остаётся в фонотеке бессрочно. После срока слушатели её не видят и в новые эфиры её не поставить, а в прошедших эфирах и архиве она остаётся. Время можно не указывать — тогда до конца дня.</span></label>
             <label class="nc-field nc-wide">
               <span>Описание выпуска — показывается в шапке эфира</span>
               <textarea id="auDesc" rows="2" placeholder="О чём этот выпуск и кому он будет полезен"></textarea>
@@ -2559,12 +2596,14 @@
     return allTracks.filter(function(t){
       if(t.demo || !t.file) return false;
       if((t.tag || "").trim() !== section) return false;
-      return isAdmin || (t.day && t.day <= today);
+      return isAdmin || (t.day && t.day <= today && !isExpiredNow(t));
     }).map(function(t){
       var tags = (t.tags && t.tags.length) ? t.tags : [];
       return {
         id: t.id, file: t.file, placeholder: !!t.placeholder, cover: t.cover || "",
         draft: !(t.day && t.day <= today),     // ещё не опубликовано
+        expired: isExpiredNow(t),              // срок вышел (виден только редактору)
+        expires: t.expires || "",
         title: t.title,
         tag: tags.length ? tags[0] : section,
         tags: tags.length ? tags : [section],
@@ -2906,14 +2945,19 @@
       var tagEl = document.createElement("span");
       tagEl.className = "q-tag";
       // если запись впервые выходила раньше — честно помечаем повтором
-      var repeatNote = (!tr.demo && tr.day && airDay && tr.day < airDay)
+      var isRep = isRepeatIn(tr, airDay);
+      var repeatNote = (isRep && !repeatHidden(airDay, tr.file))
         ? " · повтор от " + humanDay(tr.day) : "";
       tagEl.textContent = tr.broken
         ? tr.tag + " · " + ((isAdmin && tr.brokenWhy) ? tr.brokenWhy : "файл не читается")
         : tr.tag + (tr.demo ? (tr.src ? " · демо-джингл" : " · без звука") : "")
                  + repeatNote
                  // редактору подсказываем, что запись выпадет из архива
-                 + ((isAdmin && !tr.demo && !tr.day) ? " · без даты" : "");
+                 + ((isAdmin && !tr.demo && !tr.day) ? " · без даты" : "")
+                 // и что слушатели эту запись уже не увидят
+                 + ((isAdmin && tr.expires && !validOnDay(tr, airDay || todayStr()))
+                      ? " · срок истёк " + humanExpires(tr.expires) + ", слушатели её не видят"
+                      : (isAdmin && tr.expires ? " · до " + humanExpires(tr.expires) : ""));
 
       var durEl = document.createElement("span");
       durEl.className = "q-dur tabular";
@@ -2975,6 +3019,23 @@
         }
       });
 
+      // галочка «подпись „повтор от …“» — только у записей, которые в этом дне повторяются
+      if(isAdmin && isRep && airDay){
+        var repLbl = document.createElement("label");
+        repLbl.className = "q-rep";
+        repLbl.title = "Писать слушателям «повтор от " + humanDay(tr.day) + "»? Снимите галочку, если упоминать повтор не нужно.";
+        var repCb = document.createElement("input");
+        repCb.type = "checkbox";
+        repCb.checked = !repeatHidden(airDay, tr.file);
+        repCb.addEventListener("click", function(e){ e.stopPropagation(); });
+        repCb.addEventListener("change", function(){ setRepeatShown(airDay, [tr.file], repCb.checked); });
+        repLbl.addEventListener("click", function(e){ e.stopPropagation(); });
+        var repTxt = document.createElement("span");
+        repTxt.textContent = "повтор";
+        repLbl.appendChild(repCb);
+        repLbl.appendChild(repTxt);
+        actions.appendChild(repLbl);
+      }
       actions.appendChild(upBtn);
       actions.appendChild(downBtn);
       if(editBtn) actions.appendChild(editBtn);
@@ -2983,8 +3044,11 @@
       row.appendChild(grip);
       row.appendChild(idxSlot);
       row.appendChild(main);
-      row.appendChild(tagEl);
-      row.appendChild(durEl);
+      var side = document.createElement("span");
+      side.className = "q-side";
+      side.appendChild(durEl);      // сверху — длительность
+      side.appendChild(tagEl);      // под ней — рубрика и «повтор от …»
+      row.appendChild(side);
       row.appendChild(actions);
 
       row.addEventListener("click", function(){ selectTrack(tr.id, state.playing || tr.id !== state.currentId); });
@@ -2993,6 +3057,25 @@
     });
 
     updateActiveRowIndicator();
+    syncRepeatControl();
+  }
+
+  /* Галочка на весь день: «Подписывать повторы». Показывает общее состояние
+     (все / никто / часть) и переключает сразу всех повторов этого дня. */
+  function syncRepeatControl(){
+    var cb = document.getElementById("airRepeatNotes");
+    if(!cb) return;
+    var reps = (tracks || []).filter(function(t){ return isRepeatIn(t, airDay); });
+    var shown = reps.filter(function(t){ return !repeatHidden(airDay, t.file); }).length;
+    cb.disabled = !reps.length;
+    cb.indeterminate = reps.length > 0 && shown > 0 && shown < reps.length;
+    cb.checked = reps.length > 0 && shown === reps.length;
+    var note = document.getElementById("airRepeatCount");
+    if(note){
+      note.textContent = reps.length
+        ? "(повторов в этом эфире: " + reps.length + (shown && shown < reps.length ? ", подписаны " + shown : "") + ")"
+        : "(в этом эфире повторов нет)";
+    }
   }
 
   function updateDurationDisplays(){
@@ -3344,7 +3427,8 @@
       '<div class="list-row" data-id="'+escapeHtml(item.id)+'">'+
         '<div class="list-date tabular">'+escapeHtml(dateOrRead)+'</div>'+
         '<div class="list-tag">'+escapeHtml(item.tag)+
-          (item.draft ? '<span class="draft-badge">черновик</span>' : "")+'</div>'+
+          (item.draft ? '<span class="draft-badge">черновик</span>' : "")+
+          (item.expired ? '<span class="draft-badge exp-badge">срок истёк</span>' : "")+'</div>'+
         '<div class="list-body"><h3>'+escapeHtml(item.title)+'</h3><p>'+linkify(item.snippet)+'</p></div>'+
       '</div>'
     );
@@ -3443,7 +3527,7 @@
   function mediaCardHtml(item){
     var playable = !!item.file && !item.placeholder;
     return (
-      '<article class="media-card'+(item.draft ? " is-draft" : "")+'" data-id="'+escapeHtml(item.id)+'">'+
+      '<article class="media-card'+((item.draft || item.expired) ? " is-draft" : "")+'" data-id="'+escapeHtml(item.id)+'">'+
         coverHtml(item)+
         '<span class="media-tag">'+escapeHtml(item.tag)+'</span>'+
         /* Правка прямо с карточки: иначе до подкаста или шоу приходилось
@@ -3457,6 +3541,7 @@
             '</button>'
           : "")+
         (item.draft ? '<span class="draft-badge">черновик · виден только вам</span>' : "")+
+        (item.expired ? '<span class="draft-badge exp-badge">срок истёк ' + escapeHtml(humanExpires(item.expires)) + ' · виден только вам</span>' : "")+
         '<h3>'+escapeHtml(item.title)+'</h3>'+
         '<p>'+linkify(item.snippet)+'</p>'+
         '<div class="media-meta">'+
@@ -3945,7 +4030,7 @@
     var today = todayStr();
     return allTracks.filter(function(t){
       if(t.demo || !t.file) return false;
-      return isAdmin || (t.day && t.day <= today);
+      return isAdmin || (t.day && t.day <= today && !isExpiredNow(t));
     });
   }
 
@@ -5474,7 +5559,7 @@
       toggle.textContent = file ? "− Правка записи" : (body.hidden ? "+ Загрузить запись в фонотеку" : "− Свернуть");
     }
     function clearAudioForm(){
-      ["auTitle","auHost","auDesc","auDate","auTime","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
+      ["auTitle","auHost","auDesc","auDate","auTime","auTags","auExpDate","auExpTime"].forEach(function(id){ document.getElementById(id).value = ""; });
       fillSections("Эфир");
       resetCover();
       chosen = null; picked.hidden = true; fileInp.value = "";
@@ -5512,6 +5597,8 @@
       document.getElementById("auDesc").value = tr.desc || "";
       document.getElementById("auDate").value = tr.day || "";
       document.getElementById("auTime").value = tr.time || "";
+      document.getElementById("auExpDate").value = tr.expires ? tr.expires.slice(0,10) : "";
+      document.getElementById("auExpTime").value = tr.expires ? tr.expires.slice(11,16) : "";
       picked.hidden = false;
       picked.textContent = "Файл: " + file;
       setEditingTrack(file);
@@ -5553,10 +5640,20 @@
               }
             });
           }
+          if(doc.repeatHide && typeof doc.repeatHide === "object"){
+            Object.keys(doc.repeatHide).forEach(function(d){
+              if(Array.isArray(doc.repeatHide[d])){
+                doc.repeatHide[d] = doc.repeatHide[d].filter(function(f){ return f !== file; });
+                if(!doc.repeatHide[d].length) delete doc.repeatHide[d];
+              }
+            });
+            if(!Object.keys(doc.repeatHide).length) delete doc.repeatHide;
+          }
           return doc;
         }, "Запись убрана из фонотеки: " + title);
       }).then(function(doc){
         airProgram = readProgram(doc.air);
+        repeatHide = readRepeatHide(doc.repeatHide);
         refreshAirAfterEdit(doc.tracks || []);
         document.dispatchEvent(new CustomEvent("voiceai:library-changed"));
         say("Удалено");
@@ -5602,6 +5699,8 @@
             if(dt){ next.date = dt; } else { delete next.date; }
             var tm = document.getElementById("auTime").value.trim();
             if(tm){ next.time = tm; } else { delete next.time; }
+            var ex = formExpires();
+            if(ex){ next.expires = ex; } else { delete next.expires; }
             // обложка: новая — записываем путь, убрали — стираем поле
             if(coverPath){ next.cover = coverPath; }
             else if(coverPath === "" || coverRemove){ delete next.cover; }
@@ -5686,6 +5785,8 @@
           if(entryDay) entry.date = entryDay;
           var entryTime = document.getElementById("auTime").value.trim();
           if(entryTime) entry.time = entryTime;
+          var entryExp = formExpires();
+          if(entryExp) entry.expires = entryExp;
           var tg = readTags();
           if(tg.length) entry.tags = tg;
           if(savedCover) entry.cover = savedCover;
@@ -5702,7 +5803,7 @@
         chosen = null;
         picked.hidden = true;
         fileInp.value = "";
-        ["auTitle","auHost","auDesc","auDate","auTime","auTags"].forEach(function(id){ document.getElementById(id).value = ""; });
+        ["auTitle","auHost","auDesc","auDate","auTime","auTags","auExpDate","auExpTime"].forEach(function(id){ document.getElementById(id).value = ""; });
         refreshAirAfterEdit(list);     // запись появляется в фонотеке сразу
         /* Дата задана — ставим запись в эфир этого дня явно, дописывая
            в конец программы. Так состав дня всегда виден в манифесте. */
@@ -6073,6 +6174,7 @@
         tags: Array.isArray(t.tags) ? t.tags.filter(Boolean) : [],
         cover: t.cover || "",
         time: t.time || "",
+        expires: normExpires(t.expires),
         placeholder: !!t.placeholder,
         desc: t.desc || "",
         dur: (typeof t.duration === "number" && t.duration > 0) ? t.duration : null,
@@ -6084,6 +6186,7 @@
     allTracks = loaded;
     allTracks = allTracks.concat(placeholderTracks());
     airProgram = readProgram(data.air);
+    repeatHide = readRepeatHide(data.repeatHide);
     refreshSections();     // подкасты, шоу и гайды собираются из этой же фонотеки
     // фонотека приезжает позже, чем строятся формы: сообщаем, что она готова,
     // иначе списки рубрик, тегов и обложек так и останутся пустыми до первой правки
@@ -6526,6 +6629,66 @@
      вида 2026-09-22_Название.mp3. Очередь на главной — это записи одного
      дня: сегодняшнего, а если на сегодня ничего нет — последнего, где
      записи есть (радио не должно молчать). */
+  /* Подпись «повтор от …» у записи в эфире. По умолчанию пишется у каждой записи,
+     которая впервые выходила раньше этого дня. Редактор может отключить подпись
+     у отдельной записи или у всего дня — иногда это важно слушателю, а иногда
+     упоминать не стоит. Хранится в манифесте: "repeatHide": {"2026-10-01": ["файл.mp3"]}
+     — файлы дня, у которых подпись скрыта. */
+  var repeatHide = {};     // {день: {файл: true}}
+  function readRepeatHide(raw){
+    var out = {};
+    if(!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function(d){
+      if(!Array.isArray(raw[d])) return;
+      var o = {}, any = false;
+      raw[d].forEach(function(f){ if(typeof f === "string"){ o[f] = true; any = true; } });
+      if(any) out[d] = o;
+    });
+    return out;
+  }
+  function repeatHidden(day, file){ return !!(repeatHide[day] && repeatHide[day][file]); }
+  // запись — повтор в этом дне: впервые она выходила раньше
+  function isRepeatIn(tr, day){ return !!(tr && !tr.demo && tr.file && tr.day && day && tr.day < day); }
+  function repeatHideToList(day){
+    return repeatHide[day] ? Object.keys(repeatHide[day]) : [];
+  }
+  var repeatSaveTimers = {};
+  function saveRepeatHide(day){
+    if(!isAdmin || !GH.connected()) return Promise.resolve(false);
+    clearTimeout(repeatSaveTimers[day]);
+    pendingSaves++;
+    setSaveState("Сохраняю…");
+    return new Promise(function(resolve){
+      repeatSaveTimers[day] = setTimeout(function(){
+        var snapshot = repeatHideToList(day);
+        GH.editDoc("audio/manifest.json", function(doc){
+          if(!doc.repeatHide || typeof doc.repeatHide !== "object" || Array.isArray(doc.repeatHide)) doc.repeatHide = {};
+          if(snapshot.length){ doc.repeatHide[day] = snapshot; } else { delete doc.repeatHide[day]; }
+          if(!Object.keys(doc.repeatHide).length) delete doc.repeatHide;
+          return doc;
+        }, "Подписи «повтор» в эфире " + day).then(function(){ done(true); })["catch"](function(err){
+          showHint("Не сохранилось: " + err.message);
+          setSaveState("Не сохранилось — проверьте подключение к GitHub");
+          done(false);
+        });
+        function done(ok){
+          pendingSaves = Math.max(0, pendingSaves - 1);
+          if(!pendingSaves && ok) setSaveState("Все изменения сохранены");
+          resolve(ok);
+        }
+      }, 500);
+    });
+  }
+  // показать (shown=true) или скрыть подпись у списка записей дня
+  function setRepeatShown(day, files, shown){
+    if(!day) return;
+    if(!repeatHide[day]) repeatHide[day] = {};
+    files.forEach(function(f){ if(shown){ delete repeatHide[day][f]; } else { repeatHide[day][f] = true; } });
+    if(!Object.keys(repeatHide[day]).length) delete repeatHide[day];
+    renderQueue();
+    saveRepeatHide(day);
+  }
+
   var allTracks = [];      // фонотека: всё, что когда-либо загружали
   var airProgram = {};     // программа эфира по дням: {"2026-09-25": ["a.mp3"]}
   var airDay = "";         // какой день сейчас в эфире
@@ -6606,6 +6769,56 @@
     var p = mskParts();
     return new Date(p.y, p.m - 1, p.d);
   }
+
+  /* ============ Срок жизни записи ============
+     В манифесте у записи может стоять необязательное поле expires — «показывать
+     до»: дата и время по Москве, вид «2026-10-15T18:00» (дата без времени
+     означает конец этого дня, 23:59). Правила:
+       · после срока запись пропадает из фонотеки для слушателей (страницы
+         подкастов, шоу, гайдов, превью на главной, поиск) и не ставится в
+         новые эфиры;
+       · срок считается от дня эфира, а не от «сегодня»: из прошедших дней
+         (эфиры и архив) запись не убирается — тогда она была актуальна;
+       · сегодняшний эфир запись покидает в момент срока; день в будущем
+         принимает её, если срок не кончается раньше, чем день начнётся;
+       · редактор видит такие записи всегда, с пометкой, и может продлить срок.
+     Сам файл никто не удаляет — запись только скрывается. */
+  function mskNowStr(){
+    var p = mskParts(), hh = 0, mm = 0;
+    try{
+      var f = new Intl.DateTimeFormat("en-GB", {timeZone:"Europe/Moscow", hour:"2-digit", minute:"2-digit", hourCycle:"h23"});
+      var o = {}; f.formatToParts(new Date()).forEach(function(x){ o[x.type] = x.value; });
+      hh = +o.hour || 0; mm = +o.minute || 0;
+    }catch(e){
+      var u = new Date(Date.now() + 3*3600*1000); hh = u.getUTCHours(); mm = u.getUTCMinutes();
+    }
+    return p.y + "-" + ("0"+p.m).slice(-2) + "-" + ("0"+p.d).slice(-2) + "T" + ("0"+hh).slice(-2) + ":" + ("0"+mm).slice(-2);
+  }
+  function normExpires(v){
+    v = String(v || "").trim();
+    if(!v) return "";
+    var m = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(v);
+    if(!m) return "";
+    return m[1] + "T" + (m[2] ? m[2] + ":" + m[3] : "23:59");
+  }
+  function humanExpires(exp){
+    exp = normExpires(exp);
+    return exp ? exp.slice(8,10) + "." + exp.slice(5,7) + " " + exp.slice(11,16) : "";
+  }
+  function isExpiredNow(t){ return !!(t && t.expires && mskNowStr() > t.expires); }
+  // срок из полей формы редактора: «2026-10-15T18:00» или пусто
+  function formExpires(){
+    var d = (document.getElementById("auExpDate") || {value:""}).value.trim();
+    var t = (document.getElementById("auExpTime") || {value:""}).value.trim();
+    return d ? d + "T" + (t || "23:59") : "";
+  }
+  function validOnDay(t, day){
+    if(!t || !t.expires) return true;
+    var today = todayStr();
+    if(day < today) return true;                 // прошедшие эфиры и архив не трогаем
+    if(day === today) return !isExpiredNow(t);
+    return t.expires >= day + "T00:00";          // будущий день
+  }
   /* ============ Фонотека и программа эфира по дням ============
      allTracks  — фонотека: всё, что когда-либо загружали, с датой ПЕРВОЙ
                   публикации в поле day. Эта дата больше не меняется.
@@ -6675,7 +6888,39 @@
     if(el) el.textContent = text || "";
   }
 
+  (function repeatDayControl(){
+    var cb = document.getElementById("airRepeatNotes");
+    if(!cb) return;
+    cb.addEventListener("change", function(){
+      var files = (tracks || []).filter(function(t){ return isRepeatIn(t, airDay); })
+                                .map(function(t){ return t.file; });
+      if(!files.length){ syncRepeatControl(); return; }
+      setRepeatShown(airDay, files, cb.checked);
+      showHint(cb.checked ? "Подписи «повтор от …» включены у всех повторов этого эфира"
+                          : "Подписи «повтор от …» выключены у всех повторов этого эфира");
+    });
+  })();
+
+  /* Продлить (или снять) срок записи прямо из фонотеки: нужно, когда просроченную
+     запись снова ставят в эфир. Пустая строка — срок снят. */
+  function setTrackExpires(file, exp){
+    var tr = trackByFile(file);
+    if(tr) tr.expires = exp || "";
+    if(!isAdmin || !GH.connected()) return Promise.resolve(false);
+    return GH.editJson("audio/manifest.json", "tracks", function(list){
+      return list.map(function(item){
+        if(!item || item.file !== file) return item;
+        var next = {};
+        for(var k in item){ if(Object.prototype.hasOwnProperty.call(item, k)) next[k] = item[k]; }
+        if(exp){ next.expires = exp; } else { delete next.expires; }
+        return next;
+      });
+    }, "Срок записи: " + (tr ? tr.title : file) + (exp ? " — до " + humanExpires(exp) : " — снят"));
+  }
+
   function saveProgram(day, files, message, delay){
+    // одна запись — один раз за день: повтор считается по дням, а не внутри одного эфира
+    files = files.filter(function(f, i){ return files.indexOf(f) === i; });
     /* Если в дне не осталось записей и в этот день ничего не публиковалось,
        пустой день в манифесте не храним — убираем его совсем, чтобы файл
        не забивался днями-пустышками. А вот если у дня есть свои записи по
@@ -6683,8 +6928,14 @@
     var ownTracks = allTracks.some(function(t){ return t.day === day; });
     var drop = !files.length && !ownTracks;
 
-    if(drop){ delete airProgram[day]; refreshDayViews(day); }
-    else { applyProgramLocally(day, files); }
+    if(drop){ delete airProgram[day]; delete repeatHide[day]; refreshDayViews(day); }
+    else {
+      applyProgramLocally(day, files);
+      if(repeatHide[day]){
+        Object.keys(repeatHide[day]).forEach(function(f){ if(files.indexOf(f) === -1) delete repeatHide[day][f]; });
+        if(!Object.keys(repeatHide[day]).length) delete repeatHide[day];
+      }
+    }
 
     if(!isAdmin || !GH.connected()) return Promise.resolve(false);
     var snapshot = files.slice();
@@ -6696,6 +6947,12 @@
         GH.editDoc("audio/manifest.json", function(doc){
           if(!doc.air || typeof doc.air !== "object" || Array.isArray(doc.air)) doc.air = {};
           if(drop){ delete doc.air[day]; } else { doc.air[day] = snapshot; }
+          // подписи «повтор» держим только для записей, которые в этом дне ещё стоят
+          if(doc.repeatHide && typeof doc.repeatHide === "object" && doc.repeatHide[day]){
+            var keep = doc.repeatHide[day].filter(function(f){ return !drop && snapshot.indexOf(f) !== -1; });
+            if(keep.length){ doc.repeatHide[day] = keep; } else { delete doc.repeatHide[day]; }
+            if(!Object.keys(doc.repeatHide).length) delete doc.repeatHide;
+          }
           return doc;
         }, message).then(function(){
           showHint(message);
@@ -6719,12 +6976,17 @@
   function clearProgram(day){
     if(!day) return Promise.resolve(false);
     delete airProgram[day];
+    delete repeatHide[day];
     refreshDayViews(day);
     if(!isAdmin || !GH.connected()) return Promise.resolve(false);
     pendingSaves++;
     setSaveState("Сохраняю…");
     return GH.editDoc("audio/manifest.json", function(doc){
       if(doc.air && typeof doc.air === "object" && !Array.isArray(doc.air)) delete doc.air[day];
+      if(doc.repeatHide && typeof doc.repeatHide === "object"){
+        delete doc.repeatHide[day];
+        if(!Object.keys(doc.repeatHide).length) delete doc.repeatHide;
+      }
       return doc;
     }, "Очищен эфир " + day).then(function(){
       pendingSaves = Math.max(0, pendingSaves - 1);
@@ -6784,7 +7046,7 @@
     var inAir = {};
     tracksOfDay(day).forEach(function(t){ if(t.file) inAir[t.file] = true; });
     var extra = allTracks.filter(function(t){
-      return t.day === day && !t.placeholder && t.file && !inAir[t.file];
+      return t.day === day && !t.placeholder && t.file && !inAir[t.file] && (isAdmin || validOnDay(t, day));
     });
     return tracksOfDay(day).concat(extra);
   }
@@ -6794,18 +7056,18 @@
     var inAir = {};
     tracksOfDay(day).forEach(function(t){ if(t.file) inAir[t.file] = true; });
     return allTracks.filter(function(t){
-      return t.day === day && !t.placeholder && t.file && !inAir[t.file];
+      return t.day === day && !t.placeholder && t.file && !inAir[t.file] && (isAdmin || validOnDay(t, day));
     });
   }
 
   function tracksOfDay(day){
     if(!dayVisible(day)) return [];
-    if(airProgram[day]){
-      return airProgram[day].map(trackByFile).filter(Boolean);
-    }
-    return allTracks.filter(function(t){
-      return t.day === day && !isSectionOnly(t.tag);
-    });
+    var list = airProgram[day]
+      ? airProgram[day].map(trackByFile).filter(Boolean)
+      : allTracks.filter(function(t){ return t.day === day && !isSectionOnly(t.tag); });
+    // слушателю — только записи, срок которых для этого дня не кончился;
+    // редактор видит все, просроченные помечены (см. очередь)
+    return isAdmin ? list : list.filter(function(t){ return validOnDay(t, day); });
   }
   function pickDefaultDay(forToday){
     var days = airDays();
@@ -7246,17 +7508,37 @@
      дальше дни живут независимо, правка сегодняшнего не трогает архив. */
   function copyDayInto(sourceDay, targetDay){
     if(!sourceDay || !targetDay) return;
-    var source = programOfDay(sourceDay).filter(function(f){ return !!trackByFile(f); });
-    if(!source.length){ showHint("В этом дне нечего копировать"); return; }
+    var skipped = 0;
+    var source = programOfDay(sourceDay).filter(function(f){ return !!trackByFile(f); })
+      .filter(function(f){
+        // записи с истёкшим сроком в новые эфиры не переносим
+        if(validOnDay(trackByFile(f), targetDay)) return true;
+        skipped++; return false;
+      });
+    var skipNote = skipped ? " · без " + skipped + " с истёкшим сроком" : "";
+    if(!source.length){
+      showHint(skipped ? "У всех записей этого эфира срок истёк — в новый эфир они не переносятся"
+                       : "В этом дне нечего копировать");
+      return;
+    }
     if(sourceDay === targetDay){ showHint("Это тот же самый день"); return; }
 
     var current = programOfDay(targetDay).filter(function(f){ return !!trackByFile(f); });
     var human = humanDay(sourceDay) + " → " + humanDay(targetDay);
 
-    function apply(files, what){
+    function apply(files, what, keepTargetHides){
+      // настройка подписей «повтор» переезжает вместе с записями: что было скрыто
+      // в исходном дне, скрыто и в новом
+      var carried = {};
+      if(keepTargetHides && repeatHide[targetDay]){
+        Object.keys(repeatHide[targetDay]).forEach(function(f){ carried[f] = true; });
+      }
+      files.forEach(function(f){ if(repeatHidden(sourceDay, f)) carried[f] = true; });
+      if(Object.keys(carried).length){ repeatHide[targetDay] = carried; } else { delete repeatHide[targetDay]; }
+      saveRepeatHide(targetDay);
       saveProgram(targetDay, files, "Эфир " + targetDay + ": " + what);
       if(airDay !== targetDay){ setAirDay(targetDay, false, true); }
-      showHint(what);
+      showHint(what + skipNote);
     }
 
     if(!current.length){
@@ -7280,9 +7562,9 @@
         var merged = current.slice();
         source.forEach(function(f){ if(merged.indexOf(f) === -1) merged.push(f); });
         var added = merged.length - current.length;
-        apply(merged, "дописан эфир " + humanDay(sourceDay) + " (+" + added + ")");
+        apply(merged, "дописан эфир " + humanDay(sourceDay) + " (+" + added + ")", true);
       }
-      if(choice) showHint("Готово: " + human);
+      if(choice) showHint("Готово: " + human + skipNote);
     });
   }
 
@@ -7427,6 +7709,13 @@
         showHint("«" + tr.title + "» уже в эфире этого дня");
         return;
       }
+      if(!validOnDay(tr, day)){
+        if(!window.confirm("Срок записи «" + tr.title + "» истёк " + humanExpires(tr.expires) + ". " +
+           "В новый эфир её можно поставить, только продлив срок.\n\n" +
+           "Продлить до конца " + humanDay(day) + " и поставить в эфир?\n" +
+           "(Точное время можно поменять в правке записи.)")) return;
+        setTrackExpires(file, day + "T23:59");
+      }
       list.push(file);
       saveProgram(day, list, "В эфир " + day + ": " + tr.title);
       renderLibrary();
@@ -7480,12 +7769,15 @@
                                : "в эфире " + days.length + " " + plural(days.length, "дня", "дней", "дней"))
           : "не в эфире";
         var sub = [t.host || "", t.tag || "", t.placeholder ? "без звука" : where,
-                   t.dur ? fmt(t.dur) : ""].filter(Boolean).join(" · ");
+                   t.dur ? fmt(t.dur) : "",
+                   t.expires ? (isExpiredNow(t) ? "срок истёк " : "до ") + humanExpires(t.expires) : ""
+                  ].filter(Boolean).join(" · ");
         var draft = !(t.day && t.day <= todayStr());
         return '<div class="lib-row' + (already ? " is-in" : "") + (draft ? " is-draft" : "") + '">' +
                  '<span class="lib-main">' +
                    '<span class="lib-title">' + escapeHtml(t.title) +
-                     (draft ? '<span class="draft-badge">черновик</span>' : "") + '</span>' +
+                     (draft ? '<span class="draft-badge">черновик</span>' : "") +
+                     (isExpiredNow(t) ? '<span class="draft-badge exp-badge">срок истёк</span>' : "") + '</span>' +
                    '<span class="lib-sub">' + escapeHtml(sub) + '</span>' +
                  '</span>' +
                  '<button type="button" class="lib-edit" data-edit="' + escapeHtml(t.file) +
@@ -7495,7 +7787,7 @@
                  (t.placeholder
                    ? '<span class="lib-add is-off" title="Аудио ещё не загружено — в эфир поставить нечего">нет звука</span>'
                    : '<button type="button" class="lib-add" data-file="' + escapeHtml(t.file) + '">' +
-                       (already ? "уже в эфире" : "+ в эфир") +
+                       (already ? "уже в эфире" : (!validOnDay(t, day) ? "продлить и в эфир" : "+ в эфир")) +
                      '</button>') +
                '</div>';
       }).join("");
@@ -7761,6 +8053,7 @@
         title: i.title || i.file, host: i.host || "Voice Ai",
         tag: i.tag || "Эфир", tags: Array.isArray(i.tags) ? i.tags.filter(Boolean) : [],
         cover: i.cover || "", desc: i.desc || "", time: i.time || "",
+        expires: normExpires(i.expires),
         dur: (typeof i.duration === "number" && i.duration > 0) ? i.duration : null,
         placeholder: !!i.placeholder,
         src: i.placeholder ? null : mediaSrc(i.file), demo: false
@@ -7777,6 +8070,7 @@
       t.tags  = Array.isArray(i.tags) ? i.tags.filter(Boolean) : [];
       t.cover = i.cover || "";
       t.time  = i.time || "";
+      t.expires = normExpires(i.expires);
       t.placeholder = !!i.placeholder;
       if(t.placeholder) t.src = null;
       t.desc  = i.desc || "";
@@ -7901,6 +8195,28 @@
      новая дата, перерисовываем ленту (подсветка «сегодня» переезжает) и, если
      ничего не играет и стоял вчерашний эфир, открываем сегодняшний. Играющее
      не прерываем. */
+  /* Срок записи может кончиться, пока страница открыта. Раз в полминуты сверяем,
+     изменился ли набор просроченных записей: если да — обновляем разделы и, когда
+     ничего не играет, сегодняшнюю очередь (не трогая сам звук). */
+  var expirySig = null, expiryTick = 0;
+  function checkExpiry(){
+    if(!allTracks || !allTracks.length) return;
+    var sig = allTracks.filter(isExpiredNow).map(function(t){ return t.file; }).sort().join("|");
+    if(expirySig === null){ expirySig = sig; return; }
+    if(sig === expirySig) return;
+    expirySig = sig;
+    refreshSections();
+    if(airDay && !state.playing){
+      var list = tracksOfDay(airDay);
+      if(list.length){
+        tracks = list;
+        if(!list.some(function(t){ return t.id === state.currentId; })) state.currentId = list[0].id;
+        renderQueue(); renderNowPlaying(); renderAirDayLabel();
+      }
+    }
+    renderDayStrip();
+  }
+
   var lastTodayKey = "";
   function checkDayRollover(){
     var t = todayStr();
@@ -7919,6 +8235,7 @@
 
   function tickClock(){
     checkDayRollover();
+    if(++expiryTick % 30 === 0) checkExpiry();
     var now = new Date();
     var timeStr = now.toLocaleTimeString("ru-RU", {timeZone:"Europe/Moscow", hour:"2-digit", minute:"2-digit", second:"2-digit"});
     var dateStr = now.toLocaleDateString("ru-RU", {timeZone:"Europe/Moscow", weekday:"short", day:"numeric", month:"long"});
