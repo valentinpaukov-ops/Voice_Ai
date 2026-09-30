@@ -42,14 +42,16 @@
     --text:#15141c;
     --text-dim:#585a6a;
     --accent:#0048f4;
-    --accent-strong:#0036b8;
+    /* Цвета — из фирменной палитры «Технологии Доверия» (Brandbook 2.0, 2025). */
+    --accent-strong:#000f9b;
     --accent-ink:#ffffff;
-    --live:#c73a30;
-    --wave:#0d8f80;
-    --pub:#5a3fc0;
-    --date:#c25a00;     /* даты и время: новости, лента дней */
+    --live:#d7644b;
+    --air:#0048f4;      /* эфир: точка и заголовок в архиве */
+    --wave:#559bdc;     /* новости, шкала громкости, круг эфира */
+    --pub:#824b82;      /* подкасты и шоу */
+    --date:#dc7d4b;     /* даты и время */
     --shadow:0 1px 2px rgba(20,20,30,.05), 0 10px 28px -16px rgba(20,20,30,.22);
-    --pin:#8a1f1f;
+    --pin:#d7644b;
     --font-display:'Big Shoulders Display', 'Arial Narrow', Impact, sans-serif;
     --font-body:'IBM Plex Sans', system-ui, -apple-system, Segoe UI, sans-serif;
     --font-mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -66,14 +68,15 @@
       --text:#f3f1ec;
       --text-dim:#a19cae;
       --accent:#0048f4;
-      --accent-strong:#7aa2ff;
+      --accent-strong:#92b6fd;
       --accent-ink:#ffffff;
-      --live:#ff6b5e;
-      --wave:#3fe4cf;
-      --pub:#a78bfa;
-      --date:#ff9a3c;
+      --live:#e67268;
+      --air:#3c6df4;
+      --wave:#a0c8ef;
+      --pub:#a055a0;
+      --date:#fc9744;
       --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 32px -16px rgba(0,0,0,.65);
-      --pin:#e0564a;
+      --pin:#e67268;
     }
   }
   :root[data-theme="dark"]{
@@ -85,14 +88,15 @@
     --text:#f3f1ec;
     --text-dim:#a19cae;
     --accent:#0048f4;
-    --accent-strong:#7aa2ff;
+    --accent-strong:#92b6fd;
     --accent-ink:#ffffff;
-    --live:#ff6b5e;
-    --wave:#3fe4cf;
-    --pub:#a78bfa;
-    --date:#ff9a3c;
+    --live:#e67268;
+    --air:#3c6df4;
+    --wave:#a0c8ef;
+    --pub:#a055a0;
+    --date:#fc9744;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 32px -16px rgba(0,0,0,.65);
-    --pin:#e0564a;
+    --pin:#e67268;
   }
 
   *{box-sizing:border-box;}
@@ -655,7 +659,7 @@
   .arch-col .news-when{font-size:11px;}
   .arch-col-h{
     font-family:var(--font-mono);font-size:11px;text-transform:uppercase;
-    letter-spacing:.06em;color:var(--accent-strong);margin-bottom:12px;font-weight:600;
+    letter-spacing:.06em;color:var(--air);margin-bottom:12px;font-weight:600;
   }
   /* заголовок колонки новостей — в цвет её кружочка в календаре */
   .media-date{
@@ -666,14 +670,6 @@
   .arch-col-h.is-news{color:var(--wave);}
   /* публикации разделов — в цвет своего кружочка */
   .arch-col-h.is-pub{color:var(--pub);}
-  /* на светлом фоне тот же бирюзовый в мелком шрифте читается плохо —
-     берём на полтона темнее, оттенок остаётся прежним */
-  :root[data-theme="light"] .arch-col-h.is-news{color:#0a6f63;}
-  :root[data-theme="light"] .arch-col-h.is-pub{color:#4a32a8;}
-  @media (prefers-color-scheme: light){
-    :root:not([data-theme="dark"]) .arch-col-h.is-news{color:#0a6f63;}
-    :root:not([data-theme="dark"]) .arch-col-h.is-pub{color:#4a32a8;}
-  }
   .arch-extra{margin-top:26px;padding-top:20px;border-top:1px solid var(--border);}
   .arch-empty-sm{
     font-size:13px;color:var(--text-dim);padding:10px 0;
@@ -928,7 +924,7 @@
   .dc-num{font-family:var(--font-mono);font-size:15px;color:var(--date);font-weight:600;}
   .dc-dots{display:flex;gap:3px;height:5px;}
   .dc-dots i{width:5px;height:5px;border-radius:50%;display:block;}
-  .dot-air{background:var(--accent);}
+  .dot-air{background:var(--air);}
   .dot-news{background:var(--wave);}
   .dot-pub{background:var(--pub);}
 
@@ -3598,7 +3594,7 @@
        они тоже часть истории дня, хотя в ежедневный выпуск не входили. */
     var extra = sectionsOfDay(day);
     if(extra.length){
-      html += '<div class="arch-extra"><h4 class="arch-col-h is-pub">Публикации этого дня</h4>' +
+      html += '<div class="arch-extra"><h4 class="arch-col-h is-pub">Подкасты / шоу этого дня</h4>' +
         extra.map(function(t){
           return '<div class="arch-track is-playable" data-play-id="' + escapeHtml(String(t.id)) +
                  '" data-day="' + escapeHtml(day) + '" title="Послушать" role="button" tabindex="0">' +
