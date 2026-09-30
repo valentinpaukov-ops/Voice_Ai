@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-30T16:01:37Z",
+  "updated": "2026-09-30T16:04:22Z",
   "tracks": [
     {
       "file": "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
@@ -206,6 +206,18 @@
       ],
       "cover": "covers/2026-09-24_2026-09-18_Music_ver1.webp",
       "desc": "Музыкальный трек — атмосферная композиция. Для тех, кто ценит спокойную музыку и приятную атмосферу в рабочем пространстве."
+    },
+    {
+      "file": "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
+      "title": "Max Legend   Terminal Fracture",
+      "host": "Voice Ai",
+      "tag": "Эфир",
+      "size": 3560176,
+      "duration": 222.5,
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/Max Legend - Terminal Fracture_(mp3sun.org).webp"
     }
   ],
   "air": {
