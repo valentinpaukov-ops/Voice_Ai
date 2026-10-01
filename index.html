@@ -1084,6 +1084,20 @@
     background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;
   }
   .nc-hint{font-size:13px;color:var(--text-dim);margin-bottom:16px;}
+  .nc-replace{
+    width:100%;box-sizing:border-box;grid-column:1 / -1;
+    border:1px solid color-mix(in srgb, var(--date) 55%, transparent);border-radius:12px;
+    background:color-mix(in srgb, var(--date) 9%, transparent);padding:12px 14px;font-size:13px;
+  }
+  .nc-replace p{margin:0 0 8px;}
+  .nc-replace .nr-cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
+  @media (max-width:700px){ .nc-replace .nr-cmp{grid-template-columns:1fr;} }
+  .nc-replace .nr-cmp > div{background:var(--surface);border-radius:8px;padding:8px 10px;line-height:1.5;overflow-wrap:anywhere;}
+  .nc-replace .nr-cmp b{display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
+  .nc-replace del{background:color-mix(in srgb, var(--live) 22%, transparent);text-decoration:line-through;}
+  .nc-replace ins{background:color-mix(in srgb, #4cc38a 26%, transparent);text-decoration:none;}
+  .nc-replace .nr-actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
   .nc-hint code{font-family:var(--font-mono);font-size:12px;color:var(--accent-strong);}
   .nc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
   .nc-field{display:flex;flex-direction:column;gap:5px;min-width:0;}
@@ -2225,6 +2239,7 @@
           </div>
           <p class="nc-hint">Заполните поля — новость уйдёт прямо в <code>news/news.json</code>. Если публикация не подключена, форма соберёт готовый блок для вставки вручную.</p>
           <div class="nc-grid">
+            <div class="nc-replace nc-wide" id="ncReplace" hidden></div>
             <label class="nc-field nc-wide"><span>Заголовок</span><input type="text" id="ncTitle" placeholder="Запущен новый модуль аналитики"></label>
             <label class="nc-field"><span>Дата</span><input type="date" id="ncDate"></label>
             <label class="nc-field"><span>Время</span><input type="time" id="ncTime" value="10:00"></label>
@@ -2548,6 +2563,7 @@
       date: n.date || "",
       time: n.time || "",
       title: n.title || "Без заголовка",
+      fp: Array.isArray(n.fp) ? n.fp : null,
       text: body,
       author: n.author || "",
       tags: tags,
@@ -4735,6 +4751,7 @@
         refreshGhUi();
         setStatus(ghSetupStatus, "");
         say("Готово — теперь новости публикуются одной кнопкой");
+        document.dispatchEvent(new CustomEvent("voiceai:inbox-changed"));   // подтянуть материалы от агента
       })["catch"](function(err){
         GH.setToken("");
         refreshGhUi();
@@ -4769,6 +4786,28 @@
       cancelEditBtn.hidden = !item;
       publishBtn.textContent = item ? "Сохранить изменения" : "Опубликовать новость";
       toggle.textContent = item ? "− Правка новости" : (body.hidden ? "+ Добавить новость" : "− Свернуть");
+      if(!item) hideReplaceNote();
+    }
+    /* Блок «заменит опубликованную новость»: показывает, что именно изменится. */
+    function hideReplaceNote(){
+      var box = document.getElementById("ncReplace");
+      if(box){ box.hidden = true; box.innerHTML = ""; }
+    }
+    function showReplaceNote(old, incoming, how, withButton){
+      var box = document.getElementById("ncReplace");
+      if(!box || !old) return;
+      var dt = diffWordsHtml(old.text || "", incoming.text || "");
+      var t = diffWordsHtml(old.title || "", incoming.title || "");
+      var titleChanged = (old.title || "") !== (incoming.title || "");
+      box.innerHTML =
+        '<p><b>' + escapeHtml(how) + '</b> «' + escapeHtml(old.title || "") + '» от ' +
+        escapeHtml(humanDay(old.date) + (old.time ? ", " + old.time : "")) +
+        (withButton ? "." : '. Опубликованная версия будет заменена этой, вторая новость не появится.') + '</p>' +
+        (titleChanged ? '<div class="nr-cmp"><div><b>Заголовок был</b>' + t.before + '</div><div><b>Заголовок станет</b>' + t.after + '</div></div>' : "") +
+        '<div class="nr-cmp"><div><b>Текст был</b>' + dt.before + '</div><div><b>Текст станет</b>' + dt.after + '</div></div>' +
+        (withButton ? '<div class="nr-actions"><button type="button" class="btn-add" id="ncDoReplace">Заменить её этой версией</button>' +
+                      '<span class="nc-hint" style="margin:0;align-self:center">или просто опубликуйте как новую</span></div>' : "");
+      box.hidden = false;
     }
     function fillForm(n){
       document.getElementById("ncTitle").value = n.title || "";
@@ -4782,10 +4821,94 @@
       document.getElementById("ncImportant").checked = !!n.important;
       renderTagBank();
     }
+    /* Новость от агента, открытая на проверку: путь её файла в inbox. Пока он
+       задан, кнопка публикации выпускает новость и убирает файл из очереди
+       согласования. «Отменить правку» оставляет файл в очереди нетронутым. */
+    var approvingPath = null;
+    var approvingFp = null;      // отпечаток исходного фрагмента новости от агента
+    function mergeFp(a, b){
+      var seen = {}, out = [];
+      (a || []).concat(b || []).forEach(function(x){ if(!seen[x]){ seen[x] = 1; out.push(x); } });
+      return out.slice(0, 240);
+    }
+    function setApproving(path){
+      approvingPath = path || null;
+      cancelEditBtn.hidden = !approvingPath && !editingId;
+      publishBtn.textContent = approvingPath
+        ? (editingId ? "Заменить опубликованную новость" : "Опубликовать новость от агента")
+        : (editingId ? "Сохранить изменения" : "Опубликовать новость");
+      if(approvingPath) toggle.textContent = "− Новость от агента на проверке";
+    }
     cancelEditBtn.addEventListener("click", function(){
+      var wasApproving = !!approvingPath;
+      approvingFp = null;
+      setApproving(null);
       setEditing(null);
       clearForm();
-      say("Правка отменена");
+      say(wasApproving ? "Проверка отменена — новость осталась в очереди согласования" : "Правка отменена");
+    });
+
+    // «Проверить» в панели согласования: открываем обычную форму, заполненную агентом
+    document.addEventListener("voiceai:approve-news", function(e){
+      var it = e.detail && e.detail.item;
+      if(!it) return;
+      if(!GH.connected()){
+        showHint("Сначала подключите GitHub — форма подключения в блоке новостей.");
+        revealComposer("newsComposer");
+        return;
+      }
+      body.hidden = false;
+      setEditing(null);
+      fillForm(it);
+      if(!document.getElementById("ncDate").value) document.getElementById("ncDate").value = todayStr();
+      if(!document.getElementById("ncTime").value) document.getElementById("ncTime").value = "10:00";
+
+      /* Три случая:
+         1) агент пометил новость как замену, и опубликованная на месте — форма
+            открывается как правка той новости, но файл из очереди по-прежнему
+            убирается после публикации;
+         2) пометка есть, а опубликованной уже нет (удалили) — публикуем как новую;
+         3) пометки нет, но на сайте уже есть похожая — предупреждаем и даём
+            заменить её одним нажатием. */
+      approvingFp = Array.isArray(it.fp) ? it.fp : null;
+      var target = null;
+      if(it.replaces){
+        for(var k=0;k<newsItems.length;k++){ if(String(newsItems[k].id) === String(it.replaces)){ target = newsItems[k]; break; } }
+      }
+      setApproving(it.__path);
+      if(target){
+        setEditing(target);
+        setApproving(it.__path);
+        showReplaceNote(target, it, "Заменит опубликованную новость");
+        say("Проверьте, что изменится в опубликованной новости, и нажмите «Заменить опубликованную новость»");
+      } else {
+        var best = null;
+        if(!it.replaces){
+          newsItems.forEach(function(n){
+            var r = nmCompare(it, n);
+            if(r.level && (!best || r.score > best.r.score)) best = {n: n, r: r};
+          });
+        }
+        if(best){
+          var how = best.r.rel === "part" ? "Похоже, это часть уже опубликованной новости:"
+                  : best.r.rel === "merge" ? "Похоже, это объединяет уже опубликованную новость с другим материалом:"
+                  : best.r.viaSource ? "По исходному тексту это та же новость, что уже опубликована:"
+                  : (best.r.level === "same" ? "Похоже, эта новость уже опубликована:" : "Есть похожая опубликованная новость:");
+          showReplaceNote(best.n, it, how, true);
+          var go = document.getElementById("ncDoReplace");
+          if(go) go.addEventListener("click", function(){
+            setEditing(best.n);
+            setApproving(it.__path);
+            showReplaceNote(best.n, it, "Заменит опубликованную новость");
+            say("Проверьте, что изменится, и нажмите «Заменить опубликованную новость»");
+          });
+          say("Похожая новость уже на сайте — заменить её или опубликовать эту как новую?");
+        } else {
+          if(it.replaces) say("Новость, которую нужно было заменить, на сайте не найдена (возможно, её удалили). Она будет опубликована как новая.");
+          else say("Проверьте новость от агента, поправьте при необходимости и нажмите «Опубликовать»");
+        }
+      }
+      revealComposer("newsComposer");
     });
 
     document.addEventListener("click", function(e){
@@ -4840,18 +4963,32 @@
       GH.editNews(function(list){
         if(isEdit){
           return list.map(function(n){
-            return String(n.id) === String(editingId) ? item : n;
+            if(String(n.id) !== String(editingId)) return n;
+            // отпечаток исходного фрагмента сохраняем при любой правке; при замене добавляем новый
+            var fp = mergeFp(Array.isArray(n.fp) ? n.fp : null, approvingFp);
+            if(fp.length) item.fp = fp;
+            return item;
           });
         }
+        if(approvingFp && approvingFp.length) item.fp = mergeFp(null, approvingFp);
         list.unshift(item);
         return list;
       }, (isEdit ? "Правка новости: " : "Новость: ") + item.title).then(function(list){
         publishBtn.disabled = false;
+        var approved = approvingPath;
+        approvingFp = null;
+        setApproving(null);
         clearForm();
         setEditing(null);
         applyNews({news:list});          // показываем сразу, не дожидаясь пересборки сайта
         renderTagBank();
         say(isEdit ? "Изменения сохранены" : "Опубликовано. На сайте появится через минуту");
+        if(approved){
+          // новость вышла — её файл из очереди согласования больше не нужен
+          GH.deleteFile(approved, "Согласовано: " + item.title).then(function(){
+            document.dispatchEvent(new CustomEvent("voiceai:inbox-changed"));
+          })["catch"](function(){ document.dispatchEvent(new CustomEvent("voiceai:inbox-changed")); });
+        }
       })["catch"](function(err){
         publishBtn.disabled = false;
         say(err.message, true);
@@ -6689,6 +6826,92 @@
     saveRepeatHide(day);
   }
 
+/* ===== отпечаток исходного фрагмента (не раскрывает текст) ===== */
+function fpFromText(s){
+  var t = String(s || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]+/g, " ").trim();
+  if(!t) return [];
+  var w = [];
+  t.split(" ").forEach(function(x){ if(x && !NM_STOP[x]) w.push(x.length > 5 ? x.slice(0, 5) : x); });
+  var seen = {}, out = [];
+  for(var i=0;i+1<w.length;i++){            // пары соседних слов: порядок важен, одиночные слова не раскрываются
+    var h = 2166136261, p = w[i] + " " + w[i+1];
+    for(var k=0;k<p.length;k++){ h ^= p.charCodeAt(k); h = (h * 16777619) >>> 0; }
+    var key = h.toString(36);
+    if(!seen[key]){ seen[key] = 1; out.push(key); }
+  }
+  return out.slice(0, 160);
+}
+function fpCompare(a, b){
+  if(!a || !b || a.length < 5 || b.length < 5) return null;
+  var set = {}; a.forEach(function(x){ set[x] = 1; });
+  var inter = 0; b.forEach(function(x){ if(set[x]) inter++; });
+  var c = inter / Math.min(a.length, b.length);          // «один входит в другой»
+  var j = inter / (a.length + b.length - inter);
+  return {contain: c, jaccard: j, inter: inter};
+}
+
+/* ===== сравнение новостей: «та же новость» / «похожая» ===== */
+var NM_STOP = {"и":1,"в":1,"во":1,"на":1,"с":1,"со":1,"по":1,"к":1,"о":1,"об":1,"от":1,"для":1,"из":1,"за":1,"что":1,"как":1,"а":1,"но":1,"не":1,"до":1,"при":1,"это":1,"его":1,"ее":1,"их":1,"или":1,"также":1,"будет":1,"были":1,"был":1,"была":1,"было":1};
+function nmTokens(s){
+  var t = String(s || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]+/g, " ").trim();
+  if(!t) return [];
+  var out = [], seen = {};
+  t.split(" ").forEach(function(w){
+    if(!w || NM_STOP[w]) return;
+    if(w.length > 5) w = w.slice(0, 5);          // грубая основа: «аналитики»/«аналитика» совпадают
+    if(!seen[w]){ seen[w] = 1; out.push(w); }
+  });
+  return out;
+}
+function nmDice(a, b){
+  if(!a.length || !b.length) return 0;
+  var set = {}; a.forEach(function(w){ set[w] = 1; });
+  var inter = 0; b.forEach(function(w){ if(set[w]) inter++; });
+  return 2 * inter / (a.length + b.length);
+}
+function nmNorm(s){ return nmTokens(s).join(" "); }
+function nmNormUrl(u){ return String(u || "").trim().toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, ""); }
+/* Насколько новость b похожа на a. level: "same" — почти та же, "similar" — похожая, "" — разные.
+   Если у обеих есть отпечаток исходного фрагмента (fp), сравниваются в первую очередь исходники:
+   формулировки агента могут сильно отличаться от запуска к запуску, а текст документа тот же. */
+function nmCompare(a, b){
+  var td = nmDice(nmTokens(a.title), nmTokens(b.title));
+  var xd = nmDice(nmTokens(a.text), nmTokens(b.text));
+  var ua = nmNormUrl(a.sourceUrl), ub = nmNormUrl(b.sourceUrl);
+  var sameUrl = !!(ua && ub && ua === ub);
+  var level = "";
+  if(sameUrl || td >= 0.85 || (td >= 0.6 && xd >= 0.5) || xd >= 0.8) level = "same";
+  else if(td >= 0.6 || xd >= 0.55) level = "similar";
+  var fc = fpCompare(a.fp, b.fp), viaSource = false, rel = "";
+  if(fc && fc.contain >= 0.4){
+    level = "same"; viaSource = true;
+    var la = a.fp.length, lb = b.fp.length;
+    if(fc.contain >= 0.8 && la < lb * 0.7) rel = "part";          // новая — часть опубликованной
+    else if(fc.contain >= 0.8 && la > lb * 1.4) rel = "merge";    // новая включает опубликованную и что-то ещё
+  }
+  var score = Math.max(td, xd) + (sameUrl ? 1 : 0) + (viaSource ? 1 + fc.contain : 0);
+  return {level: level, title: td, text: xd, sameUrl: sameUrl, score: score, viaSource: viaSource, rel: rel};
+}
+
+  /* Пословная разница двух текстов для показа «было → стало»: убранные слова
+     подсвечиваются в старом тексте, добавленные — в новом. */
+  function diffWordsHtml(oldS, newS){
+    var a = String(oldS || "").split(/\s+/).filter(Boolean), b = String(newS || "").split(/\s+/).filter(Boolean);
+    var n = a.length, m = b.length, i, j, L = [];
+    for(i=0;i<=n;i++){ L.push(new Array(m + 1).fill(0)); }
+    for(i=n-1;i>=0;i--) for(j=m-1;j>=0;j--) L[i][j] = a[i] === b[j] ? L[i+1][j+1] + 1 : Math.max(L[i+1][j], L[i][j+1]);
+    var o = [], w = [];
+    i = 0; j = 0;
+    while(i < n && j < m){
+      if(a[i] === b[j]){ o.push(escapeHtml(a[i])); w.push(escapeHtml(b[j])); i++; j++; }
+      else if(L[i+1][j] >= L[i][j+1]){ o.push('<del>' + escapeHtml(a[i]) + '</del>'); i++; }
+      else { w.push('<ins>' + escapeHtml(b[j]) + '</ins>'); j++; }
+    }
+    while(i < n){ o.push('<del>' + escapeHtml(a[i++]) + '</del>'); }
+    while(j < m){ w.push('<ins>' + escapeHtml(b[j++]) + '</ins>'); }
+    return {before: o.join(" "), after: w.join(" ")};
+  }
+
   var allTracks = [];      // фонотека: всё, что когда-либо загружали
   var airProgram = {};     // программа эфира по дням: {"2026-09-25": ["a.mp3"]}
   var airDay = "";         // какой день сейчас в эфире
@@ -7939,10 +8162,11 @@
       if(!news && it.host) meta.push(it.host);
       if(news && it.author) meta.push(it.author);
       if(!news && it.tag) meta.push(it.tag);
+      if(news && it.replaces) meta.push("заменит: «" + (it.replacesTitle || "опубликованную") + "»");
       if(it.agent) meta.push("от " + it.agent);
       return '<div class="inbox-item' + (stale ? " is-stale" : "") + '">' +
         '<div class="ii-main">' +
-          '<span class="ii-kind">' + (news ? "новость" : "запись") + '</span>' +
+          '<span class="ii-kind">' + (news ? (it.replaces ? "замена новости" : "новость") : "запись") + '</span>' +
           '<p class="ii-title">' + escapeHtml(it.title || "без названия") + '</p>' +
           '<div class="ii-meta">' + escapeHtml(meta.join(" · ")) + '</div>' +
           (news
@@ -8030,6 +8254,20 @@
 
   // после публикации материал из inbox исчезает — перерисовываем список
   document.addEventListener("voiceai:inbox-changed", function(){ inboxRefresh(); });
+  // согласование аудиозаписей от агента пока не подключено — говорим об этом прямо
+  document.addEventListener("voiceai:approve-audio", function(){
+    showHint("Согласование аудиозаписей от агента пока не подключено. Новости согласуются здесь же кнопкой «Проверить».");
+  });
+  // очередь согласования подтягиваем при открытии страницы и когда в неё возвращаются
+  if(isAdmin){
+    setTimeout(inboxRefresh, 1200);
+    var inboxLastCheck = 0;
+    document.addEventListener("visibilitychange", function(){
+      if(document.hidden || Date.now() - inboxLastCheck < 15000) return;
+      inboxLastCheck = Date.now();
+      inboxRefresh();
+    });
+  }
 
   /* После правки, загрузки или удаления записи обновляем всё на странице
      сразу, не дожидаясь пересборки сайта и не прерывая воспроизведение. */
