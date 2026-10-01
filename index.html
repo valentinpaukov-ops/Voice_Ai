@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- Карточка ссылки в мессенджерах и почте. Чтобы поменять текст — правьте три места:
      name="description", og:title / og:description и twitter:title / twitter:description. -->
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
 <meta name="description" content="Voice Ai — корпоративное радио «Технологии Доверия»">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Voice Ai">
@@ -1093,6 +1094,22 @@
   .import-close{position:absolute;top:8px;right:12px;z-index:2;width:36px;height:36px;border-radius:50%;border:1px solid var(--border);
     background:rgba(19,19,25,.9);color:#fff;font-size:22px;line-height:1;cursor:pointer;}
   .import-close:hover{background:#26263a;}
+  .access-box{width:min(680px,100%);height:auto;max-height:100%;overflow:auto;}
+  .access-body{padding:22px 24px 26px;}
+  .access-body h2{margin:0 0 10px;font-size:22px;}
+  .acc-state{margin:0 0 10px;font-family:var(--font-mono);font-size:13px;color:var(--text-dim);}
+  .acc-state b{color:var(--text);}
+  .acc-help{font-size:14px;line-height:1.55;color:var(--text-dim);margin:0 0 12px;}
+  .acc-steps{margin:0 0 14px;font-size:14px;color:var(--text-dim);}
+  .acc-steps ol{margin:8px 0 0 18px;padding:0;line-height:1.6;}
+  .acc-steps code{font-family:var(--font-mono);font-size:12px;}
+  .acc-f{display:block;margin:0 0 12px;font-size:13px;color:var(--text-dim);}
+  .acc-f input{display:block;width:100%;box-sizing:border-box;margin-top:5px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit;}
+  .acc-row{display:flex;gap:8px;align-items:stretch;} .acc-row input{flex:1;font-family:var(--font-mono);}
+  .acc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+  .acc-msg{margin-top:14px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font-size:14px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;}
+  .acc-msg.is-ok{border-color:#2e7d5b;} .acc-msg.is-err{border-color:var(--live);}
+  .acc-msg .acc-big{display:block;margin:8px 0;font-family:var(--font-mono);font-size:20px;letter-spacing:.06em;color:var(--date);user-select:all;}
   .news-problem{
     margin:0 auto 16px;max-width:1100px;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.5;
     border:1px solid var(--live);background:color-mix(in srgb, var(--live) 14%, transparent);color:var(--text);
@@ -2215,6 +2232,7 @@
       <div class="news-composer admin-only" id="newsComposer">
         <button type="button" class="nc-toggle" id="ncToggle">+ Добавить новость</button>
         <button type="button" class="nc-toggle nc-import" id="ncImport" title="Загрузить файл Word, JSON или текст и разобрать на новости">Загрузить новости (Word, JSON, текст)</button>
+        <button type="button" class="nc-toggle nc-import" id="ncAccess" title="Доступ к форме для редакторов новостей: код, который вы выдаёте редакторам">Доступ для редакторов</button>
         <div class="nc-body" id="ncBody" hidden>
           <div class="gh-panel" id="ghPanel">
             <div class="gh-row">
@@ -2449,6 +2467,40 @@
 </footer>
 
 <audio id="audioEl" preload="metadata"></audio>
+
+<!-- Доступ для редакторов новостей: зашифрованный ключ в репозитории и код, который выдаёт выпускающий -->
+<div class="import-overlay" id="accessOverlay" hidden role="dialog" aria-modal="true" aria-label="Доступ для редакторов">
+  <div class="import-box access-box">
+    <button type="button" class="import-close" id="accessClose" aria-label="Закрыть">×</button>
+    <div class="access-body">
+      <h2>Доступ для редакторов новостей</h2>
+      <p class="acc-state" id="accState">Проверяю…</p>
+      <p class="acc-help">Редакторам не нужен ни GitHub, ни токены: вы даёте им адрес формы и <b>код доступа</b>. Форма расшифровывает ключ
+        в браузере, когда редактор вводит код; сам ключ редакторы не видят. Ключ лежит в репозитории только в зашифрованном виде.</p>
+      <details class="acc-steps" id="accSteps">
+        <summary>Как это настроить (один раз, около 5 минут)</summary>
+        <ol>
+          <li>На GitHub создайте <b>новый репозиторий для очереди</b>, например <code>Voice_Ai_inbox</code>: <b>Private</b> и обязательно с галочкой «Add a README file».</li>
+          <li>Создайте токен: GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token. <b>Repository access: Only select repositories → только Voice_Ai_inbox</b>. Permissions → Repository permissions → <b>Contents: Read and write</b>.</li>
+          <li>Откройте в GitHub свой токен, которым вы подключили платформу, и добавьте в него и репозиторий очереди (Repository access), чтобы вы видели присланное.</li>
+          <li>Ниже вставьте новый токен, нажмите «Создать доступ» и отправьте редакторам адрес и код.</li>
+        </ol>
+      </details>
+      <label class="acc-f">Репозиторий очереди (владелец/имя)
+        <input type="text" id="accRepo" placeholder="valentinpaukov-ops/Voice_Ai_inbox" autocomplete="off"></label>
+      <label class="acc-f">Токен для редакторов (только на репозиторий очереди)
+        <input type="password" id="accToken" placeholder="github_pat_…" autocomplete="off"></label>
+      <label class="acc-f">Код доступа для редакторов
+        <span class="acc-row"><input type="text" id="accCode" autocomplete="off" spellcheck="false"><button type="button" class="nc-ghost" id="accGen">Сгенерировать</button></span></label>
+      <div class="acc-actions">
+        <button type="button" class="btn-add" id="accCreate">Создать доступ</button>
+        <button type="button" class="nc-ghost" id="accShow">Показать код</button>
+        <button type="button" class="nc-ghost nc-danger" id="accRevoke">Отозвать доступ</button>
+      </div>
+      <div class="acc-msg" id="accMsg" hidden></div>
+    </div>
+  </div>
+</div>
 
 <!-- Форма загрузки новостей (Word, JSON, текст) внутри платформы: та же страница docs/news-sender.html, открытая в режиме выпускающего -->
 <div class="import-overlay" id="importOverlay" hidden role="dialog" aria-modal="true" aria-label="Загрузка новостей">
@@ -4457,7 +4509,9 @@
      редактор, он лежит в localStorage этого браузера и НИКОГДА не
      попадает в код страницы — иначе право записи получил бы каждый,
      кто откроет исходник. */
-  var GH = (function(){
+  /* Клиент GitHub. makeGH(null) работает с основным репозиторием сайта; makeGH({owner, repo, branch}) — с
+     другим (отдельный репозиторий очереди редакторов), с тем же токеном выпускающего. */
+  function makeGH(override){
     var TOKEN_KEY = "voiceai_gh_token", CFG_KEY = "voiceai_gh_cfg";
 
     function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
@@ -4472,6 +4526,7 @@
       return {owner:m[1], repo:(seg.length ? seg[0] : m[1]+".github.io"), branch:"main"};
     }
     function cfg(){
+      if(override) return {owner: override.owner, repo: override.repo, branch: override.branch || "main"};
       var saved = null;
       try{ saved = JSON.parse(lsGet(CFG_KEY) || "null"); }catch(e){}
       var g = guess();
@@ -4693,9 +4748,11 @@
       connected: connected, check: check,
       editNews: editNews, editJson: editJson, editDoc: editDoc,
       uploadFile: uploadFile, deleteFile: deleteFile,
-      listDir: listDir, getFile: getFile
+      listDir: listDir, getFile: getFile, putFile: putFile
     };
-  })();
+  }
+  var GH = makeGH(null);
+  var GHQ = null;          // клиент репозитория очереди редакторов (если он отдельный), см. ниже
 
   /* ================= Форма добавления новости =================
      Собирает корректный JSON-блок, чтобы не искать пропущенную запятую
@@ -8141,14 +8198,35 @@ function nmCompare(a, b){
     return Math.ceil(INBOX_TTL_DAYS - (Date.now() - t) / 86400000);
   }
 
-  function inboxRefresh(){
-    if(!isAdmin || !GH.connected()){ inboxItems = []; inboxRender(); return Promise.resolve([]); }
-    return GH.listDir(INBOX_DIR).then(function(files){
+  /* Доступ для редакторов (см. кнопку «Доступ для редакторов»): рядом со страницей docs/news-sender.html
+     лежит файл news-sender-access.json. В нём открыто только имя репозитория очереди, а токен записи в него
+     зашифрован кодом. Если очередь живёт в отдельном репозитории, платформа читает и его. */
+  var ACCESS_FILE = "docs/news-sender-access.json", queueError = "", queueReady = null;
+  function loadQueueConfig(){
+    if(queueReady) return queueReady;
+    queueReady = (window.fetch ? fetch(ACCESS_FILE + "?t=" + Date.now(), {cache: "no-store"}) : Promise.reject())
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){
+        GHQ = null;
+        var q = j && j.queue && typeof j.queue.repo === "string" ? j.queue : null;
+        if(!q) return;
+        var m = /^([^\/\s]+)\/([^\/\s]+)$/.exec(q.repo);
+        if(!m) return;
+        var c = GH.cfg();
+        if(m[1] === c.owner && m[2] === c.repo) return;      // очередь в основном репозитории: отдельного клиента не нужно
+        GHQ = makeGH({owner: m[1], repo: m[2], branch: q.branch || "main"});
+      })["catch"](function(){ GHQ = null; });
+    return queueReady;
+  }
+  function ghFor(it){ return (it && it.__src === "queue" && GHQ) ? GHQ : GH; }
+
+  function inboxLoadFrom(client, src){
+    return client.listDir(INBOX_DIR).then(function(files){
       var jsons = files.filter(function(f){
         return f && f.type === "file" && /\.json$/i.test(f.name);
       });
       return Promise.all(jsons.map(function(f){
-        return GH.getFile(INBOX_DIR + "/" + f.name).then(function(doc){
+        return client.getFile(INBOX_DIR + "/" + f.name).then(function(doc){
           var data = null;
           try{ data = JSON.parse(doc.text); }catch(e){ return null; }
           if(!data || typeof data !== "object") return null;
@@ -8164,17 +8242,38 @@ function nmCompare(a, b){
               for(var key in n){ if(Object.prototype.hasOwnProperty.call(n, key)) o[key] = n[key]; }
               o.kind = "news";
               if(!o.agent && meta.agent) o.agent = meta.agent;
-              o.__path = path; o.__bundle = true; o.__idx = k;
+              o.__path = path; o.__bundle = true; o.__idx = k; o.__src = src;
               return o;
             });
           }
-          data.__path = path;
+          data.__path = path; data.__src = src;
           return data;
         })["catch"](function(){ return null; });
       }));
     }).then(function(list){
-      list = [].concat.apply([], list.map(function(x){ return Array.isArray(x) ? x : [x]; }));
-      inboxItems = list.filter(Boolean).sort(function(a, b){
+      return [].concat.apply([], list.map(function(x){ return Array.isArray(x) ? x : [x]; })).filter(Boolean);
+    });
+  }
+
+  function inboxRefresh(){
+    if(!isAdmin || !GH.connected()){ inboxItems = []; inboxRender(); return Promise.resolve([]); }
+    return loadQueueConfig().then(function(){
+      queueError = "";
+      var jobs = [inboxLoadFrom(GH, "main")["catch"](function(){ return []; })];
+      if(GHQ){
+        /* Очередь редакторов в другом репозитории. Если токен выпускающего его не видит, GitHub отвечает «не
+           найдено», и это выглядело бы как «очередь пуста»: выпускающий не узнал бы, что редакторы присылают
+           новости. Поэтому сначала проверяем, что репозиторий вообще доступен, и если нет, говорим об этом прямо. */
+        jobs.push(GHQ.check().then(function(){ return inboxLoadFrom(GHQ, "queue"); })["catch"](function(err){
+          queueError = "Очередь редакторов недоступна: " + (err && err.message ? err.message : "ошибка") +
+            " Проверьте, что ваш токен GitHub включает и репозиторий очереди (Contents: Read and write).";
+          return [];
+        }));
+      }
+      return Promise.all(jobs);
+    }).then(function(parts){
+      var list = [].concat.apply([], parts);
+      inboxItems = list.sort(function(a, b){
         return String(a.created || "").localeCompare(String(b.created || ""));
       });
       inboxRender();
@@ -8185,9 +8284,10 @@ function nmCompare(a, b){
   /* Убрать материал из очереди. Обычный файл удаляется целиком; из пачки вычёркивается только эта
      новость, а когда в пачке никого не осталось, удаляется и сам файл. */
   function inboxRemove(it, message){
-    if(!it || !it.__bundle) return GH.deleteFile(it.__path, message);
+    var gh = ghFor(it);
+    if(!it || !it.__bundle) return gh.deleteFile(it.__path, message);
     var emptied = false;
-    return GH.editDoc(it.__path, function(doc){
+    return gh.editDoc(it.__path, function(doc){
       var arr = Array.isArray(doc) ? doc : ((doc && doc.news) || []), pos = -1;
       for(var k = 0; k < arr.length; k++){
         var n = arr[k];
@@ -8199,7 +8299,7 @@ function nmCompare(a, b){
       doc.news = arr;
       return doc;
     }, message).then(function(){
-      return emptied ? GH.deleteFile(it.__path, message) : null;
+      return emptied ? gh.deleteFile(it.__path, message) : null;
     });
   }
 
@@ -8211,12 +8311,12 @@ function nmCompare(a, b){
     var sub = document.getElementById("inboxSub");
     if(!panel || !list) return;
     var n = isAdmin ? inboxItems.length : 0;
-    panel.hidden = !n;
+    panel.hidden = !(n || (isAdmin && queueError));
     if(badge) badge.hidden = !n;
-    if(!n) return;
+    if(!n){ if(isAdmin && queueError){ sub.textContent = queueError; list.innerHTML = ""; } return; }
     if(badgeText) badgeText.textContent = "на согласовании: " + n;
     sub.textContent = n + " " + plural(n, "материал", "материала", "материалов") +
-      " от агента. Пока не опубликуете — их нет ни в эфире, ни в ленте, ни в поиске.";
+      " от агента и редакторов. Пока не опубликуете — их нет ни в эфире, ни в ленте, ни в поиске." + (queueError ? " " + queueError : "");
     list.innerHTML = inboxItems.map(function(it, i){
       var news = it.kind === "news";
       var left = inboxDaysLeft(it);
@@ -8340,6 +8440,132 @@ function nmCompare(a, b){
     window.addEventListener("message", function(e){
       if(e.origin !== location.origin || !e.data || typeof e.data !== "object") return;
       if(e.data.type === "voiceai:news-changed"){ loadNews(); inboxRefresh(); }
+    });
+  })();
+
+
+  /* ---- Доступ для редакторов ----
+     Ключ редакторов (токен GitHub, ограниченный репозиторием очереди) шифруется кодом и кладётся в
+     docs/news-sender-access.json. Шифрование AES-GCM, ключ из кода выводится через PBKDF2 (600 000 кругов):
+     подобрать длинный случайный код по этому файлу практически невозможно. Короткий код ("admin") подобрать
+     можно за секунды, поэтому слабый код платформа предложит заменить. Выпускающий код видит у себя, редакторы
+     вводят его в форме; сам токен в интерфейсе не показывается нигде. */
+  (function accessPanel(){
+    var btn = document.getElementById("ncAccess"), box = document.getElementById("accessOverlay");
+    if(!btn || !box || !window.crypto || !crypto.subtle) { if(btn) btn.hidden = !window.crypto; return; }
+    var CODE_KEY = "voiceai_editor_code", ITER = 600000;
+    var $ = function(id){ return document.getElementById(id); };
+    function msg(text, kind, html){
+      var m = $("accMsg"); m.hidden = !text; m.className = "acc-msg" + (kind ? " is-" + kind : "");
+      if(html) m.innerHTML = text; else m.textContent = text || "";
+    }
+    function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+    function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+    function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+    function enc64(bytes){ var s = ""; for(var i=0;i<bytes.length;i++) s += String.fromCharCode(bytes[i]); return btoa(s); }
+    function genCode(){
+      var al = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789", r = new Uint8Array(12), out = "";
+      crypto.getRandomValues(r);
+      for(var i=0;i<12;i++){ out += al[r[i] % al.length]; if(i % 4 === 3 && i < 11) out += "-"; }
+      return out;
+    }
+    function encryptWith(code, payload){
+      var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+      return crypto.subtle.importKey("raw", new TextEncoder().encode(code), "PBKDF2", false, ["deriveKey"]).then(function(k){
+        return crypto.subtle.deriveKey({name: "PBKDF2", salt: salt, iterations: ITER, hash: "SHA-256"}, k, {name: "AES-GCM", length: 256}, false, ["encrypt"]);
+      }).then(function(key){
+        return crypto.subtle.encrypt({name: "AES-GCM", iv: iv}, key, new TextEncoder().encode(JSON.stringify(payload)));
+      }).then(function(ct){
+        return {salt: enc64(salt), iv: enc64(iv), data: enc64(new Uint8Array(ct))};
+      });
+    }
+    function apiGet(token, path){
+      return fetch("https://api.github.com/" + path, {headers: {Authorization: "Bearer " + token, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"}, cache: "no-store"})
+        .then(function(res){ return res.json()["catch"](function(){ return null; }).then(function(d){ return {status: res.status, ok: res.ok, data: d}; }); });
+    }
+    function formLink(){ return location.origin + location.pathname.replace(/[^\/]*$/, "") + "docs/news-sender.html"; }
+    function refreshState(){
+      $("accState").textContent = "Проверяю…";
+      return GH.getFile(ACCESS_FILE).then(function(f){
+        var j = null; try{ j = JSON.parse(f.text); }catch(e){}
+        var q = j && j.queue && j.queue.repo;
+        $("accState").innerHTML = q ? "Доступ <b>включён</b>. Очередь редакторов: <b>" + escapeHtml(q) + "</b>" + (j.created ? ", создан " + escapeHtml(String(j.created).slice(0, 10)) : "") + "."
+                                    : "Файл доступа есть, но повреждён: создайте доступ заново.";
+        if(q && !$("accRepo").value) $("accRepo").value = q;
+      })["catch"](function(){ $("accState").innerHTML = "Доступ <b>не настроен</b>: редакторы пока могут только скачивать файл для выпускающего."; });
+    }
+    function open(){
+      if(!GH.connected()){ showHint("Сначала подключите GitHub в режиме редактора: он нужен, чтобы записать файл доступа."); return; }
+      var c = GH.cfg();
+      if(!$("accRepo").value) $("accRepo").value = c.owner + "/" + c.repo + "_inbox";
+      if(!$("accCode").value) $("accCode").value = genCode();
+      msg("");
+      box.hidden = false; document.body.style.overflow = "hidden";
+      refreshState();
+    }
+    function shut(){ box.hidden = true; document.body.style.overflow = ""; $("accToken").value = ""; }
+    btn.addEventListener("click", open);
+    $("accessClose").addEventListener("click", shut);
+    box.addEventListener("click", function(e){ if(e.target === box) shut(); });
+    document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !box.hidden) shut(); });
+    $("accGen").addEventListener("click", function(){ $("accCode").value = genCode(); });
+
+    function done(code, repo){
+      lsSet(CODE_KEY, code);
+      msg("Готово. Доступ создан, очередь: " + repo + ".\n\nОтправьте редакторам:\n• адрес формы: " + formLink() +
+          "\n• код доступа:\n<span class=\"acc-big\">" + escapeHtml(code) + "</span>" +
+          "Редактор вводит код один раз, браузер его запомнит. Код видите только вы (его можно показать кнопкой «Показать код» на этом устройстве).", "ok", true);
+      queueReady = null; loadQueueConfig().then(inboxRefresh);
+      refreshState();
+    }
+    $("accCreate").addEventListener("click", function(){
+      var repo = $("accRepo").value.trim(), token = $("accToken").value.trim(), code = $("accCode").value.trim(), m = /^([^\/\s]+)\/([^\/\s]+)$/.exec(repo);
+      if(!m){ msg("Репозиторий очереди укажите в виде владелец/имя, например valentinpaukov-ops/Voice_Ai_inbox.", "err"); return; }
+      if(!token){ msg("Вставьте токен для редакторов (только на репозиторий очереди).", "err"); return; }
+      if(/[^\x21-\x7E]/.test(token)){ msg("Токен выглядит неверно: он состоит только из латинских букв, цифр и знаков _ и - и не содержит пробелов. Проверьте, что скопировали его целиком, без лишних слов.", "err"); return; }
+      if(!code){ msg("Введите код доступа или нажмите «Сгенерировать».", "err"); return; }
+      var weak = code.length < 10 || /^(admin|password|qwerty|editor|voice|1234|0000)/i.test(code);
+      if(weak && !window.confirm("Код «" + code + "» короткий или угадываемый. Файл с зашифрованным ключом лежит в публичном репозитории, и такой код можно подобрать за секунды, после чего получить ключ.\n\nЛучше нажать «Сгенерировать» (длинный случайный код). Продолжить с этим кодом всё равно?")) return;
+      var c = GH.cfg(), sameAsMain = (m[1] === c.owner && m[2] === c.repo);
+      $("accCreate").disabled = true; msg("Проверяю токен…");
+      apiGet(token, "repos/" + encodeURIComponent(m[1]) + "/" + encodeURIComponent(m[2])).then(function(r){
+        if(!r.ok) throw new Error(r.status === 401 ? "Токен не принят: проверьте, что скопировали его целиком." :
+          r.status === 404 ? "Токен не видит репозиторий " + repo + ": проверьте имя и выбор репозитория в настройках токена." : "GitHub ответил " + r.status + ".");
+        if(r.data && r.data.permissions && !r.data.permissions.push) throw new Error("Токен читает репозиторий очереди, но не может в него писать: нужно право Contents: Read and write.");
+        if(sameAsMain){
+          if(!window.confirm("Очередь будет в ОСНОВНОМ репозитории сайта. Токен редакторов тогда сможет менять здесь любые файлы (сайт, аудио, новости), и по зашифрованному файлу его можно будет подобрать, если код окажется слабым.\n\nНастоятельно советую отдельный репозиторий очереди. Продолжить всё равно?")) throw new Error("Отменено.");
+          return null;
+        }
+        return apiGet(token, "repos/" + encodeURIComponent(c.owner) + "/" + encodeURIComponent(c.repo)).then(function(rm){
+          if(rm.ok && rm.data && rm.data.permissions && rm.data.permissions.push){
+            if(!window.confirm("Внимание: этот токен даёт запись и в ОСНОВНОЙ репозиторий сайта (" + c.owner + "/" + c.repo + "). Редакторы получили бы слишком много прав.\n\nСоздайте токен только на репозиторий очереди. Продолжить всё равно?")) throw new Error("Отменено: создайте токен только на репозиторий очереди.");
+          }
+        });
+      }).then(function(){
+        msg("Шифрую и записываю…");
+        return encryptWith(code, {token: token, repo: repo, branch: "main"});
+      }).then(function(enc){
+        var blob = {v: 1, kdf: "PBKDF2-SHA256", iter: ITER, salt: enc.salt, iv: enc.iv, data: enc.data, queue: {repo: repo, branch: "main"}, created: new Date().toISOString().replace(/\.\d+Z$/, "Z")};
+        var text = JSON.stringify(blob, null, 2) + "\n";
+        return GH.getFile(ACCESS_FILE).then(function(f){ return f.sha; }, function(){ return null; }).then(function(sha){
+          return GH.putFile(ACCESS_FILE, text, sha, "Доступ для редакторов новостей");
+        });
+      }).then(function(){ $("accToken").value = ""; done(code, repo); })
+      ["catch"](function(err){ msg(err && err.message ? err.message : "Не получилось создать доступ.", "err"); })
+      .then(function(){ $("accCreate").disabled = false; });
+    });
+    $("accShow").addEventListener("click", function(){
+      var code = lsGet(CODE_KEY);
+      if(code) msg("Код доступа для редакторов:\n<span class=\"acc-big\">" + escapeHtml(code) + "</span>Адрес формы: " + escapeHtml(formLink()), "ok", true);
+      else msg("На этом устройстве кода нет: он хранится только там, где доступ создавали. Если код потерян, создайте доступ заново (новый токен и новый код).", "err");
+    });
+    $("accRevoke").addEventListener("click", function(){
+      if(!window.confirm("Отозвать доступ редакторов? Форма перестанет принимать код, а отправка новостей будет отключена.\n\nЧтобы старый ключ нельзя было достать и из истории GitHub, отзовите ещё и сам токен на github.com/settings/tokens.")) return;
+      msg("Отзываю…");
+      GH.deleteFile(ACCESS_FILE, "Доступ для редакторов отозван").then(function(){
+        lsDel(CODE_KEY); queueReady = null; loadQueueConfig().then(inboxRefresh);
+        msg("Доступ отозван. Теперь отзовите токен редакторов на github.com/settings/tokens: файл удалён, но его старая копия остаётся в истории репозитория.", "ok"); refreshState();
+      })["catch"](function(err){ msg(err && err.message ? err.message : "Не получилось отозвать.", "err"); });
     });
   })();
 
