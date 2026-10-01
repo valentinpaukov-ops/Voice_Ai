@@ -1084,6 +1084,21 @@
     background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;
   }
   .nc-hint{font-size:13px;color:var(--text-dim);margin-bottom:16px;}
+  .nc-import{margin-left:8px;}
+  .import-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:2.5vh 2.5vw;}
+  .import-overlay[hidden]{display:none;}
+  .import-box{position:relative;width:min(1100px,100%);height:100%;background:#131319;border:1px solid var(--border);border-radius:16px;overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .import-box iframe{width:100%;height:100%;border:0;background:#131319;}
+  .import-close{position:absolute;top:8px;right:12px;z-index:2;width:36px;height:36px;border-radius:50%;border:1px solid var(--border);
+    background:rgba(19,19,25,.9);color:#fff;font-size:22px;line-height:1;cursor:pointer;}
+  .import-close:hover{background:#26263a;}
+  .news-problem{
+    margin:0 auto 16px;max-width:1100px;padding:12px 16px;border-radius:12px;font-size:14px;line-height:1.5;
+    border:1px solid var(--live);background:color-mix(in srgb, var(--live) 14%, transparent);color:var(--text);
+  }
+  .news-problem[hidden]{display:none;}
+  .news-problem a{color:var(--accent-strong);white-space:nowrap;}
   .nc-replace{
     width:100%;box-sizing:border-box;grid-column:1 / -1;
     border:1px solid color-mix(in srgb, var(--date) 55%, transparent);border-radius:12px;
@@ -2199,6 +2214,7 @@
 
       <div class="news-composer admin-only" id="newsComposer">
         <button type="button" class="nc-toggle" id="ncToggle">+ Добавить новость</button>
+        <button type="button" class="nc-toggle nc-import" id="ncImport" title="Загрузить файл Word, JSON или текст и разобрать на новости">Загрузить новости (Word, JSON, текст)</button>
         <div class="nc-body" id="ncBody" hidden>
           <div class="gh-panel" id="ghPanel">
             <div class="gh-row">
@@ -2433,6 +2449,14 @@
 </footer>
 
 <audio id="audioEl" preload="metadata"></audio>
+
+<!-- Форма загрузки новостей (Word, JSON, текст) внутри платформы: та же страница docs/news-sender.html, открытая в режиме выпускающего -->
+<div class="import-overlay" id="importOverlay" hidden role="dialog" aria-modal="true" aria-label="Загрузка новостей">
+  <div class="import-box">
+    <button type="button" class="import-close" id="importClose" aria-label="Закрыть">×</button>
+    <iframe id="importFrame" title="Загрузка новостей" src="about:blank"></iframe>
+  </div>
+</div>
 
 <div class="player-bar">
   <div class="player-inner">
@@ -4825,6 +4849,7 @@
        задан, кнопка публикации выпускает новость и убирает файл из очереди
        согласования. «Отменить правку» оставляет файл в очереди нетронутым. */
     var approvingPath = null;
+    var approvingItem = null;    // карточка из очереди (нужна, чтобы убрать из пачки именно эту новость)
     var approvingFp = null;      // отпечаток исходного фрагмента новости от агента
     function mergeFp(a, b){
       var seen = {}, out = [];
@@ -4841,7 +4866,7 @@
     }
     cancelEditBtn.addEventListener("click", function(){
       var wasApproving = !!approvingPath;
-      approvingFp = null;
+      approvingFp = null; approvingItem = null;
       setApproving(null);
       setEditing(null);
       clearForm();
@@ -4871,6 +4896,7 @@
          3) пометки нет, но на сайте уже есть похожая — предупреждаем и даём
             заменить её одним нажатием. */
       approvingFp = Array.isArray(it.fp) ? it.fp : null;
+      approvingItem = it;
       var target = null;
       if(it.replaces){
         for(var k=0;k<newsItems.length;k++){ if(String(newsItems[k].id) === String(it.replaces)){ target = newsItems[k]; break; } }
@@ -4975,8 +5001,8 @@
         return list;
       }, (isEdit ? "Правка новости: " : "Новость: ") + item.title).then(function(list){
         publishBtn.disabled = false;
-        var approved = approvingPath;
-        approvingFp = null;
+        var approved = approvingPath, approvedItem = approvingItem;
+        approvingFp = null; approvingItem = null;
         setApproving(null);
         clearForm();
         setEditing(null);
@@ -4985,7 +5011,7 @@
         say(isEdit ? "Изменения сохранены" : "Опубликовано. На сайте появится через минуту");
         if(approved){
           // новость вышла — её файл из очереди согласования больше не нужен
-          GH.deleteFile(approved, "Согласовано: " + item.title).then(function(){
+          inboxRemove(approvedItem || {__path: approved}, "Согласовано: " + item.title).then(function(){
             document.dispatchEvent(new CustomEvent("voiceai:inbox-changed"));
           })["catch"](function(){ document.dispatchEvent(new CustomEvent("voiceai:inbox-changed")); });
         }
@@ -8126,17 +8152,55 @@ function nmCompare(a, b){
           var data = null;
           try{ data = JSON.parse(doc.text); }catch(e){ return null; }
           if(!data || typeof data !== "object") return null;
-          data.__path = INBOX_DIR + "/" + f.name;
+          var path = INBOX_DIR + "/" + f.name;
+          /* Файл может содержать сразу пачку новостей: тот самый JSON, который отдаёт агент
+             ({"agent": …, "news": [ … ]}) или просто массив. Тогда каждая новость становится
+             отдельной карточкой, а публикация или отклонение убирают из файла только её. */
+          var arr = Array.isArray(data) ? data : (Array.isArray(data.news) ? data.news : null);
+          if(arr){
+            var meta = Array.isArray(data) ? {} : data;
+            return arr.filter(function(n){ return n && typeof n === "object"; }).map(function(n, k){
+              var o = {kind: "news", agent: meta.agent || "", created: meta.created || ""};
+              for(var key in n){ if(Object.prototype.hasOwnProperty.call(n, key)) o[key] = n[key]; }
+              o.kind = "news";
+              if(!o.agent && meta.agent) o.agent = meta.agent;
+              o.__path = path; o.__bundle = true; o.__idx = k;
+              return o;
+            });
+          }
+          data.__path = path;
           return data;
         })["catch"](function(){ return null; });
       }));
     }).then(function(list){
+      list = [].concat.apply([], list.map(function(x){ return Array.isArray(x) ? x : [x]; }));
       inboxItems = list.filter(Boolean).sort(function(a, b){
         return String(a.created || "").localeCompare(String(b.created || ""));
       });
       inboxRender();
       return inboxItems;
     })["catch"](function(){ inboxRender(); return []; });
+  }
+
+  /* Убрать материал из очереди. Обычный файл удаляется целиком; из пачки вычёркивается только эта
+     новость, а когда в пачке никого не осталось, удаляется и сам файл. */
+  function inboxRemove(it, message){
+    if(!it || !it.__bundle) return GH.deleteFile(it.__path, message);
+    var emptied = false;
+    return GH.editDoc(it.__path, function(doc){
+      var arr = Array.isArray(doc) ? doc : ((doc && doc.news) || []), pos = -1;
+      for(var k = 0; k < arr.length; k++){
+        var n = arr[k];
+        if(n && n.title === it.title && (n.text || "") === (it.text || "") && (n.date || "") === (it.date || "")){ pos = k; break; }
+      }
+      if(pos >= 0) arr.splice(pos, 1);
+      emptied = arr.length === 0;
+      if(Array.isArray(doc)) return arr;
+      doc.news = arr;
+      return doc;
+    }, message).then(function(){
+      return emptied ? GH.deleteFile(it.__path, message) : null;
+    });
   }
 
   function inboxRender(){
@@ -8213,7 +8277,7 @@ function nmCompare(a, b){
     if(!window.confirm(what)) return;
     inboxBusy = true;
     showHint("Отклоняю…");
-    var chain = GH.deleteFile(it.__path, "Отклонено: " + (it.title || it.__path));
+    var chain = inboxRemove(it, "Отклонено: " + (it.title || it.__path));
     if(!news && it.file){
       chain = chain.then(function(){
         return GH.deleteFile("audio/" + it.file, "Отклонена запись: " + (it.title || it.file))
@@ -8251,6 +8315,33 @@ function nmCompare(a, b){
       }, 140);
     }
   });
+
+  /* ---- Форма «Загрузить новости (Word, JSON, текст)» внутри платформы ----
+     Это та же страница docs/news-sender.html в режиме выпускающего. Она на том же адресе, поэтому токен
+     редактора ей подставляется сам. После публикации или отправки на согласование страница сообщает
+     платформе, и новости и очередь обновляются без перезагрузки. */
+  (function importOverlay(){
+    var btn = document.getElementById("ncImport"), box = document.getElementById("importOverlay"),
+        frame = document.getElementById("importFrame"), close = document.getElementById("importClose");
+    if(!btn || !box || !frame) return;
+    function open(){
+      frame.src = "docs/news-sender.html?chief=1&embed=1";
+      box.hidden = false; document.body.style.overflow = "hidden";
+    }
+    function shut(){
+      box.hidden = true; document.body.style.overflow = "";
+      frame.src = "about:blank";
+      loadNews(); inboxRefresh();
+    }
+    btn.addEventListener("click", open);
+    close.addEventListener("click", shut);
+    box.addEventListener("click", function(e){ if(e.target === box) shut(); });
+    document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !box.hidden) shut(); });
+    window.addEventListener("message", function(e){
+      if(e.origin !== location.origin || !e.data || typeof e.data !== "object") return;
+      if(e.data.type === "voiceai:news-changed"){ loadNews(); inboxRefresh(); }
+    });
+  })();
 
   // после публикации материал из inbox исчезает — перерисовываем список
   document.addEventListener("voiceai:inbox-changed", function(){ inboxRefresh(); });
@@ -8408,12 +8499,62 @@ function nmCompare(a, b){
     try{ document.dispatchEvent(new CustomEvent("voiceai:news-updated")); }catch(e){}
     return true;
   }
+  /* Файл новостей правят и руками на GitHub: одна потерянная запятая ломает его целиком, и сайт молча
+     показывал встроенные старые примеры, а выпускающий не знал, почему. Теперь выпускающему (режим
+     редактора) показывается баннер: что сломано, в какой строке и как исправить. Слушатели видят
+     прежнее поведение: сайт не падает. */
+  function explainNewsJson(text, err){
+    var msg = String(err && err.message || err), line = 0, col = 0, m;
+    if((m = /line (\d+) column (\d+)/.exec(msg))){ line = +m[1]; col = +m[2]; }
+    else if((m = /position (\d+)/.exec(msg))){
+      var pos = +m[1], before = text.slice(0, pos).split("\n");
+      line = before.length; col = before[before.length - 1].length + 1;
+    }
+    var hint;
+    if(/Unexpected end|Unterminated|end of (the )?JSON/i.test(msg)) hint = "файл оборван: не хватает закрывающей скобки или кавычки.";
+    else if(/Expected ',' or|Expected ','|expected ','/i.test(msg)) hint = "скорее всего, пропущена запятая между записями или полями (перед строкой, которую показывает ошибка).";
+    else if(/Unexpected token ['"]?[}\]]|Expected double-quoted|property name/i.test(msg)) hint = "скорее всего, лишняя запятая перед закрывающей скобкой.";
+    else hint = "проверьте скобки, запятые и кавычки рядом с этим местом.";
+    var snippet = "";
+    if(line){ var lines = text.split("\n"); snippet = (lines[line - 1] || "").trim().slice(0, 90); }
+    return "Файл новостей news/news.json не читается" + (line ? " (около строки " + line + (snippet ? ": «" + snippet + "»" : "") + ")" : "") +
+      ": " + hint + " Пока он не исправлен, на сайте показываются запасные старые новости.";
+  }
+  function showNewsProblem(text){
+    try{ console.warn(text); }catch(e){}
+    if(!isAdmin) return;
+    var host = document.querySelector("main");
+    if(!host) return;
+    var box = document.getElementById("newsProblem");
+    if(!box){
+      box = document.createElement("div"); box.id = "newsProblem"; box.className = "news-problem"; box.setAttribute("role", "alert");
+      host.insertBefore(box, host.firstChild);
+    }
+    var repo = "valentinpaukov-ops/Voice_Ai";
+    try{ var c = JSON.parse(localStorage.getItem("voiceai_gh_cfg") || "null"); if(c && c.owner && c.repo) repo = c.owner + "/" + c.repo; }catch(e){}
+    box.innerHTML = "<b>Новости не загрузились.</b> " + escapeHtml(text) +
+      ' <a href="https://github.com/' + escapeHtml(repo) + '/edit/main/news/news.json" target="_blank" rel="noopener">Открыть news.json на GitHub →</a>';
+    box.hidden = false;
+  }
+  function hideNewsProblem(){ var b = document.getElementById("newsProblem"); if(b) b.hidden = true; }
   function loadNews(){
     if(!window.fetch) return;
     fetch(NEWS_URL, {cache:"no-store"})
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(d){ applyNews(d); })
-      ["catch"](function(){ /* файла нет — показываем встроенные примеры */ });
+      .then(function(r){
+        if(!r.ok) return {missing: true};
+        return r.text().then(function(txt){ return {text: txt}; });
+      })
+      .then(function(res){
+        if(res.missing) return;                       // файла нет — показываем встроенные примеры
+        var d;
+        try{ d = JSON.parse(res.text); }
+        catch(e){ showNewsProblem(explainNewsJson(res.text, e)); return; }
+        var list = d && (Array.isArray(d) ? d : d.news);
+        if(d && !Array.isArray(list)){ showNewsProblem("Файл новостей news/news.json читается, но в нём нет списка новостей: ожидается {\"news\": [ … ]}."); return; }
+        hideNewsProblem();
+        applyNews(d);
+      })
+      ["catch"](function(){ /* нет связи — показываем встроенные примеры */ });
   }
   loadNews();
 
