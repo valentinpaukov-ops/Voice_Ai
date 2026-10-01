@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
 <title>Новости для Voice Ai — на согласование</title>
 <style>
   :root{color-scheme:dark;--bg:#131319;--card:#1c1a24;--field:#201e2a;--line:#3a3747;--text:#f3f1ec;
@@ -49,6 +50,8 @@
   details.origin summary{cursor:pointer}
   details.origin p{margin:6px 0 0;padding:8px 10px;background:var(--field);border-radius:8px;color:var(--text);line-height:1.5;white-space:pre-wrap}
   .role{margin:-8px 0 14px;font-size:13px;color:var(--dim)} .role b{color:var(--text)}
+  .acc-line{display:flex;gap:8px;align-items:stretch;margin-top:5px} .acc-line input{flex:1;margin:0}
+  .sub.ok{color:var(--green)} .sub.err{color:var(--red)}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
   .card-head .mini{background:none;border:0;color:var(--dim);cursor:pointer;font:inherit;font-size:12px;padding:2px 6px;border-radius:6px}
   .card-head .mini:hover{background:var(--field);color:var(--text)}
@@ -93,6 +96,15 @@
         <input id="defAuthor" type="text" value="Voice Ai"></label>
       <label class="f">Время первой карточки
         <input id="defTime" type="time" value="10:00"></label>
+      <div class="f" id="activateRow" hidden style="grid-column:1/-1">
+        <span>Код доступа (его выдал выпускающий): введите один раз, чтобы можно было отправлять</span>
+        <span class="acc-line">
+          <input id="accessKey" type="password" autocomplete="off" placeholder="например Zk7Q-m2Xp-9Wd4">
+          <button id="activateBtn" class="primary" type="button">Активировать</button>
+          <button id="forgetKey" class="ghost" type="button" hidden>забыть код</button>
+        </span>
+        <span id="activateNote" class="sub" style="margin:2px 0 0"></span>
+      </div>
     </div>
   </section>
 
@@ -140,14 +152,6 @@
       <div class="row">
         <label class="chk"><input id="remember" type="checkbox" checked> запомнить токен на этом устройстве</label>
         <button id="forget" class="ghost" type="button">забыть токен</button>
-      </div>
-    </div>
-    <div id="keyBox" hidden>
-      <label class="f">Код доступа (его выдал выпускающий)
-        <input id="accessKey" type="password" autocomplete="off" placeholder="например A7K4Q9">
-      </label>
-      <div class="row">
-        <label class="chk"><input id="rememberKey" type="checkbox" checked> запомнить код на этом устройстве</label>
       </div>
     </div>
     <div class="row">
@@ -968,21 +972,30 @@ function say(msg, cls, html) {
 }
 function b64(s) { return btoa(unescape(encodeURIComponent(s))); }
 function unb64(s) { return decodeURIComponent(escape(atob(String(s).replace(/\s/g, "")))); }
+/* CTX: ключ редактора, расшифрованный его кодом ({token, owner, repo, branch}). Пока он задан, все запросы идут в
+   репозиторий очереди с этим ключом; у выпускающего CTX пуст и используется токен из поля. */
+var CTX = null;
+function cx() { return CTX || {token: tokenEl.value.trim(), owner: CONFIG.owner, repo: CONFIG.repo, branch: CONFIG.branch}; }
 function url(path) {
-  return "https://api.github.com/repos/" + encodeURIComponent(CONFIG.owner) + "/" + encodeURIComponent(CONFIG.repo) +
+  var c = cx();
+  return "https://api.github.com/repos/" + encodeURIComponent(c.owner) + "/" + encodeURIComponent(c.repo) +
          "/contents/" + path.split("/").map(encodeURIComponent).join("/");
 }
 function api(method, path, body) {
+  var c = cx();
+  // в токене только латиница, цифры и знаки _ и -: иначе браузер вместо понятной ошибки выдаёт системную
+  if (/[^\x21-\x7E]/.test(c.token)) return Promise.resolve({status: 401, ok: false, data: {message: "bad token characters"}});
   var o = {method: method, headers: {
-    "Accept": "application/vnd.github+json", "Authorization": "Bearer " + tokenEl.value.trim(),
+    "Accept": "application/vnd.github+json", "Authorization": "Bearer " + c.token,
     "X-GitHub-Api-Version": "2022-11-28"}, cache: "no-store"};
   if (body) { o.body = JSON.stringify(body); o.headers["Content-Type"] = "application/json"; }
-  var u = url(path) + (method === "GET" ? "?ref=" + encodeURIComponent(CONFIG.branch) + "&t=" + Date.now() : "");
+  var u = url(path) + (method === "GET" ? "?ref=" + encodeURIComponent(c.branch) + "&t=" + Date.now() : "");
   return fetch(u, o).then(function (res) {
     return res.json().catch(function () { return null; }).then(function (data) { return {status: res.status, ok: res.ok, data: data}; });
   });
 }
 function explain(r) {
+  if (CTX && (r.status === 401 || r.status === 403 || r.status === 404)) return "ключ доступа больше не действует или не подходит: сообщите выпускающему";
   if (r.status === 401) return "токен не принят — проверьте, что он вставлен целиком и не истёк";
   if (r.status === 403) return "у токена нет права писать в репозиторий (нужно Contents: Read and write) или исчерпан лимит запросов";
   if (r.status === 404) return "репозиторий не найден или токен не видит его — в настройках токена выберите репозиторий Voice_Ai";
@@ -1021,7 +1034,7 @@ function loadPublished(viaApi) {
 function payload(it) {
   if (!it._created) it._created = new Date().toISOString();
   var p = {kind: "news", title: it.title, text: it.text, date: it.date, time: it.time,
-           author: it.author, tags: it.tags, agent: (it.source === "human" ? (editorName() || (CHIEF ? "выпускающий" : "редактор")) : AGENT), created: it._created};
+           author: it.author, tags: it.tags, agent: (it.source === "human" ? (editorName() || (CHIEF ? "выпускающий" : "редактор")) : (AGENT + (!CHIEF && editorName() ? " · " + editorName() : ""))), created: it._created};
   if (it.fp && it.fp.length >= 5) p.fp = it.fp;     // отпечаток, а не сам текст: очередь лежит в публичном репозитории
   if (it.mode === "replace" && it.matches[it.target]) {
     var pub = it.matches[it.target].pub;
@@ -1041,7 +1054,7 @@ function sendOne(it) {
   var path = pathOf(it);
   return api("GET", path).then(function (g) {
     if (g.status === 401 || g.status === 403) throw new Error(explain(g));
-    var body = {message: (it.source === "human" ? "Новость на проверку (" + (editorName() || (CHIEF ? "выпускающий" : "редактор")) + "): " : "Новость от агента: ") + it.title, branch: CONFIG.branch,
+    var body = {message: (it.source === "human" ? "Новость на проверку (" + (editorName() || (CHIEF ? "выпускающий" : "редактор")) + "): " : "Новость от агента: ") + it.title, branch: cx().branch,
                 content: b64(JSON.stringify(payload(it), null, 2) + "\n")};
     if (g.ok && g.data && g.data.sha) body.sha = g.data.sha;
     return api("PUT", path, body);
@@ -1288,23 +1301,84 @@ function loadConfig() {
       var u = c && typeof c.relay === "string" ? c.relay.trim() : "";
       RELAY_URL = /^https:\/\/[^\s]+$/.test(u) ? u : "";
     })["catch"](function () { RELAY_URL = ""; })
-    .then(refreshSendUi);
+    .then(loadAccess)
+    .then(refreshSendUi)
+    .then(autoActivate);
+}
+
+/* Доступ по коду. Выпускающий на платформе («Доступ для редакторов») кладёт сюда файл news-sender-access.json:
+   токен записи в репозиторий очереди, зашифрованный кодом (AES-GCM, ключ из кода через PBKDF2). Редактор вводит
+   код, страница расшифровывает токен в браузере и пишет в очередь. Токен нигде не показывается. */
+var ACCESS = null;
+function loadAccess() {
+  return fetch("news-sender-access.json?t=" + Date.now(), {cache: "no-store"})
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { ACCESS = (j && j.v === 1 && j.salt && j.iv && j.data) ? j : null; })
+    ["catch"](function () { ACCESS = null; });
+}
+function dec64(s) { var bin = atob(String(s)), b = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i); return b; }
+function unlockAccess(code) {
+  if (!ACCESS || !window.crypto || !crypto.subtle) return Promise.reject(new Error("no-access"));
+  var iter = Math.min(2000000, Math.max(100000, parseInt(ACCESS.iter, 10) || 600000));
+  return crypto.subtle.importKey("raw", new TextEncoder().encode(code), "PBKDF2", false, ["deriveKey"]).then(function (k) {
+    return crypto.subtle.deriveKey({name: "PBKDF2", salt: dec64(ACCESS.salt), iterations: iter, hash: "SHA-256"}, k, {name: "AES-GCM", length: 256}, false, ["decrypt"]);
+  }).then(function (key) {
+    return crypto.subtle.decrypt({name: "AES-GCM", iv: dec64(ACCESS.iv)}, key, dec64(ACCESS.data));
+  }).then(function (buf) {
+    var o = JSON.parse(new TextDecoder().decode(buf)), m = /^([^\/\s]+)\/([^\/\s]+)$/.exec(String(o && o.repo || ""));
+    if (!o || !o.token || !m) throw new Error("bad-payload");
+    return {token: o.token, owner: m[1], repo: m[2], branch: o.branch || "main"};
+  });
 }
 function refreshSendUi() {
   var editor = !CHIEF;
   document.getElementById("tokenBox").hidden = editor;
   document.getElementById("tokenHelp").hidden = editor;
-  document.getElementById("keyBox").hidden = !(editor && RELAY_URL);
+  var canSend = !!(RELAY_URL || ACCESS);
+  document.getElementById("activateRow").hidden = !(editor && canSend);
   document.getElementById("offlineRow").hidden = !editor;
-  document.getElementById("sendBtn").hidden = editor && !RELAY_URL;
+  document.getElementById("sendBtn").hidden = editor && !canSend;
   document.getElementById("sendLabel").textContent = editor ? "Отправить на проверку" : "Отправить на согласование";
   document.getElementById("sendTitle").textContent = editor ? "Отправить выпускающему" : "Отправка";
   document.getElementById("pubNote").textContent = CHIEF
     ? "«Опубликовать на сайте» выпускает проверенные здесь новости сразу, без второй проверки на платформе. «Отправить на согласование» кладёт их в очередь, где редактор откроет и опубликует каждую на сайте (удобно, если решать будет другой человек)."
-    : (RELAY_URL
+    : (canSend
         ? "Новости уйдут выпускающему на проверку: он откроет платформу, проверит каждую и опубликует. Если отправка не сработает, скачайте файл и передайте его выпускающему."
         : "Прямая отправка на платформу не настроена. Скачайте файл (или скопируйте текст) и передайте выпускающему любым способом: он загрузит его на этой же странице.");
-  try { var k = localStorage.getItem(KEY_STORE); if (k && !document.getElementById("accessKey").value) document.getElementById("accessKey").value = k; } catch (e) {}
+}
+/* Активация кода: вводится вначале, проверяется сразу (а не после того, как подготовлены все новости). */
+var UNLOCKED = null;
+function activateAccess(auto) {
+  var inp = document.getElementById("accessKey"), note = document.getElementById("activateNote"),
+      forgetBtn = document.getElementById("forgetKey"), key = inp.value.trim();
+  function bad(msg) { UNLOCKED = null; forgetBtn.hidden = true; note.className = "sub err"; note.textContent = msg; return false; }
+  if (!key) return Promise.resolve(auto ? false : bad("Введите код доступа."));
+  note.className = "sub"; note.textContent = "Проверяю код…";
+  var p;
+  if (ACCESS) p = unlockAccess(key).then(function (ctx) { ctx.key = key; return ctx; });
+  else if (RELAY_URL) p = Promise.resolve({relay: true, key: key});
+  else p = Promise.reject(new Error("no-access"));
+  return p.then(function (ctx) {
+    UNLOCKED = ctx;
+    try { localStorage.setItem(KEY_STORE, key); } catch (e) {}
+    forgetBtn.hidden = false; note.className = "sub ok";
+    note.textContent = ACCESS ? "✓ Доступ активирован. Теперь можно отправлять новости выпускающему." : "✓ Код запомнен (его проверит ретранслятор при отправке).";
+    return true;
+  }, function (e) {
+    if (auto) { try { localStorage.removeItem(KEY_STORE); } catch (x) {} inp.value = ""; return bad("Сохранённый код больше не подходит: введите новый."); }
+    return bad(e && e.message === "no-access" ? "Доступ по коду не настроен: можно скачать файл для выпускающего." : "Код не подошёл. Проверьте код или спросите выпускающего.");
+  });
+}
+document.getElementById("activateBtn").addEventListener("click", function () { activateAccess(false); });
+document.getElementById("accessKey").addEventListener("keydown", function (e) { if (e.key === "Enter") activateAccess(false); });
+document.getElementById("forgetKey").addEventListener("click", function () {
+  UNLOCKED = null; try { localStorage.removeItem(KEY_STORE); } catch (e) {}
+  document.getElementById("accessKey").value = ""; this.hidden = true;
+  var n = document.getElementById("activateNote"); n.className = "sub"; n.textContent = "Код забыт на этом устройстве.";
+});
+function autoActivate() {
+  if (CHIEF) return;
+  try { var k = localStorage.getItem(KEY_STORE); if (k && (ACCESS || RELAY_URL)) { document.getElementById("accessKey").value = k; activateAccess(true); } } catch (e) {}
 }
 
 function relayFields(it) {
@@ -1328,12 +1402,10 @@ var RELAY_ERRORS = {
 };
 document.getElementById("sendBtn").addEventListener("click", function () {
   if (CHIEF) return;
+  if (!RELAY_URL && ACCESS) { sendViaAccess(); return; }
   if (!RELAY_URL) { say("Прямая отправка не настроена: скачайте файл и передайте его выпускающему.", "err"); return; }
-  var key = document.getElementById("accessKey").value.trim();
-  if (!key) { say("Введите код доступа, который выдал выпускающий.", "err"); document.getElementById("accessKey").focus(); return; }
-  try {
-    if (document.getElementById("rememberKey").checked) localStorage.setItem(KEY_STORE, key); else localStorage.removeItem(KEY_STORE);
-  } catch (e) {}
+  var key = (UNLOCKED && UNLOCKED.key) || document.getElementById("accessKey").value.trim();
+  if (!key) { say("Сначала введите код доступа вверху страницы и нажмите «Активировать».", "err"); document.getElementById("accessKey").focus(); return; }
   var btns = [document.getElementById("sendBtn")]; btns.forEach(function (b) { b.disabled = true; });
   prepare(true).then(function (todo) {
     if (!todo) return null;
@@ -1358,6 +1430,36 @@ document.getElementById("sendBtn").addEventListener("click", function () {
     });
   }).then(function () { updateCount(); });
 });
+
+/* Отправка по коду доступа: расшифровываем ключ, сверяем с опубликованным и кладём файлы в очередь выпускающего. */
+function sendViaAccess() {
+  if (!needName()) return;
+  if (!UNLOCKED || !UNLOCKED.token) {
+    say("Сначала введите код доступа вверху страницы и нажмите «Активировать».", "err");
+    var k = document.getElementById("accessKey"); k.focus(); if (k.scrollIntoView) k.scrollIntoView({block: "center"}); return;
+  }
+  var btn = document.getElementById("sendBtn"); btn.disabled = true;
+  Promise.resolve(UNLOCKED).then(function (ctx) {
+    return prepare(true).then(function (todo) {
+      if (!todo) return null;
+      CTX = ctx;
+      say("Отправляю: " + todo.length + "…", "");
+      var okN = 0, chain = Promise.resolve();
+      todo.forEach(function (it) { chain = chain.then(function () { return sendOne(it).then(function (r) { if (r) okN++; }); }); });
+      return chain.then(function () {
+        CTX = null; render();
+        if (okN === todo.length && okN) {
+          say("Готово: выпускающему отправлено новостей — " + okN + ".\nОн увидит их на платформе в блоке «на согласовании» и опубликует. Если нужно что-то поправить, исправьте карточку и отправьте ещё раз: дублей не будет.", "ok");
+        } else if (okN) {
+          say("Часть отправлена (" + okN + " из " + todo.length + "). У остальных причина указана в карточке; исправьте и нажмите кнопку ещё раз.", "err");
+        } else {
+          say("Ничего не отправилось. Причина указана в карточках. Можно скачать файл и передать его выпускающему.", "err");
+        }
+      });
+    });
+  })["catch"](function () { say("Что-то пошло не так. Попробуйте ещё раз или скачайте файл и передайте его выпускающему.", "err"); })
+    .then(function () { CTX = null; updateCount(); });
+}
 
 /* Файл для выпускающего: тот же JSON, что делает агент. Он открывается на этой же странице (кнопка «выбрать файл»). */
 function fileForChief() {
