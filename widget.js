@@ -54,9 +54,39 @@
     var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
     return h ? h + ":" + two(m) + ":" + two(s) : two(m) + ":" + two(s);
   }
-  function todayStr() {
-    var d = new Date();
-    return d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate());
+  /* «Сегодня» — по Москве, как на самом сайте (часы в шапке тоже московские):
+     иначе у посетителя портала в другом часовом поясе виджет мог показывать
+     не тот день. */
+  function mskStamp() {
+    var o = {};
+    try {
+      new Intl.DateTimeFormat("en-GB", {timeZone: "Europe/Moscow", year: "numeric", month: "2-digit",
+        day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23"})
+        .formatToParts(new Date()).forEach(function (x) { o[x.type] = x.value; });
+    } catch (e) {}
+    if (!o.year) {                       // запасной путь: Москва = UTC+3
+      var u = new Date(Date.now() + 3 * 3600 * 1000);
+      o = {year: u.getUTCFullYear(), month: two(u.getUTCMonth() + 1), day: two(u.getUTCDate()),
+           hour: two(u.getUTCHours()), minute: two(u.getUTCMinutes())};
+    }
+    return o.year + "-" + o.month + "-" + o.day + "T" + o.hour + ":" + o.minute;
+  }
+  function todayStr() { return mskStamp().slice(0, 10); }
+
+  /* Срок записи (поле expires в манифесте, время московское), те же правила, что на
+     сайте: из сегодняшнего эфира запись уходит в момент срока, из прошедших дней не
+     убирается. */
+  function normExpires(v) {
+    var m = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(String(v || "").trim());
+    return m ? m[1] + "T" + (m[2] ? m[2] + ":" + m[3] : "23:59") : "";
+  }
+  function validOnDay(t, d) {
+    var exp = normExpires(t && t.expires);
+    if (!exp) return true;
+    var today = todayStr();
+    if (d < today) return true;
+    if (d === today) return mskStamp() <= exp;
+    return exp >= d + "T00:00";
   }
   var MONTHS = ["января","февраля","марта","апреля","мая","июня",
                 "июля","августа","сентября","октября","ноября","декабря"];
@@ -613,7 +643,8 @@
         queue = air
           ? air.map(function (f) { return byFile[f]; }).filter(Boolean)
           : tracks.filter(function (t) { return t.date === day; });
-        if (!queue.length) queue = tracks.slice(-8);
+        queue = queue.filter(function (t) { return validOnDay(t, day); });
+        if (!queue.length) queue = tracks.filter(function (t) { return validOnDay(t, todayStr()); }).slice(-8);
 
         idx = queue.length ? 0 : -1;
         peek = queue.length > 1 ? 1 : 0;
