@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Новости для Voice Ai — на согласование</title>
+<style>
+  :root{color-scheme:dark;--bg:#131319;--card:#1c1a24;--field:#201e2a;--line:#3a3747;--text:#f3f1ec;
+        --dim:#a19cae;--blue:#0048f4;--blue2:#92b6fd;--orange:#fc9744;--red:#e67268;--green:#4cc38a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "IBM Plex Sans",system-ui,-apple-system,Segoe UI,sans-serif}
+  main{max-width:860px;margin:0 auto;padding:28px 18px 80px}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:.01em}
+  h2{font-size:17px;margin:0 0 12px}
+  .lead{color:var(--dim);margin:0 0 22px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card.off{opacity:.55}
+  .card-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+  .card-head .n{font:500 12px "IBM Plex Mono",ui-monospace,monospace;color:var(--dim);letter-spacing:.06em}
+  .card-head .st{margin-left:auto;font:500 12px "IBM Plex Mono",ui-monospace,monospace}
+  .st.ok{color:var(--green)} .st.err{color:var(--red)} .st.wait{color:var(--orange)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .wide{grid-column:1/-1}
+  label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--dim)}
+  input[type=text],input[type=date],input[type=time],input[type=url],input[type=password],textarea{
+    width:100%;background:var(--field);color:var(--text);border:1px solid var(--line);border-radius:9px;
+    padding:9px 11px;font:inherit}
+  textarea{resize:vertical;min-height:84px}
+  input:focus,textarea:focus{outline:none;border-color:var(--blue)}
+  .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);cursor:pointer}
+  .chk input{width:17px;height:17px;accent-color:var(--blue)}
+  .tagbank{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .tagbank button{background:none;border:1px solid var(--line);color:var(--dim);border-radius:999px;padding:2px 9px;
+    font:500 11px "IBM Plex Mono",ui-monospace,monospace;letter-spacing:.04em;cursor:pointer}
+  .tagbank button.on{border-color:var(--blue);color:var(--blue2);background:rgba(0,72,244,.14)}
+  .dup{margin-top:12px;border:1px solid var(--orange);border-radius:10px;padding:11px 13px;background:rgba(252,151,68,.07);font-size:13px}
+  .dup b{color:var(--orange)}
+  .dup label.opt{display:flex;gap:8px;align-items:flex-start;margin:7px 0;cursor:pointer;color:var(--text)}
+  .dup label.opt input{margin-top:3px;accent-color:var(--blue)}
+  .dup .sub{color:var(--dim);font-size:12px}
+  .dup .cmp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+  @media (max-width:640px){.dup .cmp{grid-template-columns:1fr}}
+  .dup .cmp>div{background:var(--field);border-radius:8px;padding:8px 10px;line-height:1.5;overflow-wrap:anywhere}
+  .dup .cmp i{display:block;font:500 11px "IBM Plex Mono",ui-monospace,monospace;color:var(--dim);letter-spacing:.05em;text-transform:uppercase;font-style:normal;margin-bottom:3px}
+  .dup del{background:rgba(230,114,104,.25);text-decoration:line-through}
+  .dup ins{background:rgba(76,195,138,.28);text-decoration:none}
+  .dup .same{color:var(--green)}
+  details.origin{margin-top:10px;font-size:12px;color:var(--dim)}
+  details.origin summary{cursor:pointer}
+  details.origin p{margin:6px 0 0;padding:8px 10px;background:var(--field);border-radius:8px;color:var(--text);line-height:1.5;white-space:pre-wrap}
+  .loadbox textarea{min-height:120px;font:12px/1.5 "IBM Plex Mono",ui-monospace,monospace}
+  .loadbox .sub{color:var(--dim);font-size:13px;margin:0 0 10px}
+  .loadbox .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .filebtn{color:var(--dim);font-size:13px;cursor:pointer}
+  .filebtn input{font-size:12px;color:var(--dim);margin-left:6px}
+  #loadMsg{margin-top:10px;font-size:13px;white-space:pre-wrap}
+  #loadMsg.err{color:var(--red)} #loadMsg.ok{color:var(--green)}
+  .issues{margin:8px 0 0;padding:0;list-style:none;font-size:12px;color:var(--orange)}
+  .issues li::before{content:"• "}
+  .send{background:var(--card);border:1px solid var(--blue);border-radius:14px;padding:18px;margin-top:22px}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:12px}
+  .primary{background:var(--blue);color:#fff;border:0;border-radius:11px;padding:12px 20px;font:600 15px inherit;cursor:pointer}
+  .primary:hover{background:#0036b8} .primary:disabled{opacity:.5;cursor:default}
+  .ghost{background:none;border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+  #status{margin-top:14px;font-size:14px;white-space:pre-wrap}
+  #status.ok{color:var(--green)} #status.err{color:var(--red)}
+  #status a{color:var(--blue2)}
+  details{margin-top:14px;color:var(--dim);font-size:13px} summary{cursor:pointer;color:var(--text)}
+  details ol{padding-left:20px;margin:8px 0 0}
+  @media (max-width:640px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+  <h1>Новости для Voice Ai</h1>
+  <p class="lead" id="lead"></p>
+
+  <section class="loadbox card" id="loadBox">
+    <h2>Новости от агента</h2>
+    <p class="sub">Вставьте сюда результат работы агента (JSON) или выберите файл, затем нажмите «Разобрать».
+       Вместе с JSON можно вставить любой текст вокруг, например пояснения агента или блок кода: страница сама найдёт в нём данные.</p>
+    <textarea id="jsonIn" rows="7" spellcheck="false" placeholder='{ "agent": "Тедора", "batch": "20261002-0915", "news": [ { "title": "…", "text": "…", … } ] }'></textarea>
+    <div class="row">
+      <button id="loadBtn" class="primary" type="button">Разобрать</button>
+      <label class="filebtn">или выбрать файл <input id="jsonFile" type="file" accept=".json,.txt,application/json,text/plain"></label>
+      <button id="clearBtn" class="ghost" type="button">очистить</button>
+    </div>
+    <div id="loadMsg"></div>
+  </section>
+
+  <div id="cards"></div>
+
+  <section class="send">
+    <h2>Отправка на согласование</h2>
+    <label class="f">Токен GitHub <span id="tokenNote" style="color:var(--green)"></span>
+      <input id="token" type="password" autocomplete="off" placeholder="github_pat_…">
+    </label>
+    <div class="row">
+      <label class="chk"><input id="remember" type="checkbox" checked> запомнить токен на этом устройстве</label>
+      <button id="forget" class="ghost" type="button">забыть токен</button>
+    </div>
+    <div class="row">
+      <button id="sendBtn" class="primary" type="button">Отправить на согласование (<span id="cnt">0</span>)</button>
+    </div>
+    <div id="status"></div>
+    <details>
+      <summary>Где взять токен</summary>
+      <ol>
+        <li>GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token.</li>
+        <li>Repository access: Only select repositories → Voice_Ai.</li>
+        <li>Permissions → Repository permissions → Contents: Read and write.</li>
+        <li>Скопируйте токен и вставьте выше. Подойдёт и тот же токен, что вы вводите на самом сайте в режиме редактора.</li>
+      </ol>
+    </details>
+  </section>
+</main>
+
+<script>
+/* Страница ничего не вшивает: новости приходят от агента как JSON, их вставляют в поле выше
+   или загружают файлом. Партия (batch) и имя агента берутся из того же JSON; если их там нет,
+   партия называется по московскому времени, а агент — «агент». */
+var BATCH_ID = "", AGENT = "агент";
+
+var CONFIG = {owner:"valentinpaukov-ops", repo:"Voice_Ai", branch:"main",
+              site:"https://valentinpaukov-ops.github.io/Voice_Ai/?admin=1"};
+var KNOWN_TAGS = ["Автобизнес","Автопром","Арктика","Аудит","Банки","Безопасность","Бизнес","ВЭД","Законодательство",
+  "Здоровье","ИИ","ИТ","Инвестиции","Инженерия","Инновации","Инфляция","Инфраструктура","Исследования","Книги",
+  "Компания","Криптовалюта","Культура","Логистика","Медицина","Мероприятия","Налоги","Нефть и газ","Новости",
+  "Обучение","Онбординг","Подкаст","Прогнозы","Продукт","Проекты","Производство","Радио","Релизы","Рынки",
+  "Технологии","ТеДо","Туризм","Финансы","Финтех","Экономика","Энергетика","ЦБ","HR","Voice Ai"];
+// (список на сайте шире; страница при открытии дополняет его тегами с сайта — см. loadPublished)
+var TOKEN_KEY = "voiceai_agent_sender_token";
+
+/* ---------- сравнение с опубликованными новостями ---------- */
+/* ===== отпечаток исходного фрагмента (не раскрывает текст) ===== */
+function fpFromText(s){
+  var t = String(s || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]+/g, " ").trim();
+  if(!t) return [];
+  var w = [];
+  t.split(" ").forEach(function(x){ if(x && !NM_STOP[x]) w.push(x.length > 5 ? x.slice(0, 5) : x); });
+  var seen = {}, out = [];
+  for(var i=0;i+1<w.length;i++){            // пары соседних слов: порядок важен, одиночные слова не раскрываются
+    var h = 2166136261, p = w[i] + " " + w[i+1];
+    for(var k=0;k<p.length;k++){ h ^= p.charCodeAt(k); h = (h * 16777619) >>> 0; }
+    var key = h.toString(36);
+    if(!seen[key]){ seen[key] = 1; out.push(key); }
+  }
+  return out.slice(0, 160);
+}
+function fpCompare(a, b){
+  if(!a || !b || a.length < 5 || b.length < 5) return null;
+  var set = {}; a.forEach(function(x){ set[x] = 1; });
+  var inter = 0; b.forEach(function(x){ if(set[x]) inter++; });
+  var c = inter / Math.min(a.length, b.length);          // «один входит в другой»
+  var j = inter / (a.length + b.length - inter);
+  return {contain: c, jaccard: j, inter: inter};
+}
+
+/* ===== сравнение новостей: «та же новость» / «похожая» ===== */
+var NM_STOP = {"и":1,"в":1,"во":1,"на":1,"с":1,"со":1,"по":1,"к":1,"о":1,"об":1,"от":1,"для":1,"из":1,"за":1,"что":1,"как":1,"а":1,"но":1,"не":1,"до":1,"при":1,"это":1,"его":1,"ее":1,"их":1,"или":1,"также":1,"будет":1,"были":1,"был":1,"была":1,"было":1};
+function nmTokens(s){
+  var t = String(s || "").toLowerCase().replace(/ё/g, "е").replace(/[^a-zа-я0-9]+/g, " ").trim();
+  if(!t) return [];
+  var out = [], seen = {};
+  t.split(" ").forEach(function(w){
+    if(!w || NM_STOP[w]) return;
+    if(w.length > 5) w = w.slice(0, 5);          // грубая основа: «аналитики»/«аналитика» совпадают
+    if(!seen[w]){ seen[w] = 1; out.push(w); }
+  });
+  return out;
+}
+function nmDice(a, b){
+  if(!a.length || !b.length) return 0;
+  var set = {}; a.forEach(function(w){ set[w] = 1; });
+  var inter = 0; b.forEach(function(w){ if(set[w]) inter++; });
+  return 2 * inter / (a.length + b.length);
+}
+function nmNorm(s){ return nmTokens(s).join(" "); }
+function nmNormUrl(u){ return String(u || "").trim().toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/[?#].*$/, "").replace(/\/+$/, ""); }
+/* Насколько новость b похожа на a. level: "same" — почти та же, "similar" — похожая, "" — разные.
+   Если у обеих есть отпечаток исходного фрагмента (fp), сравниваются в первую очередь исходники:
+   формулировки агента могут сильно отличаться от запуска к запуску, а текст документа тот же. */
+function nmCompare(a, b){
+  var td = nmDice(nmTokens(a.title), nmTokens(b.title));
+  var xd = nmDice(nmTokens(a.text), nmTokens(b.text));
+  var ua = nmNormUrl(a.sourceUrl), ub = nmNormUrl(b.sourceUrl);
+  var sameUrl = !!(ua && ub && ua === ub);
+  var level = "";
+  if(sameUrl || td >= 0.85 || (td >= 0.6 && xd >= 0.5) || xd >= 0.8) level = "same";
+  else if(td >= 0.6 || xd >= 0.55) level = "similar";
+  var fc = fpCompare(a.fp, b.fp), viaSource = false, rel = "";
+  if(fc && fc.contain >= 0.4){
+    level = "same"; viaSource = true;
+    var la = a.fp.length, lb = b.fp.length;
+    if(fc.contain >= 0.8 && la < lb * 0.7) rel = "part";          // новая — часть опубликованной
+    else if(fc.contain >= 0.8 && la > lb * 1.4) rel = "merge";    // новая включает опубликованную и что-то ещё
+  }
+  var score = Math.max(td, xd) + (sameUrl ? 1 : 0) + (viaSource ? 1 + fc.contain : 0);
+  return {level: level, title: td, text: xd, sameUrl: sameUrl, score: score, viaSource: viaSource, rel: rel};
+}
+
+var PUBLISHED = null;        // опубликованные новости (null — сверить не удалось)
+var PUBLISHED_SRC = "";      // откуда взяты: "site" или "api"
+function humanDate(d) {
+  var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || "");
+  if (!m) return d || "";
+  var mon = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+  return parseInt(m[3], 10) + " " + mon[parseInt(m[2], 10) - 1];
+}
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]; }); }
+function diffWords(oldS, newS) {
+  var a = String(oldS || "").split(/\s+/).filter(Boolean), b = String(newS || "").split(/\s+/).filter(Boolean);
+  var n = a.length, m = b.length, i, j, L = [];
+  for (i = 0; i <= n; i++) L.push(new Array(m + 1).fill(0));
+  for (i = n - 1; i >= 0; i--) for (j = m - 1; j >= 0; j--) L[i][j] = a[i] === b[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  var o = [], w = []; i = 0; j = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) { o.push(esc(a[i])); w.push(esc(b[j])); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) { o.push("<del>" + esc(a[i]) + "</del>"); i++; }
+    else { w.push("<ins>" + esc(b[j]) + "</ins>"); j++; }
+  }
+  while (i < n) o.push("<del>" + esc(a[i++]) + "</del>");
+  while (j < m) w.push("<ins>" + esc(b[j++]) + "</ins>");
+  return {before: o.join(" "), after: w.join(" ")};
+}
+// кандидаты на «такая же новость уже опубликована» для каждой карточки
+function matchAll() {
+  items.forEach(function (it) {
+    if (it.origin && !it.fp.length) it.fp = fpFromText(it.origin);
+    it.matches = [];
+    if (!PUBLISHED) return;
+    PUBLISHED.forEach(function (p) {
+      var r = nmCompare({title: it.title, text: it.text, sourceUrl: it.sourceUrl, fp: it.fp}, p);
+      if (r.level) it.matches.push({pub: p, level: r.level, score: r.score, viaSource: r.viaSource, rel: r.rel});
+    });
+    it.matches.sort(function (a, b) { return b.score - a.score; });
+    it.matches = it.matches.slice(0, 3);
+    var best = it.matches[0];
+    if (!best) { it.mode = "new"; it.unchanged = false; return; }
+    it.why = best.viaSource ? "source" : "";
+    it.target = 0;
+    var p = best.pub;
+    it.unchanged = nmNorm(it.title) === nmNorm(p.title || "") && nmNorm(it.text) === nmNorm(p.text || "");
+    // «почти та же» и текст отличается — по умолчанию предлагаем заменить; «просто похожая» — как новую
+    it.mode = best.level === "same" ? "replace" : "new";
+    if (it.unchanged) it.include = false;      // менять нечего: по умолчанию не отправляем
+  });
+}
+function matchSignature() {
+  return items.map(function (it) { return it.matches.map(function (m) { return m.pub.id; }).join(","); }).join("|");
+}
+
+/* ---------- состояние ---------- */
+var items = [];
+function makeItems(arr) {
+  return arr.map(function (n, i) {
+    n = n || {};
+    return {
+      include: true, status: "", statusClass: "", matches: [], mode: "new", target: 0, keepWhen: true, unchanged: false,
+      title: str(n.title), text: str(n.text), origin: str(n.origin), fp: [], date: str(n.date), time: str(n.time) || "10:00",
+      author: str(n.author), tags: Array.isArray(n.tags) ? n.tags.map(str).filter(Boolean) : [],
+      sourceName: str(n.sourceName), sourceUrl: str(n.sourceUrl), important: n.important === true || n.important === "true",
+      _path: "inbox/news-" + BATCH_ID + "-" + ("0" + (i + 1)).slice(-2) + ".json", _created: ""
+    };
+  });
+}
+function mskBatch() {
+  var o = {};
+  try {
+    new Intl.DateTimeFormat("en-GB", {timeZone: "Europe/Moscow", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23"}).formatToParts(new Date()).forEach(function (x) { o[x.type] = x.value; });
+  } catch (e) {}
+  if (!o.year) { var u = new Date(Date.now() + 3 * 3600 * 1000); function p2(n) { return ("0" + n).slice(-2); }
+    o = {year: u.getUTCFullYear(), month: p2(u.getUTCMonth() + 1), day: p2(u.getUTCDate()), hour: p2(u.getUTCHours()), minute: p2(u.getUTCMinutes())}; }
+  return o.year + o.month + o.day + "-" + o.hour + o.minute;
+}
+
+/* Достаём JSON из того, что вставили: чистый JSON, блок кода ```json … ``` или JSON внутри пояснений.
+   Перебираем места, где может начинаться JSON (« { » и « [ »), для каждого берём сбалансированный кусок
+   (скобки внутри строк не считаются) и берём первый, который действительно разбирается. Так пояснения
+   со скобками перед JSON («см. [1]», «{…}») не мешают. Если ничего не разбирается, возвращаем первый
+   кусок, чтобы объяснить ошибку по нему. */
+function balancedFrom(src, start) {
+  var depth = 0, inStr = false, esc = false;
+  for (var j = start; j < src.length; j++) {
+    var c = src[j];
+    if (inStr) { if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; continue; }
+    if (c === "{" || c === "[") depth++;
+    else if (c === "}" || c === "]") { depth--; if (depth === 0) return src.slice(start, j + 1); }
+  }
+  return src.slice(start);                       // скобки не закрыты
+}
+/* Лишние запятые перед « } » и « ] » — самая частая беда в JSON от моделей. Убираем их, не трогая
+   запятые внутри строк. */
+function repairTrailingCommas(s) {
+  var out = "", inStr = false, esc = false;
+  for (var i = 0; i < s.length; i++) {
+    var c = s[i];
+    if (inStr) { out += c; if (esc) esc = false; else if (c === "\\") esc = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') { inStr = true; out += c; continue; }
+    if (c === ",") { var k = i + 1; while (k < s.length && /\s/.test(s[k])) k++; if (s[k] === "}" || s[k] === "]") continue; }
+    out += c;
+  }
+  return out;
+}
+function tryParse(s) {
+  try { return {ok: true, value: JSON.parse(s), repaired: false}; } catch (e) {}
+  var r = repairTrailingCommas(s);
+  if (r !== s) { try { return {ok: true, value: JSON.parse(r), repaired: true}; } catch (e) {} }
+  return {ok: false};
+}
+// похоже ли разобранное на новости: массив с объектами, объект с полем news или одна новость с заголовком
+function plausible(v) {
+  if (Array.isArray(v)) return v.some(function (x) { return x && typeof x === "object"; });
+  return !!(v && typeof v === "object" && (Array.isArray(v.news) || v.title));
+}
+function extractJson(text) {
+  var s = String(text || "").replace(/^\uFEFF/, "");
+  var fence = /```(?:json|JSON)?\s*([\s\S]*?)```/.exec(s);
+  var sources = fence ? [fence[1], s] : [s], firstSlice = "";
+  for (var t = 0; t < sources.length; t++) {
+    var src = sources[t], tries = 0;
+    for (var i = 0; i < src.length && tries < 40; i++) {
+      if (src[i] !== "{" && src[i] !== "[") continue;
+      tries++;
+      var slice = balancedFrom(src, i);
+      if (!firstSlice) firstSlice = slice;
+      var r = tryParse(slice);
+      if (r.ok && plausible(r.value)) return slice;
+      // кусок не подошёл (пояснение в скобках или сломанный JSON): пропускаем его целиком, не заглядывая
+      // внутрь, иначе из сломанного списка можно молча вытащить одну новость из нескольких
+      i += slice.length - 1;
+    }
+  }
+  return firstSlice;
+}
+function explainJsonError(raw, e) {
+  var msg = String(e && e.message || e), hint = "";
+  var m = /position (\d+)/.exec(msg);
+  if (m) { var pos = +m[1], before = raw.slice(0, pos), line = before.split("\n").length;
+    hint = " (около строки " + line + ": «" + raw.slice(Math.max(0, pos - 25), pos + 25).replace(/\s+/g, " ") + "»)"; }
+  if (/Unexpected token ['}\]]/.test(msg) || /trailing/i.test(msg)) hint += "\nЧаще всего это лишняя запятая после последнего элемента.";
+  else if (/Unexpected token/.test(msg) && /'/.test(raw.slice(0, 400))) hint += "\nПохоже, использованы одинарные кавычки: в JSON нужны двойные.";
+  else if (/Unexpected end/.test(msg) || !/[}\]]\s*$/.test(raw)) hint += "\nПохоже, вставлено не всё: JSON обрывается, не хватает закрывающей скобки.";
+  return "Это не получилось разобрать как JSON" + hint + "\nПопросите агента прислать JSON ещё раз, целиком и без комментариев внутри.";
+}
+function loadFromText(text) {
+  var box = document.getElementById("loadMsg");
+  function fail(m) { box.className = "err"; box.textContent = m; return false; }
+  var raw = extractJson(text);
+  if (!raw) return fail("В тексте не нашлось данных: нужен JSON, он начинается с « { » или « [ ».");
+  var pr = tryParse(raw), data;
+  if (!pr.ok) { var err; try { JSON.parse(raw); } catch (e) { err = e; } return fail(explainJsonError(raw, err)); }
+  data = pr.value;
+  var arr = Array.isArray(data) ? data : (data && Array.isArray(data.news) ? data.news : (data && data.title ? [data] : null));
+  if (!arr) return fail("JSON разобрался, но в нём нет списка новостей: ожидается массив или объект с полем «news».");
+  arr = arr.filter(function (n) { return n && typeof n === "object"; });
+  if (!arr.length) return fail("Список новостей пуст.");
+  var meta = (!Array.isArray(data) && data) || {};
+  AGENT = str(meta.agent) || AGENT || "агент";
+  BATCH_ID = str(meta.batch).replace(/[^0-9A-Za-zА-Яа-я_-]/g, "") || mskBatch();
+  items = makeItems(arr);
+  PUBLISHED_RELOAD = true;
+  box.className = "ok";
+  box.textContent = "Разобрано новостей: " + items.length + ". Партия " + BATCH_ID + ", агент: " + AGENT + "." +
+    (pr.repaired ? "\nВ JSON были лишние запятые перед закрывающей скобкой, я их убрал. Проверьте, что все новости на месте." : "");
+  if (PUBLISHED) matchAll();
+  render();
+  var d = document.getElementById("cards"); if (d.scrollIntoView) d.scrollIntoView({behavior: "smooth", block: "start"});
+  return true;
+}
+var PUBLISHED_RELOAD = false;
+function str(v) { return v == null ? "" : String(v).trim(); }
+
+/* ---------- проверка полей ---------- */
+function issuesOf(it) {
+  var out = [];
+  if (!it.title) out.push("нет заголовка — без него новость не отправится");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(it.date)) out.push("дата нужна в виде ГГГГ-ММ-ДД — без даты новость останется черновиком");
+  if (!/^\d{2}:\d{2}$/.test(it.time)) out.push("время нужно в виде ЧЧ:ММ");
+  if (it.text.length > 320) out.push("длинное описание (" + it.text.length + " знаков): в ленте обычно до 300");
+  if (it.sourceUrl && !/^https?:\/\//.test(it.sourceUrl)) out.push("ссылка на источник должна начинаться с http:// или https://");
+  if (!it.origin) out.push("нет фрагмента документа: если эта новость уже была опубликована другими словами, страница её не узнает");
+  var fresh = it.tags.filter(function (t) { return KNOWN_TAGS.indexOf(t) === -1; });
+  if (fresh.length) out.push("новые теги: " + fresh.join(", ") + " — если подходит существующий, лучше взять его");
+  return out;
+}
+function blocking(it) { return !it.title; }
+
+/* ---------- отрисовка ---------- */
+var cardsEl = document.getElementById("cards");
+function el(tag, attrs, kids) {
+  var e = document.createElement(tag);
+  Object.keys(attrs || {}).forEach(function (k) {
+    if (k === "text") e.textContent = attrs[k]; else if (k === "class") e.className = attrs[k]; else e.setAttribute(k, attrs[k]);
+  });
+  (kids || []).forEach(function (c) { e.appendChild(c); });
+  return e;
+}
+function field(label, input, wide) {
+  var l = el("label", {"class": "f" + (wide ? " wide" : "")}, [document.createTextNode(label), input]);
+  return l;
+}
+function render() {
+  cardsEl.innerHTML = "";
+  var n = items.length;
+  document.getElementById("lead").textContent = n
+    ? "Подготовлено новостей: " + n + ". Проверьте и при необходимости поправьте текст прямо здесь, уберите галочку у лишних и нажмите «Отправить на согласование» внизу. На сайте они появятся только после вашего подтверждения."
+    : "Вставьте JSON от агента в поле ниже, чтобы увидеть новости.";
+  items.forEach(function (it, idx) {
+    var card = el("div", {"class": "card" + (it.include ? "" : " off")});
+    var cb = el("input", {type: "checkbox"}); cb.checked = it.include;
+    cb.addEventListener("change", function () { it.include = cb.checked; render(); });
+    var head = el("div", {"class": "card-head"}, [
+      el("label", {"class": "chk"}, [cb, document.createTextNode("Отправить")]),
+      el("span", {"class": "n", text: "НОВОСТЬ " + (idx + 1)}),
+      el("span", {"class": "st " + it.statusClass, text: it.status})
+    ]);
+    function bind(tag, type, key, extra) {
+      var i = el(tag, type ? {type: type} : {}); i.value = it[key];
+      i.addEventListener("input", function () { it[key] = i.value.trim(); refreshIssues(); updateCount(); });
+      return i;
+    }
+    var title = bind("input", "text", "title");
+    var date = bind("input", "date", "date");
+    var time = bind("input", "time", "time");
+    var text = bind("textarea", "", "text"); text.rows = 4;
+    var author = bind("input", "text", "author");
+    var srcName = bind("input", "text", "sourceName");
+    var srcUrl = bind("input", "url", "sourceUrl");
+    var tags = el("input", {type: "text"}); tags.value = it.tags.join(", ");
+    var bank = el("div", {"class": "tagbank"});
+    function drawBank() {
+      bank.innerHTML = "";
+      KNOWN_TAGS.forEach(function (t) {
+        var b = el("button", {type: "button", text: t, "class": it.tags.indexOf(t) !== -1 ? "on" : ""});
+        b.addEventListener("click", function () {
+          var k = it.tags.indexOf(t);
+          if (k === -1) it.tags.push(t); else it.tags.splice(k, 1);
+          tags.value = it.tags.join(", "); drawBank(); refreshIssues();
+        });
+        bank.appendChild(b);
+      });
+    }
+    tags.addEventListener("input", function () {
+      it.tags = tags.value.split(",").map(function (t) { return t.trim(); }).filter(Boolean);
+      drawBank(); refreshIssues();
+    });
+    drawBank();
+    var imp = el("input", {type: "checkbox"}); imp.checked = it.important;
+    imp.addEventListener("change", function () { it.important = imp.checked; });
+    var issues = el("ul", {"class": "issues"});
+    function refreshIssues() {
+      issues.innerHTML = "";
+      issuesOf(it).forEach(function (m) { issues.appendChild(el("li", {text: m})); });
+    }
+    card.appendChild(head);
+    card.appendChild(el("div", {"class": "grid"}, [
+      field("Заголовок", title, true),
+      field("Дата", date), field("Время", time),
+      field("Описание", text, true),
+      field("Автор", author),
+      field("Название источника", srcName),
+      field("Ссылка на источник", srcUrl, true),
+      (function () { var w = el("div", {"class": "wide"}, [field("Теги (через запятую)", tags), bank]); return w; })(),
+      el("label", {"class": "chk wide"}, [imp, document.createTextNode("Важная новость (синяя полоса в ленте)")])
+    ]));
+    card.appendChild(issues);
+    refreshIssues();
+    if (it.origin) {
+      var det = el("details", {"class": "origin"});
+      det.appendChild(el("summary", {text: "Фрагмент документа, на котором основана новость (для сверки; на сайт не отправляется)"}));
+      det.appendChild(el("p", {text: it.origin}));
+      card.appendChild(det);
+    }
+    if (it.matches.length) card.appendChild(dupBox(it));
+    cardsEl.appendChild(card);
+  });
+  updateCount();
+}
+function dupBox(it) {
+  var box = el("div", {"class": "dup"});
+  var best = it.matches[0];
+  var head = el("div");
+  var why = best.rel === "part" ? "Похоже, это часть уже опубликованной новости"
+          : best.rel === "merge" ? "Похоже, это объединяет опубликованную новость с другим материалом"
+          : best.viaSource ? "По исходному тексту из документа это та же новость, что уже опубликована"
+          : best.level === "same" ? "Похоже, эта новость уже опубликована на сайте" : "На сайте есть похожая новость";
+  head.innerHTML = "<b>" + why + "</b>" +
+    (it.unchanged ? ' <span class="same">· текст совпадает, менять нечего</span>' : "");
+  box.appendChild(head);
+  // варианты: заменить одну из найденных / отправить как новую
+  it.matches.forEach(function (m, k) {
+    var r = el("input", {type: "radio", name: "mode" + items.indexOf(it)});
+    r.checked = (it.mode === "replace" && it.target === k);
+    r.addEventListener("change", function () { it.mode = "replace"; it.target = k; render(); });
+    var l = el("label", {"class": "opt"}, [r]);
+    var span = el("span"); span.innerHTML = "Заменить опубликованную: <b style=\"color:inherit\">«" + esc(m.pub.title) + "»</b><br><span class=\"sub\">" +
+      esc(humanDate(m.pub.date) + (m.pub.time ? ", " + m.pub.time : "") + (m.pub.author ? " · " + m.pub.author : "")) + "</span>";
+    l.appendChild(span); box.appendChild(l);
+  });
+  var rn = el("input", {type: "radio", name: "mode" + items.indexOf(it)}); rn.checked = (it.mode === "new");
+  rn.addEventListener("change", function () { it.mode = "new"; render(); });
+  box.appendChild(el("label", {"class": "opt"}, [rn, (function () { var s = el("span"); s.innerHTML = "Отправить как новую <span class=\"sub\">(на сайте будут обе)</span>"; return s; })()]));
+  if (it.mode === "replace") {
+    var pub = it.matches[it.target].pub;
+    var keep = el("input", {type: "checkbox"}); keep.checked = it.keepWhen;
+    keep.addEventListener("change", function () { it.keepWhen = keep.checked; });
+    box.appendChild(el("label", {"class": "opt"}, [keep, document.createTextNode("Оставить дату и время опубликованной новости (" + humanDate(pub.date) + (pub.time ? ", " + pub.time : "") + ")")]));
+    var dt = diffWords(pub.text || "", it.text || ""), dtt = diffWords(pub.title || "", it.title || "");
+    var cmp = el("div"); 
+    cmp.innerHTML = (nmNorm(pub.title || "") !== nmNorm(it.title || "") || (pub.title || "") !== (it.title || "")
+        ? '<div class="cmp"><div><i>Заголовок был</i>' + dtt.before + '</div><div><i>Заголовок станет</i>' + dtt.after + '</div></div>' : "") +
+      '<div class="cmp"><div><i>Текст был</i>' + dt.before + '</div><div><i>Текст станет</i>' + dt.after + '</div></div>';
+    box.appendChild(cmp);
+  }
+  return box;
+}
+function updateCount() {
+  var c = items.filter(function (it) { return it.include && !blocking(it); }).length;
+  document.getElementById("cnt").textContent = c;
+  document.getElementById("sendBtn").disabled = !c;
+}
+
+/* ---------- работа с GitHub ---------- */
+var tokenEl = document.getElementById("token"), statusEl = document.getElementById("status");
+try { var saved = localStorage.getItem(TOKEN_KEY); if (saved) tokenEl.value = saved; } catch (e) {}
+document.getElementById("forget").addEventListener("click", function () {
+  try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+  tokenEl.value = ""; say("Токен забыт.", "");
+});
+function say(msg, cls, html) {
+  statusEl.className = cls || "";
+  if (html) statusEl.innerHTML = msg; else statusEl.textContent = msg;
+}
+function b64(s) { return btoa(unescape(encodeURIComponent(s))); }
+function unb64(s) { return decodeURIComponent(escape(atob(String(s).replace(/\s/g, "")))); }
+function url(path) {
+  return "https://api.github.com/repos/" + encodeURIComponent(CONFIG.owner) + "/" + encodeURIComponent(CONFIG.repo) +
+         "/contents/" + path.split("/").map(encodeURIComponent).join("/");
+}
+function api(method, path, body) {
+  var o = {method: method, headers: {
+    "Accept": "application/vnd.github+json", "Authorization": "Bearer " + tokenEl.value.trim(),
+    "X-GitHub-Api-Version": "2022-11-28"}, cache: "no-store"};
+  if (body) { o.body = JSON.stringify(body); o.headers["Content-Type"] = "application/json"; }
+  var u = url(path) + (method === "GET" ? "?ref=" + encodeURIComponent(CONFIG.branch) + "&t=" + Date.now() : "");
+  return fetch(u, o).then(function (res) {
+    return res.json().catch(function () { return null; }).then(function (data) { return {status: res.status, ok: res.ok, data: data}; });
+  });
+}
+function explain(r) {
+  if (r.status === 401) return "токен не принят — проверьте, что он вставлен целиком и не истёк";
+  if (r.status === 403) return "у токена нет права писать в репозиторий (нужно Contents: Read and write) или исчерпан лимит запросов";
+  if (r.status === 404) return "репозиторий не найден или токен не видит его — в настройках токена выберите репозиторий Voice_Ai";
+  if (r.status === 409 || r.status === 422) return "файл изменился во время отправки — нажмите кнопку ещё раз";
+  return "ответ GitHub " + r.status + ((r.data && r.data.message) ? ": " + r.data.message : "");
+}
+/* Опубликованные новости читаем с сайта (публичный адрес, токен не нужен), а при отправке —
+   ещё раз через GitHub, чтобы увидеть самое свежее. Так «такая уже есть» работает всегда. */
+function rawUrl(path) {
+  return "https://raw.githubusercontent.com/" + CONFIG.owner + "/" + CONFIG.repo + "/" + CONFIG.branch + "/" + path + "?t=" + Date.now();
+}
+function listOf(doc) { return Array.isArray(doc) ? doc : ((doc && doc.news) || []); }
+function mergeTags(extra) {
+  (extra || []).forEach(function (t) { t = str(t); if (t && KNOWN_TAGS.indexOf(t) === -1) KNOWN_TAGS.push(t); });
+}
+function loadPublished(viaApi) {
+  var p;
+  if (viaApi && tokenEl.value.trim()) {
+    p = api("GET", "news/news.json").then(function (r) {
+      if (!r.ok || !r.data || !r.data.content) throw new Error("api");
+      return {list: listOf(JSON.parse(unb64(r.data.content))), src: "api"};
+    });
+  } else {
+    p = fetch(rawUrl("news/news.json"), {cache: "no-store"}).then(function (res) {
+      if (!res.ok) throw new Error("site");
+      return res.json();
+    }).then(function (doc) { return {list: listOf(doc), src: "site"}; });
+  }
+  return p.then(function (r) {
+    PUBLISHED = r.list; PUBLISHED_SRC = r.src;
+    mergeTags([].concat.apply([], PUBLISHED.map(function (n) { return n.tags || []; })));
+    return true;
+  }).catch(function () { return false; });
+}
+
+function payload(it) {
+  if (!it._created) it._created = new Date().toISOString();
+  var p = {kind: "news", title: it.title, text: it.text, date: it.date, time: it.time,
+           author: it.author, tags: it.tags, agent: AGENT, created: it._created};
+  if (it.fp && it.fp.length >= 5) p.fp = it.fp;     // отпечаток, а не сам текст: очередь лежит в публичном репозитории
+  if (it.mode === "replace" && it.matches[it.target]) {
+    var pub = it.matches[it.target].pub;
+    p.replaces = pub.id; p.replacesTitle = pub.title;
+    if (it.keepWhen) { if (pub.date) p.date = pub.date; if (pub.time) p.time = pub.time; }
+  }
+  if (it.sourceName) p.sourceName = it.sourceName;
+  if (it.sourceUrl) p.sourceUrl = it.sourceUrl;
+  if (it.important) p.important = true;
+  return p;
+}
+
+function sendOne(it) {
+  it.status = "отправляю…"; it.statusClass = "wait"; render();
+  // если такой файл уже лежит в очереди (повторная отправка) — обновляем его, а не создаём новый
+  return api("GET", it._path).then(function (g) {
+    if (g.status === 401 || g.status === 403) throw new Error(explain(g));
+    var body = {message: "Новость от агента: " + it.title, branch: CONFIG.branch,
+                content: b64(JSON.stringify(payload(it), null, 2) + "\n")};
+    if (g.ok && g.data && g.data.sha) body.sha = g.data.sha;
+    return api("PUT", it._path, body);
+  }).then(function (r) {
+    if (!r.ok) throw new Error(explain(r));
+    it.status = "✓ на согласовании"; it.statusClass = "ok"; return true;
+  }).catch(function (err) {
+    it.status = "✗ " + (err && err.message ? err.message : "не отправилась"); it.statusClass = "err"; return false;
+  });
+}
+
+document.getElementById("sendBtn").addEventListener("click", function () {
+  var token = tokenEl.value.trim();
+  if (!token) { say("Вставьте токен GitHub.", "err"); return; }
+  try {
+    if (document.getElementById("remember").checked) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch (e) {}
+  var btn = document.getElementById("sendBtn"); btn.disabled = true;
+  say("Сверяю с опубликованными новостями…", "");
+  var before = matchSignature();
+  loadPublished(true).then(function (ok) {
+    if (ok) matchAll_keepChoices(before);
+    var after = matchSignature();
+    if (ok && after !== before) {
+      render();
+      say("Список опубликованных новостей изменился с момента открытия страницы. Проверьте отмеченные карточки («такая новость уже есть») и нажмите кнопку ещё раз.", "err");
+      return null;
+    }
+    var todo = items.filter(function (it) { return it.include && !blocking(it); });
+    if (!todo.length) { say("Нечего отправлять.", "err"); return null; }
+    // «отправить как новую» при почти точном совпадении — переспрашиваем, чтобы не получить дубль случайно
+    todo = todo.filter(function (it) {
+      var best = it.matches[0];
+      if (it.mode === "new" && best && best.level === "same") {
+        var go = window.confirm("Новость «" + it.title + "» очень похожа на уже опубликованную («" + best.pub.title + "»).\nОтправить как новую (получится дубль)?");
+        if (!go) { it.status = "пропущена: уже на сайте"; it.statusClass = "wait"; }
+        return go;
+      }
+      return true;
+    });
+    if (!todo.length) { render(); say("Нечего отправлять.", "err"); return null; }
+    say("Отправляю: " + todo.length + "…", "");
+    var okN = 0, chain = Promise.resolve();
+    todo.forEach(function (it) { chain = chain.then(function () { return sendOne(it).then(function (r) { if (r) okN++; }); }); });
+    return chain.then(function () {
+      render();
+      var repl = todo.filter(function (it) { return it.mode === "replace"; }).length;
+      if (okN === todo.length && okN) {
+        say("Готово: на согласование ушло новостей — " + okN + (repl ? " (из них замен опубликованных: " + repl + ")" : "") + ".\nОткройте платформу в режиме редактора: в блоке «на согласовании» нажмите «Проверить», затем «Опубликовать» (у замены — «Заменить опубликованную новость»). " +
+            "Отправленное можно править здесь и отправлять снова, пока новость не опубликована.\n" +
+            "<a href=\"" + CONFIG.site + "\" target=\"_blank\" rel=\"noopener\">Открыть платформу</a>", "ok", true);
+      } else if (okN) {
+        say("Часть отправлена (" + okN + " из " + todo.length + "). У остальных причина указана в карточке; исправьте и нажмите кнопку ещё раз.", "err");
+      } else {
+        say("Ничего не отправилось. Причина указана в карточках.", "err");
+      }
+    });
+  }).then(function () { btn.disabled = false; updateCount(); });
+});
+
+// после повторной сверки сохраняем выбор человека там, где найденная новость та же
+function matchAll_keepChoices(prevSig) {
+  var prev = items.map(function (it) { return {mode: it.mode, target: it.target, include: it.include, keep: it.keepWhen, id: it.matches[0] && it.matches[0].pub.id}; });
+  matchAll();
+  items.forEach(function (it, i) {
+    var pv = prev[i], b = it.matches[0];
+    if (pv && b && pv.id === b.pub.id) { it.mode = pv.mode; it.target = Math.min(pv.target, it.matches.length - 1); it.include = pv.include; it.keepWhen = pv.keep; }
+  });
+}
+
+document.getElementById("loadBtn").addEventListener("click", function () { loadFromText(document.getElementById("jsonIn").value); });
+document.getElementById("clearBtn").addEventListener("click", function () {
+  document.getElementById("jsonIn").value = ""; document.getElementById("loadMsg").textContent = ""; items = []; render();
+});
+document.getElementById("jsonFile").addEventListener("change", function (e) {
+  var f = e.target.files && e.target.files[0]; if (!f) return;
+  var r = new FileReader();
+  r.onload = function () { document.getElementById("jsonIn").value = String(r.result || ""); loadFromText(String(r.result || "")); };
+  r.onerror = function () { var b = document.getElementById("loadMsg"); b.className = "err"; b.textContent = "Не удалось прочитать файл."; };
+  r.readAsText(f, "utf-8");
+});
+// Токен: тот же, что вы вводите на самом сайте в режиме редактора (страница лежит на том же адресе),
+// подставляем его, чтобы не вводить дважды.
+try {
+  if (!tokenEl.value) {
+    var siteTok = localStorage.getItem("voiceai_gh_token");
+    if (siteTok) { tokenEl.value = siteTok; document.getElementById("tokenNote").textContent = "Подставлен токен редактора сайта."; }
+  }
+} catch (e) {}
+// при открытии страницы сразу читаем опубликованные новости (для сверки на дубли)
+loadPublished(false).then(function (ok) {
+  if (ok && items.length) { matchAll(); render(); }
+  else if (!ok) {
+    var n = document.getElementById("loadMsg");
+    n.textContent = "Не удалось заранее прочитать опубликованные новости: сверка на дубли будет выполнена при отправке.";
+  }
+});
+
+render();
+</script>
+</body>
+</html>
