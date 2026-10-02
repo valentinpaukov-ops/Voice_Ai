@@ -1055,8 +1055,9 @@ function payload(it) {
 }
 
 function pathOf(it) { return "inbox/news-" + BATCH_ID + "-" + ("0" + it._n).slice(-2) + ".json"; }
-function sendOne(it) {
-  it.status = "отправляю…"; it.statusClass = "wait"; render();
+function sendOne(it, attempt) {
+  attempt = attempt || 0;
+  it.status = attempt ? "отправляю ещё раз…" : "отправляю…"; it.statusClass = "wait"; render();
   // если такой файл уже лежит в очереди (повторная отправка) — обновляем его, а не создаём новый
   var path = pathOf(it);
   return api("GET", path).then(function (g) {
@@ -1066,6 +1067,9 @@ function sendOne(it) {
     if (g.ok && g.data && g.data.sha) body.sha = g.data.sha;
     return api("PUT", path, body);
   }).then(function (r) {
+    if (!r.ok && (r.status === 409 || r.status === 422) && attempt < 4) {
+      return new Promise(function (res) { setTimeout(res, 300 + Math.random() * 900 * (attempt + 1)); }).then(function () { return sendOne(it, attempt + 1); });
+    }
     if (!r.ok) throw new Error(explain(r));
     it.status = "✓ на согласовании"; it.statusClass = "ok"; return true;
   }).catch(function (err) {
