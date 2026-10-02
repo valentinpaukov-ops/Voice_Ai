@@ -1,7 +1,13 @@
 {
+  "v": 1,
+  "kdf": "PBKDF2-SHA256",
+  "iter": 600000,
+  "salt": "wWLkPi/vvF77JEHqkd9j+Q==",
+  "iv": "7jgQBLJKOqc/5eLb",
+  "data": "m8pNDL7xZKTndrUe7O6DgKXcGv/QB3qubA4A/8grVzzP7MicsWGMHdwCMA1IJtJ5iWQz9fMPrEn739YjOW9Qb0vVioUSoMpEJH3GxHVHp0QSIxr+opdlTlZB/QwtM0JhC/FU2vzYjmNZx73Y0hO0BZSlw/LPZY8q5gcaSA7SgKk4kWFa6r5lJ91gYmX5WZAsHY17DLPiayKWO7X68rABQ3SZmyvt5cBcGl/SDiw8wzBvYRqj",
   "queue": {
     "repo": "valentinpaukov-ops/Voice_Ai_inbox",
     "branch": "main"
   },
-  "created": "2026-10-02T09:00:35Z"
+  "created": "2026-10-02T11:16:16Z"
 }
