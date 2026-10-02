@@ -1,6 +1,17 @@
 {
   "news": [
     {
+      "id": "n1790930254489",
+      "date": "2026-10-02",
+      "time": "10:00",
+      "title": "test",
+      "text": "test",
+      "author": "test",
+      "tags": [],
+      "sourceName": "test",
+      "sourceUrl": "test"
+    },
+    {
       "id": "n1790202076373",
       "date": "2026-09-24",
       "time": "10:00",
@@ -469,5 +480,5 @@
       ]
     }
   ],
-  "updated": "2026-09-24T15:54:48Z"
+  "updated": "2026-10-02T08:37:35Z"
 }
