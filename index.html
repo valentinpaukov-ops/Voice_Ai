@@ -6130,27 +6130,27 @@
   (function heroWavesInit(){
     var hero = document.getElementById("air");
     if(!HERO_WAVES || !hero) return;
-    var TAU = Math.PI * 2, LOOP = 24;
+    var TAU = Math.PI * 2, REF_W = 1440, REF_H = 520, FLOW = 30, PAD = 60;
     var THEMES = {
       dark: {
         blend: "lighter",
         wave: {core: "255,240,212", gold: "255,208,140", amber: "255,188,115"},
         dust: {core: "255,243,214", gold: "255,184,77", amber: "255,157,46"},
-        waveGain: .80, dustGain: 1
+        waveGain: .56, dustGain: 1
       },
       light: {
         blend: "source-over",
         wave: {core: "146,182,253", gold: "85,155,220", amber: "60,109,244"},
         dust: {core: "146,182,253", gold: "85,155,220", amber: "60,109,244"},
-        waveGain: 1.15, dustGain: .95
+        waveGain: .80, dustGain: .95
       }
     };
     var LAYERS = [
-      {base: .85, lvl: 1, count: 280, thick: .013, alpha: .60, size: .42, harm: [[.040, .9, 1, .3], [.021, 2.1, 1, 1.7]]},
-      {base: .79, lvl: 1, count: 300, thick: .011, alpha: .64, size: .42, harm: [[.048, 1.2, 1, 2.4], [.024, 2.6, 1, .9]]},
-      {base: .73, lvl: 0, count: 320, thick: .007, alpha: .68, size: .55, harm: [[.055, 1.0, 1, 4.1], [.026, 2.3, 1, 5.0]]},
-      {base: .67, lvl: 0, count: 340, thick: .005, alpha: .72, size: .55, harm: [[.065, 1.1, 1, 1.1], [.029, 2.7, 1, 3.2]]},
-      {base: .62, lvl: 0, count: 360, thick: .004, alpha: .78, size: .56, harm: [[.075, 1.0, 1, .5], [.031, 2.4, 1, 2.2]]}
+      {base: .85, lvl: 1, dens: .135, cap: 360, thick: .013, alpha: .60, size: .42, harm: [[.040, .9, .3], [.021, 2.1, 1.7]]},
+      {base: .79, lvl: 1, dens: .145, cap: 380, thick: .011, alpha: .64, size: .42, harm: [[.048, 1.2, 2.4], [.024, 2.6, .9]]},
+      {base: .73, lvl: 0, dens: .155, cap: 400, thick: .007, alpha: .68, size: .55, harm: [[.055, 1.0, 4.1], [.026, 2.3, 5.0]]},
+      {base: .67, lvl: 0, dens: .165, cap: 420, thick: .005, alpha: .72, size: .55, harm: [[.065, 1.1, 1.1], [.029, 2.7, 3.2]]},
+      {base: .62, lvl: 0, dens: .175, cap: 440, thick: .004, alpha: .78, size: .56, harm: [[.075, 1.0, .5], [.031, 2.4, 2.2]]}
     ];
     var RADII = [4, 9, 20];
 
@@ -6193,17 +6193,19 @@
     var theme = currentTheme(), W = 0, H = 0, dpr = 1, q = window.innerWidth < 700 ? 1 : 0, parts = [], dust = [], waveSprites, dustSprites;
 
     function build(){
-      var r = rng(20261002), i, p, L, arr;
+      var r = rng(20261002), i, p, L, arr, span = W + PAD * 2;
       parts = [];
       for(i = 0; i < LAYERS.length; i++){
         L = LAYERS[i]; arr = [];
-        for(p = 0; p < L.count; p++){
+        var n = Math.min(L.cap, Math.max(40, Math.round(span * L.dens)));
+        for(p = 0; p < n; p++){
           var pick = r();
-          arr.push({u: (p + (r() - .5) * .8) / L.count, off: gauss(r) * L.thick, ph: r() * TAU, size: .7 + r() * .6, col: pick < .3 ? 0 : (pick < .75 ? 1 : 2), tw: 2 + ((r() * 4) | 0), jn: 2 + ((r() * 3) | 0)});
+          arr.push({x0: (p + (r() - .5) * .8) / n * span, off: gauss(r) * L.thick * REF_H, ph: r() * TAU, size: .7 + r() * .6, col: pick < .3 ? 0 : (pick < .75 ? 1 : 2), tw: TAU / (8 + r() * 14), jn: TAU / (5 + r() * 6)});
         }
         parts.push(arr);
       }
       dust = [];
+      r = rng(77001);
       for(p = 0; p < 150; p++){
         dust.push({x: Math.pow(r(), 1.8) * .92, y: .22 + r() * .66, ph: r(), drift: .16 + r() * .24, depth: (r() * 3) | 0, size: .7 + r() * 1.2, a: .35 + r() * .65, sw: r() * TAU, col: r() < .4 ? 0 : (r() < .6 ? 1 : 2)});
       }
@@ -6213,9 +6215,12 @@
       waveSprites = spriteSet(T.wave);
       dustSprites = spriteSet(T.dust);
     }
-    function curveY(i, u, tau){
-      var L = LAYERS[i], y = L.base, k;
-      for(k = 0; k < L.harm.length; k++){ var hm = L.harm[k]; y += hm[0] * Math.sin(TAU * (hm[1] * u - hm[2] * tau) + hm[3]); }
+    function curveY(i, x, t, unit){
+      var L = LAYERS[i], y = H - (1 - L.base) * REF_H, k;
+      for(k = 0; k < L.harm.length; k++){
+        var hm = L.harm[k], lam = unit / hm[1];
+        y += hm[0] * REF_H * Math.sin(TAU * (x - FLOW / hm[1] * t) / lam + hm[2]);
+      }
       return y;
     }
     function blit(sp, lvl, x, y, size, alpha){
@@ -6223,47 +6228,47 @@
       ctx.globalAlpha = alpha > 1 ? 1 : alpha;
       ctx.drawImage(sp, x - s / 2, y - s / 2, s, s);
     }
-    function draw(tau){
+    function draw(t){
       var T = THEMES[theme], i, p, k, trails = q === 0 ? 3 : (q === 1 ? 2 : 1), stride = q === 2 ? 2 : 1, boost = stride === 2 ? 1.5 : 1;
-      tau = tau - Math.floor(tau);
+      var unit = W < 700 ? 900 : REF_W, span = W + PAD * 2, sc = W < 700 ? .85 : 1, dscale = Math.max(.6, Math.min(1.3, W / REF_W));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
       ctx.clearRect(0, 0, W, H);
       ctx.globalCompositeOperation = T.blend;
-      var pad = 50, span = W + pad * 2, scale = W / 1440;
       for(i = 0; i < LAYERS.length; i++){
         var L = LAYERS[i], arr = parts[i];
         for(p = 0; p < arr.length; p += stride){
-          var s0 = arr[p], x = ((s0.u + tau) % 1) * span - pad, ux = x / W;
-          var fade = smooth(0, .06, ux) * (1 - smooth(.94, 1, ux));
-          var tw = .5 + .5 * Math.sin(TAU * s0.tw * tau + s0.ph);
-          var jy = Math.sin(TAU * s0.jn * tau + s0.ph * 1.7) * H * .003;
+          var s0 = arr[p], x = ((s0.x0 + FLOW * t) % span) - PAD;
+          var fade = smooth(0, 90, x) * (1 - smooth(W - 90, W, x));
+          if(fade <= 0) continue;
+          var tw = .5 + .5 * Math.sin(s0.tw * t + s0.ph);
+          var jy = Math.sin(s0.jn * t + s0.ph * 1.7) * REF_H * .003;
           var a = L.alpha * s0.size * (.35 + .65 * tw) * fade * T.waveGain * boost;
-          if(a < .015) continue;
+          if(a < .012) continue;
           var sp = waveSprites[s0.col][L.lvl];
           for(k = 0; k < trails; k++){
-            var tx = x - k * 5 * scale, ty = (curveY(i, tx / W, tau) + s0.off) * H + jy;
-            blit(sp, L.lvl, tx, ty, L.size * s0.size * Math.max(.8, scale), a * (k === 0 ? 1 : k === 1 ? .4 : .15));
+            var tx = x - k * 5, ty = curveY(i, tx, t, unit) + s0.off + jy;
+            blit(sp, L.lvl, tx, ty, L.size * s0.size * sc, a * (k === 0 ? 1 : k === 1 ? .4 : .15));
           }
         }
       }
       for(p = 0; p < dust.length; p++){
-        var m = dust[p], s = (2 * tau + m.ph) % 1, al = Math.pow(Math.sin(Math.PI * s), 2) * m.a * T.dustGain;
-        var dx = (m.x + Math.sin(TAU * 2 * tau + m.sw) * .006) * W, dy = (m.y - s * m.drift) * H;
-        blit(dustSprites[m.col][m.depth], m.depth, dx, dy, m.size * (m.depth === 2 ? .85 : m.depth === 1 ? .7 : .5) * scale, al * (m.depth === 2 ? .32 : .8));
+        var m = dust[p], s = (t / 12 + m.ph) % 1, al = Math.pow(Math.sin(Math.PI * s), 2) * m.a * T.dustGain;
+        var dx = (m.x + Math.sin(TAU * t / 12 + m.sw) * .006) * W, dy = (m.y - s * m.drift) * H;
+        blit(dustSprites[m.col][m.depth], m.depth, dx, dy, m.size * (m.depth === 2 ? .85 : m.depth === 1 ? .7 : .5) * dscale, al * (m.depth === 2 ? .32 : .8));
       }
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
     }
 
     var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     var t0 = performance.now(), running = false, visible = true, last = 0, cost = 0;
-    function tauNow(){ return reduce ? .2 : ((performance.now() - t0) / 1000 / LOOP) % 1; }
+    function secNow(){ return reduce ? 5 : (performance.now() - t0) / 1000; }
     function frame(now){
       if(!running) return;
       window.requestAnimationFrame(frame);
       if(now - last < 33) return;
       last = now;
       var started = performance.now();
-      draw(((now - t0) / 1000 / LOOP) % 1);
+      draw((now - t0) / 1000);
       cost = cost * .9 + (performance.now() - started) * .1;
       if(cost > 14 && q < 2){ q++; cost = 0; }
     }
@@ -6277,11 +6282,12 @@
       dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       W = Math.max(1, Math.round(rc.width)); H = Math.max(1, Math.round(rc.height));
       cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-      draw(tauNow());
+      build();
+      draw(secNow());
     }
 
-    build(); setSprites(); resize();
-    heroWaves = {setTheme: function(th){ theme = th === "light" ? "light" : "dark"; setSprites(); if(!running) draw(tauNow()); }};
+    setSprites(); resize();
+    heroWaves = {setTheme: function(th){ theme = th === "light" ? "light" : "dark"; setSprites(); if(!running) draw(secNow()); }};
     if(window.ResizeObserver){ new ResizeObserver(resize).observe(hero); } else { window.addEventListener("resize", resize); }
     if(window.IntersectionObserver){
       new IntersectionObserver(function(es){ visible = es[0].isIntersecting; sync(); }, {rootMargin: "80px"}).observe(hero);
