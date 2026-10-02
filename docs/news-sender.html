@@ -444,6 +444,7 @@ function str(v) { return v == null ? "" : String(v).trim(); }
 // а не защита: кто может писать в репозиторий токеном, технически может всё. Редактору кнопка «Опубликовать
 // на сайте» не показывается, чтобы случайно не выпустить новость мимо проверки.
 var CHIEF = (function () {
+  if (window.EDITOR_PRESET) return false;
   var q = null; try { q = new URLSearchParams(location.search).get("chief"); } catch (e) {}
   try {
     if (q === "1") localStorage.setItem("newsSender.chief", "1");
@@ -452,6 +453,11 @@ var CHIEF = (function () {
   } catch (e) { return q === "1"; }
 })();
 var NAME_KEY = "newsSender.name";
+var PRESET = (function () {
+  var p = window.EDITOR_PRESET, m = p && typeof p === "object" ? /^([^\/\s]+)\/([^\/\s]+)$/.exec(String(p.repo || "")) : null;
+  if (!p || !p.token || !m) return null;
+  return {token: String(p.token), owner: m[1], repo: m[2], branch: String(p.branch || "main"), name: String(p.name || "")};
+})();
 function editorName() { return str(document.getElementById("editorName").value); }
 
 /* ---------- Word (.docx) без сторонних библиотек ---------- */
@@ -1295,6 +1301,10 @@ document.getElementById("applyBtn").addEventListener("click", function () {
 // Пока он пуст, редактор может скачать файл или скопировать текст и передать выпускающему любым способом.
 var RELAY_URL = "", KEY_STORE = "newsSender.accessKey";
 function loadConfig() {
+  if (PRESET) {
+    UNLOCKED = {token: PRESET.token, owner: PRESET.owner, repo: PRESET.repo, branch: PRESET.branch, key: ""};
+    return Promise.resolve().then(refreshSendUi);
+  }
   return fetch("news-sender-config.json?t=" + Date.now(), {cache: "no-store"})
     .then(function (r) { return r.ok ? r.json() : {}; })
     .then(function (c) {
@@ -1334,8 +1344,14 @@ function refreshSendUi() {
   var editor = !CHIEF;
   document.getElementById("tokenBox").hidden = editor;
   document.getElementById("tokenHelp").hidden = editor;
-  var canSend = !!(RELAY_URL || ACCESS);
+  var canSend = !!(RELAY_URL || ACCESS || PRESET);
   document.getElementById("activateRow").hidden = !(editor && canSend);
+  if (PRESET) {
+    var row = document.getElementById("activateRow");
+    Array.prototype.forEach.call(row.querySelectorAll(".acc-line, :scope > span:first-child"), function (e) { e.style.display = "none"; });
+    var nt = document.getElementById("activateNote"); nt.className = "sub ok";
+    nt.textContent = "✓ Доступ включён. Отправленные новости попадут к выпускающему на проверку.";
+  }
   document.getElementById("offlineRow").hidden = !editor;
   document.getElementById("sendBtn").hidden = editor && !canSend;
   document.getElementById("sendLabel").textContent = editor ? "Отправить на проверку" : "Отправить на согласование";
@@ -1377,7 +1393,7 @@ document.getElementById("forgetKey").addEventListener("click", function () {
   var n = document.getElementById("activateNote"); n.className = "sub"; n.textContent = "Код забыт на этом устройстве.";
 });
 function autoActivate() {
-  if (CHIEF) return;
+  if (CHIEF || PRESET) return;
   try { var k = localStorage.getItem(KEY_STORE); if (k && (ACCESS || RELAY_URL)) { document.getElementById("accessKey").value = k; activateAccess(true); } } catch (e) {}
 }
 
@@ -1402,7 +1418,7 @@ var RELAY_ERRORS = {
 };
 document.getElementById("sendBtn").addEventListener("click", function () {
   if (CHIEF) return;
-  if (!RELAY_URL && ACCESS) { sendViaAccess(); return; }
+  if (!RELAY_URL && (ACCESS || PRESET)) { sendViaAccess(); return; }
   if (!RELAY_URL) { say("Прямая отправка не настроена: скачайте файл и передайте его выпускающему.", "err"); return; }
   var key = (UNLOCKED && UNLOCKED.key) || document.getElementById("accessKey").value.trim();
   if (!key) { say("Сначала введите код доступа вверху страницы и нажмите «Активировать».", "err"); document.getElementById("accessKey").focus(); return; }
@@ -1503,6 +1519,7 @@ loadConfig();
 (function () {
   var nm = document.getElementById("editorName");
   try { nm.value = localStorage.getItem(NAME_KEY) || ""; } catch (e) {}
+  if (PRESET && PRESET.name) nm.value = PRESET.name;
   nm.addEventListener("input", function () { try { localStorage.setItem(NAME_KEY, nm.value); } catch (e) {} });
   document.getElementById("defDate").value = mskDay();
   document.getElementById("roleNote").innerHTML = CHIEF
