@@ -974,10 +974,8 @@
   .ii-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .ii-warn{font-size:12px;color:var(--live);margin-top:6px;}
   .inbox-bulk{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0 2px;}
-  .ib-all{display:inline-flex;gap:7px;align-items:center;font-size:13px;color:var(--text-dim);cursor:pointer;}
-  .ib-note{flex:1 1 260px;font-size:13px;color:var(--text-dim);overflow-wrap:anywhere;white-space:pre-line;}
-  .ii-sel{flex:0 0 auto;padding-top:4px;cursor:pointer;}
-  .ii-sel input{width:18px;height:18px;cursor:pointer;}
+  .ib-note{margin:10px 0 0;font-size:13px;color:var(--text-dim);overflow-wrap:anywhere;white-space:pre-line;}
+  .ib-note:empty{display:none;}
 
   .day-nav{display:flex;align-items:center;gap:8px;}
   .day-arrow{
@@ -2143,11 +2141,10 @@
           <span class="inbox-sub" id="inboxSub"></span>
         </div>
         <div class="inbox-bulk" id="inboxBulk" hidden>
-          <label class="ib-all"><input type="checkbox" id="inboxAll"> Выбрать все новости</label>
-          <button type="button" class="btn-add" id="inboxPubSel" disabled>Опубликовать выбранные</button>
-          <button type="button" class="nc-ghost nc-danger" id="inboxDropSel" disabled>Отклонить выбранные</button>
-          <span class="ib-note" id="inboxBulkNote" role="status"></span>
+          <button type="button" class="btn-add" id="inboxPubSel">Опубликовать все</button>
+          <button type="button" class="nc-ghost nc-danger" id="inboxDropSel">Отклонить все</button>
         </div>
+        <div class="ib-note" id="inboxBulkNote" role="status"></div>
         <div class="inbox-list" id="inboxList"></div>
       </section>
 
@@ -8221,7 +8218,6 @@ function nmCompare(a, b){
   var INBOX_DIR = "inbox";
   var INBOX_TTL_DAYS = 7;          // столько же стоит в роботе-уборщике
   var inboxItems = [];
-  var inboxSel = {};
   var inboxBusy = false;
 
   function inboxDaysLeft(item){
@@ -8363,7 +8359,6 @@ function nmCompare(a, b){
       if(news && it.replaces) meta.push("заменит: «" + (it.replacesTitle || "опубликованную") + "»");
       if(it.agent) meta.push("от " + it.agent);
       return '<div class="inbox-item' + (stale ? " is-stale" : "") + '">' +
-        (news ? '<label class="ii-sel" title="Отметить для массовых действий"><input type="checkbox" data-inbox-sel="' + i + '"' + (inboxSel[inboxKey(it)] ? " checked" : "") + '></label>' : "") +
         '<div class="ii-main">' +
           '<span class="ii-kind">' + (news ? (it.replaces ? "замена новости" : "новость") : "запись") + '</span>' +
           '<p class="ii-title">' + escapeHtml(it.title || "без названия") + '</p>' +
@@ -8381,7 +8376,10 @@ function nmCompare(a, b){
             : "") +
         '</div>' +
         '<div class="ii-acts">' +
-          '<button type="button" class="btn-add" data-inbox-open="' + i + '">Проверить</button>' +
+          (news
+            ? '<button type="button" class="btn-add" data-inbox-pub="' + i + '" title="Опубликовать новость сразу, как она есть">Опубликовать</button>' +
+              '<button type="button" class="nc-ghost" data-inbox-open="' + i + '" title="Открыть в форме, поправить и опубликовать">Изменить</button>'
+            : '<button type="button" class="btn-add" data-inbox-open="' + i + '">Проверить</button>') +
           '<button type="button" class="nc-ghost nc-danger" data-inbox-drop="' + i + '">Отклонить</button>' +
         '</div>' +
       '</div>';
@@ -8389,27 +8387,20 @@ function nmCompare(a, b){
     inboxBulkUi();
   }
 
-  function inboxKey(it){ return (it.__src || "main") + "|" + it.__path + "|" + (it.__idx == null ? "" : it.__idx) + "|" + (it.title || ""); }
-  function inboxNewsSelected(){
-    return inboxItems.filter(function(it){ return it.kind === "news" && inboxSel[inboxKey(it)]; });
+  function inboxNewsAll(){
+    return inboxItems.filter(function(it){ return it.kind === "news"; });
   }
   function inboxBulkUi(){
     var box = document.getElementById("inboxBulk");
     if(!box) return;
-    var news = inboxItems.filter(function(it){ return it.kind === "news"; });
-    var live = {};
-    news.forEach(function(it){ live[inboxKey(it)] = 1; });
-    Object.keys(inboxSel).forEach(function(k){ if(!live[k]) delete inboxSel[k]; });
-    var sel = news.filter(function(it){ return inboxSel[inboxKey(it)]; }).length;
-    box.hidden = !isAdmin || news.length < 2;
-    var all = document.getElementById("inboxAll");
-    all.checked = sel > 0 && sel === news.length;
-    all.indeterminate = sel > 0 && sel < news.length;
+    var n = inboxNewsAll().length;
+    box.hidden = !isAdmin || n < 2;
     var pub = document.getElementById("inboxPubSel"), drop = document.getElementById("inboxDropSel");
-    pub.textContent = "Опубликовать выбранные" + (sel ? " (" + sel + ")" : "");
-    drop.textContent = "Отклонить выбранные" + (sel ? " (" + sel + ")" : "");
-    pub.disabled = !sel || inboxBusy;
-    drop.disabled = !sel || inboxBusy;
+    pub.textContent = "Опубликовать все (" + n + ")";
+    drop.textContent = "Отклонить все (" + n + ")";
+    pub.disabled = inboxBusy;
+    drop.disabled = inboxBusy;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-inbox-pub]"), function(b){ b.disabled = inboxBusy; });
   }
   function inboxBulkNote(text){ var n = document.getElementById("inboxBulkNote"); if(n) n.textContent = text || ""; }
 
@@ -8477,20 +8468,22 @@ function nmCompare(a, b){
     });
     return chain.then(function(){ return failed; });
   }
-  function inboxPublishSelected(){
+  function inboxPublishItems(items, single){
     if(inboxBusy) return;
     if(!GH.connected()){ showHint("Сначала подключите GitHub — форма подключения в блоке новостей."); return; }
-    var items = inboxNewsSelected();
-    if(!items.length){ showHint("Отметьте новости галочками"); return; }
+    if(!items.length){ showHint("В очереди нет новостей"); return; }
     var dry = bulkSummary(planBulk(newsItems, items));
     if(!dry.pub.length){
-      inboxBulkNote("Нечего публиковать: все отмеченные требуют вашего решения.\n" + bulkSkippedText(dry.skip) + "\nОткройте их кнопкой «Проверить».");
+      inboxBulkNote((single ? "Эту новость нужно проверить самому.\n" : "Нечего публиковать: все новости требуют вашего решения.\n") + bulkSkippedText(dry.skip) +
+        "\nОткройте её кнопкой «Изменить» и выберите: заменить опубликованную или опубликовать как новую.");
       return;
     }
-    var ask = "Опубликовать новостей: " + dry.pub.length + (dry.rep ? " (из них замен опубликованных: " + dry.rep + ")" : "") + "?\n\nСлушатели увидят их сразу" +
-      (dry.future ? " (" + dry.future + " с датой в будущем появятся в свой день)" : "") + "." +
-      (dry.skip.length ? "\n\nПропущено, останется в очереди: " + dry.skip.length + "\n" + bulkSkippedText(dry.skip) : "");
-    if(!window.confirm(ask)) return;
+    if(!single){
+      var ask = "Опубликовать новостей: " + dry.pub.length + (dry.rep ? " (из них замен опубликованных: " + dry.rep + ")" : "") + "?\n\nСлушатели увидят их сразу" +
+        (dry.future ? " (" + dry.future + " с датой в будущем появятся в свой день)" : "") + "." +
+        (dry.skip.length ? "\n\nПропущено, останется в очереди: " + dry.skip.length + "\n" + bulkSkippedText(dry.skip) : "");
+      if(!window.confirm(ask)) return;
+    }
     inboxBusy = true; inboxBulkUi(); inboxBulkNote("Публикую…");
     var done = null;
     GH.editNews(function(list){
@@ -8512,9 +8505,9 @@ function nmCompare(a, b){
       applyNews({news: list});
       document.dispatchEvent(new CustomEvent("voiceai:news-published"));
       return inboxRemoveAll(sum.pub.map(function(o){ return o.it; }), "Согласовано: ").then(function(failed){
-        sum.pub.forEach(function(o){ delete inboxSel[inboxKey(o.it)]; });
         var msg = "Опубликовано: " + sum.pub.length + (sum.rep ? " (замен: " + sum.rep + ")" : "") + ". На сайте появится через минуту." +
-          (sum.skip.length ? "\nПропущено, осталось в очереди: " + sum.skip.length + "\n" + bulkSkippedText(sum.skip) + "\nОткройте их кнопкой «Проверить»." : "") +
+          (sum.future ? "\nНовостей с датой в будущем: " + sum.future + ", они выйдут у слушателей сами в свой день." : "") +
+          (sum.skip.length ? "\nПропущено, осталось в очереди: " + sum.skip.length + "\n" + bulkSkippedText(sum.skip) + "\nОткройте их кнопкой «Изменить»." : "") +
           (failed ? "\nНе удалось убрать из очереди: " + failed + ". Они уже опубликованы: отклоните их вручную, иначе они останутся в списке." : "");
         inboxBusy = false;
         inboxBulkNote(msg);
@@ -8526,14 +8519,13 @@ function nmCompare(a, b){
       inboxBulkNote("Не получилось опубликовать: " + (err && err.message ? err.message : "ошибка") + "\nНичего не изменилось, нажмите кнопку ещё раз.");
     });
   }
-  function inboxDropSelected(){
+  function inboxDropAll(){
     if(inboxBusy) return;
-    var items = inboxNewsSelected();
-    if(!items.length){ showHint("Отметьте новости галочками"); return; }
-    if(!window.confirm("Отклонить новостей: " + items.length + "?\n\nОни не выходили в ленту, удалятся только описания из очереди.")) return;
+    var items = inboxNewsAll();
+    if(!items.length){ showHint("В очереди нет новостей"); return; }
+    if(!window.confirm("Отклонить все новости в очереди (" + items.length + ")?\n\nОни не выходили в ленту, удалятся только описания из очереди.")) return;
     inboxBusy = true; inboxBulkUi(); inboxBulkNote("Отклоняю…");
     inboxRemoveAll(items, "Отклонено: ").then(function(failed){
-      items.forEach(function(it){ delete inboxSel[inboxKey(it)]; });
       inboxBusy = false;
       inboxBulkNote("Отклонено: " + (items.length - failed) + (failed ? ". Не удалось: " + failed + ", попробуйте ещё раз." : "."));
       return inboxRefresh();
@@ -8542,25 +8534,12 @@ function nmCompare(a, b){
       inboxBulkNote("Не получилось отклонить: " + (err && err.message ? err.message : "ошибка"));
     });
   }
-  document.addEventListener("change", function(e){
-    var t = e.target;
-    if(!t || !t.matches) return;
-    if(t.matches("[data-inbox-sel]")){
-      var it = inboxItems[+t.getAttribute("data-inbox-sel")];
-      if(it){ if(t.checked) inboxSel[inboxKey(it)] = 1; else delete inboxSel[inboxKey(it)]; }
-      inboxBulkUi();
-    } else if(t.id === "inboxAll"){
-      inboxItems.forEach(function(x){
-        if(x.kind !== "news") return;
-        if(t.checked) inboxSel[inboxKey(x)] = 1; else delete inboxSel[inboxKey(x)];
-      });
-      inboxRender();
-    }
-  });
   document.addEventListener("click", function(e){
     if(!e.target.closest) return;
-    if(e.target.closest("#inboxPubSel")){ inboxPublishSelected(); }
-    else if(e.target.closest("#inboxDropSel")){ inboxDropSelected(); }
+    var one = e.target.closest("[data-inbox-pub]");
+    if(one){ var it = inboxItems[+one.getAttribute("data-inbox-pub")]; if(it) inboxPublishItems([it], true); return; }
+    if(e.target.closest("#inboxPubSel")){ inboxPublishItems(inboxNewsAll(), false); }
+    else if(e.target.closest("#inboxDropSel")){ inboxDropAll(); }
   });
 
   /* «Проверить» открывает обычную форму, заполненную данными агента.
