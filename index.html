@@ -2715,6 +2715,7 @@
       return {
         id: t.id, file: t.file, placeholder: !!t.placeholder, cover: t.cover || "",
         draft: !(t.day && t.day <= today),     // ещё не опубликовано
+        day: t.day || "",
         expired: isExpiredNow(t),              // срок вышел (виден только редактору)
         expires: t.expires || "",
         title: t.title,
@@ -3540,7 +3541,7 @@
       '<div class="list-row" data-id="'+escapeHtml(item.id)+'">'+
         '<div class="list-date tabular">'+escapeHtml(dateOrRead)+'</div>'+
         '<div class="list-tag">'+escapeHtml(item.tag)+
-          (item.draft ? '<span class="draft-badge">черновик</span>' : "")+
+          (item.draft ? '<span class="draft-badge">' + (item.day ? "будущее" : "черновик") + '</span>' : "")+
           (item.expired ? '<span class="draft-badge exp-badge">срок истёк</span>' : "")+'</div>'+
         '<div class="list-body"><h3>'+escapeHtml(item.title)+'</h3><p>'+linkify(item.snippet)+'</p></div>'+
       '</div>'
@@ -3550,7 +3551,12 @@
      так же ясно, как черновик подкаста. */
   function newsIsDraft(n){
     var d = newsDayKey(n);
-    return !d || d > todayStr();
+    return !!d && d > todayStr();
+  }
+  function newsStateBadge(n){
+    var d = newsDayKey(n);
+    if(!d) return '<span class="draft-badge" title="Слушатели видят эту новость, но без даты. Чтобы она встала в ленту по порядку, откройте её и поставьте дату">без даты</span>';
+    return '<span class="draft-badge" title="Новость уже сохранена и выйдет у слушателей сама ' + escapeHtml(humanDay(d)) + ': открывать и править её не нужно">будущее</span>';
   }
 
   function newsRowHtml(n){
@@ -3575,7 +3581,7 @@
       '<div class="news-row' + (n.important ? ' is-important' : '') +
         (isAdmin && newsIsDraft(n) ? ' is-draft' : '') + '" data-id="' + escapeHtml(n.id) + '">' +
         '<div class="news-when tabular">' + escapeHtml(newsWhen(n)) +
-          (isAdmin && newsIsDraft(n) ? '<span class="draft-badge">черновик</span>' : '') + '</div>' +
+          (isAdmin && (newsIsDraft(n) || !newsDayKey(n)) ? newsStateBadge(n) : '') + '</div>' +
         '<div class="news-body">' +
           (tagsHtml ? '<div class="news-tags">' + tagsHtml + '</div>' : '') +
           '<h3>' + escapeHtml(n.title) + '</h3>' +
@@ -3653,7 +3659,9 @@
                 '<path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg>'+
             '</button>'
           : "")+
-        (item.draft ? '<span class="draft-badge">черновик · виден только вам</span>' : "")+
+        (item.draft ? (item.day
+           ? '<span class="draft-badge">будущее · выйдет ' + escapeHtml(humanDay(item.day)) + ' · виден только вам</span>'
+           : '<span class="draft-badge">черновик · без даты, виден только вам</span>') : "")+
         (item.expired ? '<span class="draft-badge exp-badge">срок истёк ' + escapeHtml(humanExpires(item.expires)) + ' · виден только вам</span>' : "")+
         '<h3>'+escapeHtml(item.title)+'</h3>'+
         '<p>'+linkify(item.snippet)+'</p>'+
@@ -3924,7 +3932,7 @@
     /* Шапка дня: только дата и краткий итог. Кнопка «Слушать этот эфир»
        стоит под самим списком записей — рядом с тем, что она включает. */
     var html = (isAdmin && day > todayStr()
-                 ? '<div class="plan-note">Черновик: этот день ещё не наступил, слушателям он не виден.</div>'
+                 ? '<div class="plan-note">Будущее: этот день ещё не наступил, слушателям он не виден. Он откроется сам в назначенную дату.</div>'
                  : "") +
                '<div class="arch-day-head">' +
                  '<div class="adh-text">' +
@@ -7551,7 +7559,7 @@ function nmCompare(a, b){
       var dow = RU_DOW_SHORT[(d.getDay() + 6) % 7];
       var planned = (i > 0 && has);     // будущее, в котором уже что-то собрано
       var title = planned
-        ? dayTitleAttr(key) + " — черновик, слушателям не виден" +
+        ? dayTitleAttr(key) + " — будущее, слушателям не виден" +
           (isAdmin ? ". Нажмите, чтобы собрать этот день" : "")
         : ((i > 0 && !has)
             ? humanDay(key) + (isAdmin ? ": пусто — нажмите, чтобы собрать этот день" : ": впереди")
@@ -7941,7 +7949,7 @@ function nmCompare(a, b){
     var future = airDay && airDay > todayStr();
     el.hidden = !future;
     if(future){
-      el.textContent = "Черновик: эфир на " + humanDay(airDay) +
+      el.textContent = "Будущее: эфир на " + humanDay(airDay) +
         ". Слушателям этот день пока не показывается — ни в ленте, ни в календаре, " +
         "ни в поиске. Он появится у них сам, когда наступит " + humanDay(airDay) + ".";
     }
@@ -8103,17 +8111,16 @@ function nmCompare(a, b){
                    t.expires ? (isExpiredNow(t) ? "срок истёк " : "до ") + humanExpires(t.expires) : ""
                   ].filter(Boolean).join(" · ");
         var draft = !(t.day && t.day <= todayStr());
+        var future = !!(t.day && t.day > todayStr());
         return '<div class="lib-row' + (already ? " is-in" : "") + (draft ? " is-draft" : "") + '">' +
                  '<span class="lib-main">' +
                    '<span class="lib-title">' + escapeHtml(t.title) +
-                     (draft ? '<span class="draft-badge">черновик</span>' : "") +
+                     (draft ? '<span class="draft-badge">' + (future ? "будущее" : "черновик") + '</span>' : "") +
                      (isExpiredNow(t) ? '<span class="draft-badge exp-badge">срок истёк</span>' : "") + '</span>' +
                    '<span class="lib-sub">' + escapeHtml(sub) + '</span>' +
                  '</span>' +
                  '<button type="button" class="lib-edit" data-edit="' + escapeHtml(t.file) +
-                   '" title="' + (draft
-                       ? "Черновик: откройте и поставьте дату — материал станет виден всем"
-                       : "Изменить название, описание, раздел, теги и дату") + '">✎</button>' +
+                   '" title="' + (future ? "Запланировано на " + humanDay(t.day) + ": запись появится у слушателей сама, править её не нужно" : (draft ? "Черновик: без даты слушателям запись не видна — откройте и поставьте дату" : "Изменить название, описание, раздел, теги и дату")) + '">✎</button>' +
                  (t.placeholder
                    ? '<span class="lib-add is-off" title="Аудио ещё не загружено — в эфир поставить нечего">нет звука</span>'
                    : '<button type="button" class="lib-add" data-file="' + escapeHtml(t.file) + '">' +
