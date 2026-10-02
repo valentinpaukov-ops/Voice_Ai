@@ -348,11 +348,18 @@
 
   /* ---------- Hero / on-air ---------- */
   .hero{
+    position:relative;
     padding-block:52px 40px;
     border-bottom:1px solid var(--border);
     background:transparent;
   }
+  .hero-waves{
+    position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;
+    -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 9%,#000 90%,transparent 100%);
+    mask-image:linear-gradient(to bottom,transparent 0,#000 9%,#000 90%,transparent 100%);
+  }
   .hero-grid{
+    position:relative;z-index:1;
     display:grid;
     grid-template-columns:1.1fr .9fr;
     gap:40px;
@@ -6109,11 +6116,179 @@
     var label = theme === "dark" ? "Включить светлую тему" : "Включить тёмную тему";
     themeBtn.setAttribute("title", label);
     themeBtn.setAttribute("aria-label", label);
+    heroWavesTheme(theme);
   }
   applyTheme(currentTheme());
   themeBtn.addEventListener("click", function(){
     applyTheme(currentTheme() === "dark" ? "light" : "dark");
   });
+
+  var HERO_WAVES = true;
+  var heroWaves = null;
+  function heroWavesTheme(theme){ if(heroWaves) heroWaves.setTheme(theme); }
+
+  (function heroWavesInit(){
+    var hero = document.getElementById("air");
+    if(!HERO_WAVES || !hero) return;
+    var TAU = Math.PI * 2, LOOP = 24;
+    var THEMES = {
+      dark: {
+        blend: "lighter",
+        wave: {core: "255,240,212", gold: "255,208,140", amber: "255,188,115"},
+        dust: {core: "255,243,214", gold: "255,184,77", amber: "255,157,46"},
+        waveGain: .80, dustGain: 1
+      },
+      light: {
+        blend: "source-over",
+        wave: {core: "146,182,253", gold: "85,155,220", amber: "60,109,244"},
+        dust: {core: "146,182,253", gold: "85,155,220", amber: "60,109,244"},
+        waveGain: 1.15, dustGain: .95
+      }
+    };
+    var LAYERS = [
+      {base: .85, lvl: 1, count: 280, thick: .013, alpha: .60, size: .42, harm: [[.040, .9, 1, .3], [.021, 2.1, 1, 1.7]]},
+      {base: .79, lvl: 1, count: 300, thick: .011, alpha: .64, size: .42, harm: [[.048, 1.2, 1, 2.4], [.024, 2.6, 1, .9]]},
+      {base: .73, lvl: 0, count: 320, thick: .007, alpha: .68, size: .55, harm: [[.055, 1.0, 1, 4.1], [.026, 2.3, 1, 5.0]]},
+      {base: .67, lvl: 0, count: 340, thick: .005, alpha: .72, size: .55, harm: [[.065, 1.1, 1, 1.1], [.029, 2.7, 1, 3.2]]},
+      {base: .62, lvl: 0, count: 360, thick: .004, alpha: .78, size: .56, harm: [[.075, 1.0, 1, .5], [.031, 2.4, 1, 2.2]]}
+    ];
+    var RADII = [4, 9, 20];
+
+    function rng(seed){
+      var a = seed >>> 0;
+      return function(){
+        a = (a + 0x6D2B79F5) >>> 0;
+        var t = a;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function gauss(r){ return (r() + r() + r() + r() - 2) / .58; }
+    function smooth(a, b, x){ var t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
+    function makeSprite(radius, rgb){
+      var c = document.createElement("canvas"), s = Math.ceil(radius * 2);
+      c.width = c.height = s;
+      var g = c.getContext("2d"), gr = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+      gr.addColorStop(0, "rgba(" + rgb + ",1)");
+      gr.addColorStop(.28, "rgba(" + rgb + ",.55)");
+      gr.addColorStop(.6, "rgba(" + rgb + ",.14)");
+      gr.addColorStop(1, "rgba(" + rgb + ",0)");
+      g.fillStyle = gr; g.fillRect(0, 0, s, s);
+      return c;
+    }
+    function spriteSet(p){
+      var rgbs = [p.core, p.gold, p.amber], out = [], c, d;
+      for(c = 0; c < 3; c++){ out.push([]); for(d = 0; d < 3; d++) out[c].push(makeSprite(RADII[d], rgbs[c])); }
+      return out;
+    }
+
+    var cv = document.createElement("canvas");
+    cv.className = "hero-waves";
+    cv.setAttribute("aria-hidden", "true");
+    hero.insertBefore(cv, hero.firstChild);
+    var ctx = cv.getContext("2d");
+    if(!ctx) return;
+
+    var theme = currentTheme(), W = 0, H = 0, dpr = 1, q = window.innerWidth < 700 ? 1 : 0, parts = [], dust = [], waveSprites, dustSprites;
+
+    function build(){
+      var r = rng(20261002), i, p, L, arr;
+      parts = [];
+      for(i = 0; i < LAYERS.length; i++){
+        L = LAYERS[i]; arr = [];
+        for(p = 0; p < L.count; p++){
+          var pick = r();
+          arr.push({u: (p + (r() - .5) * .8) / L.count, off: gauss(r) * L.thick, ph: r() * TAU, size: .7 + r() * .6, col: pick < .3 ? 0 : (pick < .75 ? 1 : 2), tw: 2 + ((r() * 4) | 0), jn: 2 + ((r() * 3) | 0)});
+        }
+        parts.push(arr);
+      }
+      dust = [];
+      for(p = 0; p < 150; p++){
+        dust.push({x: Math.pow(r(), 1.8) * .92, y: .22 + r() * .66, ph: r(), drift: .16 + r() * .24, depth: (r() * 3) | 0, size: .7 + r() * 1.2, a: .35 + r() * .65, sw: r() * TAU, col: r() < .4 ? 0 : (r() < .6 ? 1 : 2)});
+      }
+    }
+    function setSprites(){
+      var T = THEMES[theme];
+      waveSprites = spriteSet(T.wave);
+      dustSprites = spriteSet(T.dust);
+    }
+    function curveY(i, u, tau){
+      var L = LAYERS[i], y = L.base, k;
+      for(k = 0; k < L.harm.length; k++){ var hm = L.harm[k]; y += hm[0] * Math.sin(TAU * (hm[1] * u - hm[2] * tau) + hm[3]); }
+      return y;
+    }
+    function blit(sp, lvl, x, y, size, alpha){
+      var s = RADII[lvl] * 2 * size;
+      ctx.globalAlpha = alpha > 1 ? 1 : alpha;
+      ctx.drawImage(sp, x - s / 2, y - s / 2, s, s);
+    }
+    function draw(tau){
+      var T = THEMES[theme], i, p, k, trails = q === 0 ? 3 : (q === 1 ? 2 : 1), stride = q === 2 ? 2 : 1, boost = stride === 2 ? 1.5 : 1;
+      tau = tau - Math.floor(tau);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+      ctx.clearRect(0, 0, W, H);
+      ctx.globalCompositeOperation = T.blend;
+      var pad = 50, span = W + pad * 2, scale = W / 1440;
+      for(i = 0; i < LAYERS.length; i++){
+        var L = LAYERS[i], arr = parts[i];
+        for(p = 0; p < arr.length; p += stride){
+          var s0 = arr[p], x = ((s0.u + tau) % 1) * span - pad, ux = x / W;
+          var fade = smooth(0, .06, ux) * (1 - smooth(.94, 1, ux));
+          var tw = .5 + .5 * Math.sin(TAU * s0.tw * tau + s0.ph);
+          var jy = Math.sin(TAU * s0.jn * tau + s0.ph * 1.7) * H * .003;
+          var a = L.alpha * s0.size * (.35 + .65 * tw) * fade * T.waveGain * boost;
+          if(a < .015) continue;
+          var sp = waveSprites[s0.col][L.lvl];
+          for(k = 0; k < trails; k++){
+            var tx = x - k * 5 * scale, ty = (curveY(i, tx / W, tau) + s0.off) * H + jy;
+            blit(sp, L.lvl, tx, ty, L.size * s0.size * Math.max(.8, scale), a * (k === 0 ? 1 : k === 1 ? .4 : .15));
+          }
+        }
+      }
+      for(p = 0; p < dust.length; p++){
+        var m = dust[p], s = (2 * tau + m.ph) % 1, al = Math.pow(Math.sin(Math.PI * s), 2) * m.a * T.dustGain;
+        var dx = (m.x + Math.sin(TAU * 2 * tau + m.sw) * .006) * W, dy = (m.y - s * m.drift) * H;
+        blit(dustSprites[m.col][m.depth], m.depth, dx, dy, m.size * (m.depth === 2 ? .85 : m.depth === 1 ? .7 : .5) * scale, al * (m.depth === 2 ? .32 : .8));
+      }
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
+    }
+
+    var reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    var t0 = performance.now(), running = false, visible = true, last = 0, cost = 0;
+    function tauNow(){ return reduce ? .2 : ((performance.now() - t0) / 1000 / LOOP) % 1; }
+    function frame(now){
+      if(!running) return;
+      window.requestAnimationFrame(frame);
+      if(now - last < 33) return;
+      last = now;
+      var started = performance.now();
+      draw(((now - t0) / 1000 / LOOP) % 1);
+      cost = cost * .9 + (performance.now() - started) * .1;
+      if(cost > 14 && q < 2){ q++; cost = 0; }
+    }
+    function sync(){
+      var want = visible && !document.hidden && !reduce;
+      if(want && !running){ running = true; window.requestAnimationFrame(frame); }
+      else if(!want){ running = false; }
+    }
+    function resize(){
+      var rc = cv.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      W = Math.max(1, Math.round(rc.width)); H = Math.max(1, Math.round(rc.height));
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      draw(tauNow());
+    }
+
+    build(); setSprites(); resize();
+    heroWaves = {setTheme: function(th){ theme = th === "light" ? "light" : "dark"; setSprites(); if(!running) draw(tauNow()); }};
+    if(window.ResizeObserver){ new ResizeObserver(resize).observe(hero); } else { window.addEventListener("resize", resize); }
+    if(window.IntersectionObserver){
+      new IntersectionObserver(function(es){ visible = es[0].isIntersecting; sync(); }, {rootMargin: "80px"}).observe(hero);
+    }
+    document.addEventListener("visibilitychange", sync);
+    sync();
+  })();
 
   /* ================= Контакт редакции =================
      ↓↓↓ ЗАМЕНИТЕ АДРЕС НА СВОЙ — это единственное место, где он задаётся.
