@@ -1047,6 +1047,7 @@ function payload(it) {
     p.replaces = pub.id; p.replacesTitle = pub.title;
     if (it.keepWhen) { if (pub.date) p.date = pub.date; if (pub.time) p.time = pub.time; }
   }
+  else if (it.mode === "new" && it.matches[0] && it.matches[0].level === "same") p.asNew = true;
   if (it.sourceName) p.sourceName = it.sourceName;
   if (it.sourceUrl) p.sourceUrl = it.sourceUrl;
   if (it.important) p.important = true;
