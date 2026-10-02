@@ -49,7 +49,7 @@
   details.origin{margin-top:10px;font-size:12px;color:var(--dim)}
   details.origin summary{cursor:pointer}
   details.origin p{margin:6px 0 0;padding:8px 10px;background:var(--field);border-radius:8px;color:var(--text);line-height:1.5;white-space:pre-wrap}
-  .role{margin:-8px 0 14px;font-size:13px;color:var(--dim)} .role b{color:var(--text)}
+  .role{margin:-8px 0 14px;font-size:13px;color:var(--dim)} .role:empty{display:none} .role b{color:var(--text)}
   .acc-line{display:flex;gap:8px;align-items:stretch;margin-top:5px} .acc-line input{flex:1;margin:0}
   .sub.ok{color:var(--green)} .sub.err{color:var(--red)}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
@@ -1471,9 +1471,7 @@ loadConfig();
   if (PRESET && PRESET.name) nm.value = PRESET.name;
   nm.addEventListener("input", function () { try { localStorage.setItem(NAME_KEY, nm.value); } catch (e) {} });
   document.getElementById("defDate").value = mskDay();
-  document.getElementById("roleNote").innerHTML = CHIEF
-    ? "Режим: <b>выпускающий</b>. Можно опубликовать на сайте сразу или отправить на согласование."
-    : "Режим: <b>редактор</b>. Подготовленные новости уходят выпускающему на проверку, он опубликует их на платформе. GitHub и токены вам не нужны.";
+  if (CHIEF) document.getElementById("roleNote").innerHTML = "Режим: <b>выпускающий</b>. Можно опубликовать на сайте сразу или отправить на согласование.";
   document.getElementById("pubBtn").hidden = !CHIEF;
 })();
 // Токен: тот же, что вы вводите на самом сайте в режиме редактора (страница лежит на том же адресе),
