@@ -2475,28 +2475,38 @@
     <div class="access-body">
       <h2>Доступ для редакторов новостей</h2>
       <p class="acc-state" id="accState">Проверяю…</p>
-      <p class="acc-help">Редакторам не нужен ни GitHub, ни токены: вы даёте им адрес формы и <b>код доступа</b>. Форма расшифровывает ключ
-        в браузере, когда редактор вводит код; сам ключ редакторы не видят. Ключ лежит в репозитории только в зашифрованном виде.</p>
-      <details class="acc-steps" id="accSteps">
-        <summary>Как это настроить (один раз, около 5 минут)</summary>
+      <p class="acc-help"><b>Готовая форма для сотрудника.</b> Платформа создаёт файл, в котором доступ уже включён: сотрудник открывает его двойным щелчком,
+        раскладывает новости по карточкам и отправляет вам на проверку. Ничего вводить ему не нужно. Ключ лежит внутри файла, поэтому
+        файл отдавайте только тем, кому доверяете. Ключ позволяет только добавлять материалы в очередь, но не публиковать их и не менять сайт.</p>
+      <details class="acc-steps" id="accSteps" open>
+        <summary>Что нужно подготовить (один раз, около 3 минут)</summary>
         <ol>
-          <li>На GitHub создайте <b>новый репозиторий для очереди</b>, например <code>Voice_Ai_inbox</code>: <b>Private</b> и обязательно с галочкой «Add a README file».</li>
-          <li>Создайте токен: GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token. <b>Repository access: Only select repositories → только Voice_Ai_inbox</b>. Permissions → Repository permissions → <b>Contents: Read and write</b>.</li>
-          <li>Откройте в GitHub свой токен, которым вы подключили платформу, и добавьте в него и репозиторий очереди (Repository access), чтобы вы видели присланное.</li>
-          <li>Ниже вставьте новый токен, нажмите «Создать доступ» и отправьте редакторам адрес и код.</li>
+          <li>На GitHub создайте <b>новый репозиторий для очереди</b>, например <code>Voice_Ai_inbox</code>: <b>Private</b> и с галочкой «Add a README file».</li>
+          <li>Создайте токен: GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token. <b>Repository access: Only select repositories → только Voice_Ai_inbox</b>. Permissions → Repository permissions → <b>Contents: Read and write</b>. Скопируйте токен.</li>
+          <li>В настройках своего токена, которым подключена платформа, добавьте и этот репозиторий, чтобы вы видели присланное.</li>
+          <li>Ниже вставьте токен, при желании впишите имя сотрудника и нажмите «Скачать готовую форму». Для другого сотрудника поменяйте имя и нажмите ещё раз.</li>
         </ol>
       </details>
       <label class="acc-f">Репозиторий очереди (владелец/имя)
         <input type="text" id="accRepo" placeholder="valentinpaukov-ops/Voice_Ai_inbox" autocomplete="off"></label>
       <label class="acc-f">Токен для редакторов (только на репозиторий очереди)
         <input type="password" id="accToken" placeholder="github_pat_…" autocomplete="off"></label>
-      <label class="acc-f">Код доступа для редакторов
-        <span class="acc-row"><input type="text" id="accCode" autocomplete="off" spellcheck="false"><button type="button" class="nc-ghost" id="accGen">Сгенерировать</button></span></label>
+      <label class="acc-f">Имя сотрудника (необязательно, подставится в форму)
+        <input type="text" id="accEmployee" placeholder="Анна Волкова" autocomplete="off"></label>
       <div class="acc-actions">
-        <button type="button" class="btn-add" id="accCreate">Создать доступ</button>
-        <button type="button" class="nc-ghost" id="accShow">Показать код</button>
-        <button type="button" class="nc-ghost nc-danger" id="accRevoke">Отозвать доступ</button>
+        <button type="button" class="btn-add" id="accMakeForm">Скачать готовую форму</button>
       </div>
+      <details class="acc-steps" id="accCodeBox">
+        <summary>Другой способ: общая страница и код доступа</summary>
+        <p class="acc-help">Для тех, кто будет открывать форму по ссылке на сайте. Ключ лежит в репозитории в зашифрованном виде, сотрудник вводит код.</p>
+        <label class="acc-f">Код доступа для редакторов
+          <span class="acc-row"><input type="text" id="accCode" autocomplete="off" spellcheck="false"><button type="button" class="nc-ghost" id="accGen">Сгенерировать</button></span></label>
+        <div class="acc-actions">
+          <button type="button" class="btn-add" id="accCreate">Создать доступ по коду</button>
+          <button type="button" class="nc-ghost" id="accShow">Показать код</button>
+          <button type="button" class="nc-ghost nc-danger" id="accRevoke">Отозвать доступ по коду</button>
+        </div>
+      </details>
       <div class="acc-msg" id="accMsg" hidden></div>
     </div>
   </div>
@@ -8204,8 +8214,10 @@ function nmCompare(a, b){
   var ACCESS_FILE = "docs/news-sender-access.json", queueError = "", queueReady = null;
   function loadQueueConfig(){
     if(queueReady) return queueReady;
-    queueReady = (window.fetch ? fetch(ACCESS_FILE + "?t=" + Date.now(), {cache: "no-store"}) : Promise.reject())
-      .then(function(r){ return r.ok ? r.json() : null; })
+    var source = GH.connected()
+      ? GH.getFile(ACCESS_FILE).then(function(f){ return JSON.parse(f.text); })
+      : (window.fetch ? fetch(ACCESS_FILE + "?t=" + Date.now(), {cache: "no-store"}).then(function(r){ return r.ok ? r.json() : null; }) : Promise.reject());
+    queueReady = source["catch"](function(){ return null; })
       .then(function(j){
         GHQ = null;
         var q = j && j.queue && typeof j.queue.repo === "string" ? j.queue : null;
@@ -8492,7 +8504,7 @@ function nmCompare(a, b){
         $("accState").innerHTML = q ? "Доступ <b>включён</b>. Очередь редакторов: <b>" + escapeHtml(q) + "</b>" + (j.created ? ", создан " + escapeHtml(String(j.created).slice(0, 10)) : "") + "."
                                     : "Файл доступа есть, но повреждён: создайте доступ заново.";
         if(q && !$("accRepo").value) $("accRepo").value = q;
-      })["catch"](function(){ $("accState").innerHTML = "Доступ <b>не настроен</b>: редакторы пока могут только скачивать файл для выпускающего."; });
+      })["catch"](function(){ $("accState").innerHTML = "Доступ по коду <b>не настроен</b>. Готовые формы для сотрудников работают и без него."; });
     }
     function open(){
       if(!GH.connected()){ showHint("Сначала подключите GitHub в режиме редактора: он нужен, чтобы записать файл доступа."); return; }
@@ -8518,22 +8530,16 @@ function nmCompare(a, b){
       queueReady = null; loadQueueConfig().then(inboxRefresh);
       refreshState();
     }
-    $("accCreate").addEventListener("click", function(){
-      var repo = $("accRepo").value.trim(), token = $("accToken").value.trim(), code = $("accCode").value.trim(), m = /^([^\/\s]+)\/([^\/\s]+)$/.exec(repo);
-      if(!m){ msg("Репозиторий очереди укажите в виде владелец/имя, например valentinpaukov-ops/Voice_Ai_inbox.", "err"); return; }
-      if(!token){ msg("Вставьте токен для редакторов (только на репозиторий очереди).", "err"); return; }
-      if(/[^\x21-\x7E]/.test(token)){ msg("Токен выглядит неверно: он состоит только из латинских букв, цифр и знаков _ и - и не содержит пробелов. Проверьте, что скопировали его целиком, без лишних слов.", "err"); return; }
-      if(!code){ msg("Введите код доступа или нажмите «Сгенерировать».", "err"); return; }
-      var weak = code.length < 10 || /^(admin|password|qwerty|editor|voice|1234|0000)/i.test(code);
-      if(weak && !window.confirm("Код «" + code + "» короткий или угадываемый. Файл с зашифрованным ключом лежит в публичном репозитории, и такой код можно подобрать за секунды, после чего получить ключ.\n\nЛучше нажать «Сгенерировать» (длинный случайный код). Продолжить с этим кодом всё равно?")) return;
+    function verifyEditorToken(token, repo, m, forFile){
       var c = GH.cfg(), sameAsMain = (m[1] === c.owner && m[2] === c.repo);
-      $("accCreate").disabled = true; msg("Проверяю токен…");
-      apiGet(token, "repos/" + encodeURIComponent(m[1]) + "/" + encodeURIComponent(m[2])).then(function(r){
+      return apiGet(token, "repos/" + encodeURIComponent(m[1]) + "/" + encodeURIComponent(m[2])).then(function(r){
         if(!r.ok) throw new Error(r.status === 401 ? "Токен не принят: проверьте, что скопировали его целиком." :
           r.status === 404 ? "Токен не видит репозиторий " + repo + ": проверьте имя и выбор репозитория в настройках токена." : "GitHub ответил " + r.status + ".");
         if(r.data && r.data.permissions && !r.data.permissions.push) throw new Error("Токен читает репозиторий очереди, но не может в него писать: нужно право Contents: Read and write.");
         if(sameAsMain){
-          if(!window.confirm("Очередь будет в ОСНОВНОМ репозитории сайта. Токен редакторов тогда сможет менять здесь любые файлы (сайт, аудио, новости), и по зашифрованному файлу его можно будет подобрать, если код окажется слабым.\n\nНастоятельно советую отдельный репозиторий очереди. Продолжить всё равно?")) throw new Error("Отменено.");
+          if(!window.confirm("Очередь будет в ОСНОВНОМ репозитории сайта. Токен редакторов тогда сможет менять здесь любые файлы (сайт, аудио, новости)" +
+            (forFile ? ", а он лежит внутри файла формы." : ", и по зашифрованному файлу его можно будет подобрать, если код окажется слабым.") +
+            "\n\nНастоятельно советую отдельный репозиторий очереди. Продолжить всё равно?")) throw new Error("Отменено.");
           return null;
         }
         return apiGet(token, "repos/" + encodeURIComponent(c.owner) + "/" + encodeURIComponent(c.repo)).then(function(rm){
@@ -8541,16 +8547,79 @@ function nmCompare(a, b){
             if(!window.confirm("Внимание: этот токен даёт запись и в ОСНОВНОЙ репозиторий сайта (" + c.owner + "/" + c.repo + "). Редакторы получили бы слишком много прав.\n\nСоздайте токен только на репозиторий очереди. Продолжить всё равно?")) throw new Error("Отменено: создайте токен только на репозиторий очереди.");
           }
         });
+      });
+    }
+    function readTokenFields(){
+      var repo = $("accRepo").value.trim(), token = $("accToken").value.trim(), m = /^([^\/\s]+)\/([^\/\s]+)$/.exec(repo);
+      if(!m){ msg("Репозиторий очереди укажите в виде владелец/имя, например valentinpaukov-ops/Voice_Ai_inbox.", "err"); return null; }
+      if(!token){ msg("Вставьте токен для редакторов (только на репозиторий очереди).", "err"); return null; }
+      if(/[^\x21-\x7E]/.test(token)){ msg("Токен выглядит неверно: он состоит только из латинских букв, цифр и знаков _ и - и не содержит пробелов. Проверьте, что скопировали его целиком, без лишних слов.", "err"); return null; }
+      return {repo: repo, token: token, m: m};
+    }
+    function ensureQueueMeta(repo){
+      return GH.getFile(ACCESS_FILE).then(function(file){
+        var j = {};
+        try{ j = JSON.parse(file.text) || {}; }catch(e){}
+        return {j: j, sha: file.sha};
+      }, function(){ return {j: {}, sha: null}; }).then(function(o){
+        var q = o.j.queue && o.j.queue.repo;
+        if(q === repo) return null;
+        if(q && o.j.data) throw new Error("По коду уже работает очередь " + q + ". Платформа читает одну очередь: укажите то же имя или сначала отзовите доступ по коду.");
+        o.j.queue = {repo: repo, branch: "main"};
+        o.j.created = new Date().toISOString().replace(/\.\d+Z$/, "Z");
+        return GH.putFile(ACCESS_FILE, JSON.stringify(o.j, null, 2) + "\n", o.sha, "Очередь редакторов новостей");
+      });
+    }
+    $("accMakeForm").addEventListener("click", function(){
+      var f = readTokenFields();
+      if(!f) return;
+      var name = $("accEmployee").value.trim();
+      $("accMakeForm").disabled = true; msg("Проверяю токен…");
+      verifyEditorToken(f.token, f.repo, f.m, true).then(function(){
+        msg("Записываю адрес очереди…");
+        return ensureQueueMeta(f.repo);
       }).then(function(){
+        msg("Собираю форму…");
+        return fetch("docs/news-sender.html", {cache: "no-store"}).then(function(res){
+          if(!res.ok) throw new Error("Не удалось прочитать страницу формы (docs/news-sender.html).");
+          return res.text();
+        });
+      }).then(function(html){
+        var preset = {token: f.token, repo: f.repo, branch: "main", name: name};
+        var tag = "<script>window.EDITOR_PRESET=" + JSON.stringify(preset).replace(/</g, "\\u003c") + ";<\/script>";
+        var k = html.indexOf("<head>");
+        if(k < 0) throw new Error("В странице формы не нашлось заголовка: файл не собран.");
+        html = html.slice(0, k + 6) + "\n" + tag + html.slice(k + 6);
+        var safe = name.replace(/[\\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+        var fileName = "Форма-для-редактора" + (safe ? "-" + safe.replace(/ /g, "-") : "") + ".html";
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([html], {type: "text/html;charset=utf-8"}));
+        a.download = fileName;
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+        queueReady = null; loadQueueConfig().then(inboxRefresh);
+        msg("Готово. Файл «" + fileName + "» скачан.\n\nОтправьте его сотруднику (почтой или в чате): он открывает файл двойным щелчком в браузере, раскладывает новости по карточкам и нажимает «Отправить на проверку». Присланное появится у вас в блоке «на согласовании».\n\nВнутри файла лежит ключ, поэтому не выкладывайте его на сайт и не пересылайте посторонним. Чтобы отключить все выданные формы сразу, отзовите токен на github.com/settings/tokens.", "ok");
+      })["catch"](function(err){ msg(err && err.message ? err.message : "Не получилось создать форму.", "err"); })
+      .then(function(){ $("accMakeForm").disabled = false; });
+    });
+    $("accCreate").addEventListener("click", function(){
+      var f = readTokenFields();
+      if(!f) return;
+      var code = $("accCode").value.trim();
+      if(!code){ msg("Введите код доступа или нажмите «Сгенерировать».", "err"); return; }
+      var weak = code.length < 10 || /^(admin|password|qwerty|editor|voice|1234|0000)/i.test(code);
+      if(weak && !window.confirm("Код «" + code + "» короткий или угадываемый. Файл с зашифрованным ключом лежит в публичном репозитории, и такой код можно подобрать за секунды, после чего получить ключ.\n\nЛучше нажать «Сгенерировать» (длинный случайный код). Продолжить с этим кодом всё равно?")) return;
+      $("accCreate").disabled = true; msg("Проверяю токен…");
+      verifyEditorToken(f.token, f.repo, f.m, false).then(function(){
         msg("Шифрую и записываю…");
-        return encryptWith(code, {token: token, repo: repo, branch: "main"});
+        return encryptWith(code, {token: f.token, repo: f.repo, branch: "main"});
       }).then(function(enc){
-        var blob = {v: 1, kdf: "PBKDF2-SHA256", iter: ITER, salt: enc.salt, iv: enc.iv, data: enc.data, queue: {repo: repo, branch: "main"}, created: new Date().toISOString().replace(/\.\d+Z$/, "Z")};
+        var blob = {v: 1, kdf: "PBKDF2-SHA256", iter: ITER, salt: enc.salt, iv: enc.iv, data: enc.data, queue: {repo: f.repo, branch: "main"}, created: new Date().toISOString().replace(/\.\d+Z$/, "Z")};
         var text = JSON.stringify(blob, null, 2) + "\n";
-        return GH.getFile(ACCESS_FILE).then(function(f){ return f.sha; }, function(){ return null; }).then(function(sha){
+        return GH.getFile(ACCESS_FILE).then(function(x){ return x.sha; }, function(){ return null; }).then(function(sha){
           return GH.putFile(ACCESS_FILE, text, sha, "Доступ для редакторов новостей");
         });
-      }).then(function(){ $("accToken").value = ""; done(code, repo); })
+      }).then(function(){ $("accToken").value = ""; done(code, f.repo); })
       ["catch"](function(err){ msg(err && err.message ? err.message : "Не получилось создать доступ.", "err"); })
       .then(function(){ $("accCreate").disabled = false; });
     });
