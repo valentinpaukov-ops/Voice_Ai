@@ -1127,7 +1127,7 @@ function prepare(noToken) {
 
 /* В очередь согласования: редактор потом откроет каждую на платформе. */
 document.getElementById("sendBtn").addEventListener("click", function () {
-  if (!CHIEF) return;          // редактор отправляет через ретранслятор (ниже)
+  if (!CHIEF) return;
   // выпускающий отправляет в очередь сам себе: имя не требуется, подпись «выпускающий»
   var btns = [document.getElementById("sendBtn"), document.getElementById("pubBtn")];
   btns.forEach(function (b) { b.disabled = true; });
@@ -1296,24 +1296,13 @@ document.getElementById("applyBtn").addEventListener("click", function () {
   render();
 });
 
-/* ---------- редактор без GitHub: отправка через ретранслятор, запасной путь — файл ---------- */
-// Адрес ретранслятора лежит в файле news-sender-config.json рядом со страницей ({"relay": "https://…"}).
-// Пока он пуст, редактор может скачать файл или скопировать текст и передать выпускающему любым способом.
-var RELAY_URL = "", KEY_STORE = "newsSender.accessKey";
+var KEY_STORE = "newsSender.accessKey";
 function loadConfig() {
   if (PRESET) {
     UNLOCKED = {token: PRESET.token, owner: PRESET.owner, repo: PRESET.repo, branch: PRESET.branch, key: ""};
     return Promise.resolve().then(refreshSendUi);
   }
-  return fetch("news-sender-config.json?t=" + Date.now(), {cache: "no-store"})
-    .then(function (r) { return r.ok ? r.json() : {}; })
-    .then(function (c) {
-      var u = c && typeof c.relay === "string" ? c.relay.trim() : "";
-      RELAY_URL = /^https:\/\/[^\s]+$/.test(u) ? u : "";
-    })["catch"](function () { RELAY_URL = ""; })
-    .then(loadAccess)
-    .then(refreshSendUi)
-    .then(autoActivate);
+  return loadAccess().then(refreshSendUi).then(autoActivate);
 }
 
 /* Доступ по коду. Выпускающий на платформе («Доступ для редакторов») кладёт сюда файл news-sender-access.json:
@@ -1344,7 +1333,7 @@ function refreshSendUi() {
   var editor = !CHIEF;
   document.getElementById("tokenBox").hidden = editor;
   document.getElementById("tokenHelp").hidden = editor;
-  var canSend = !!(RELAY_URL || ACCESS || PRESET);
+  var canSend = !!(ACCESS || PRESET);
   document.getElementById("activateRow").hidden = !(editor && canSend);
   if (PRESET) {
     var row = document.getElementById("activateRow");
@@ -1372,13 +1361,12 @@ function activateAccess(auto) {
   note.className = "sub"; note.textContent = "Проверяю код…";
   var p;
   if (ACCESS) p = unlockAccess(key).then(function (ctx) { ctx.key = key; return ctx; });
-  else if (RELAY_URL) p = Promise.resolve({relay: true, key: key});
   else p = Promise.reject(new Error("no-access"));
   return p.then(function (ctx) {
     UNLOCKED = ctx;
     try { localStorage.setItem(KEY_STORE, key); } catch (e) {}
     forgetBtn.hidden = false; note.className = "sub ok";
-    note.textContent = ACCESS ? "✓ Доступ активирован. Теперь можно отправлять новости выпускающему." : "✓ Код запомнен (его проверит ретранслятор при отправке).";
+    note.textContent = "✓ Доступ активирован. Теперь можно отправлять новости выпускающему.";
     return true;
   }, function (e) {
     if (auto) { try { localStorage.removeItem(KEY_STORE); } catch (x) {} inp.value = ""; return bad("Сохранённый код больше не подходит: введите новый."); }
@@ -1394,57 +1382,13 @@ document.getElementById("forgetKey").addEventListener("click", function () {
 });
 function autoActivate() {
   if (CHIEF || PRESET) return;
-  try { var k = localStorage.getItem(KEY_STORE); if (k && (ACCESS || RELAY_URL)) { document.getElementById("accessKey").value = k; activateAccess(true); } } catch (e) {}
+  try { var k = localStorage.getItem(KEY_STORE); if (k && ACCESS) { document.getElementById("accessKey").value = k; activateAccess(true); } } catch (e) {}
 }
 
-function relayFields(it) {
-  var p = payload(it);                         // тот же состав полей, что и в очередь
-  delete p.kind; delete p.agent; delete p.created;
-  p.n = it._n;                                 // номер карточки: повторная отправка перезапишет файл, а не создаст второй
-  return p;
-}
-function relayPost(body) {
-  return fetch(RELAY_URL, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: JSON.stringify(body), redirect: "follow"})
-    .then(function (res) { return res.text(); })
-    .then(function (txt) { return JSON.parse(txt); });
-}
-var RELAY_ERRORS = {
-  bad_key: "Код доступа не подошёл. Проверьте код или спросите выпускающего.",
-  too_big: "Слишком большой объём. Отправьте новости частями.",
-  too_many: "Слишком много новостей за один раз (не больше 40). Отправьте частями.",
-  no_news: "Нечего отправлять.",
-  bad_json: "Ретранслятор не смог прочитать запрос. Скачайте файл и передайте его выпускающему.",
-  daily_limit: "Достигнут дневной лимит отправки. Скачайте файл и передайте его выпускающему, либо попробуйте завтра."
-};
 document.getElementById("sendBtn").addEventListener("click", function () {
   if (CHIEF) return;
-  if (!RELAY_URL && (ACCESS || PRESET)) { sendViaAccess(); return; }
-  if (!RELAY_URL) { say("Прямая отправка не настроена: скачайте файл и передайте его выпускающему.", "err"); return; }
-  var key = (UNLOCKED && UNLOCKED.key) || document.getElementById("accessKey").value.trim();
-  if (!key) { say("Сначала введите код доступа вверху страницы и нажмите «Активировать».", "err"); document.getElementById("accessKey").focus(); return; }
-  var btns = [document.getElementById("sendBtn")]; btns.forEach(function (b) { b.disabled = true; });
-  prepare(true).then(function (todo) {
-    if (!todo) return null;
-    say("Отправляю: " + todo.length + "…", "");
-    return relayPost({key: key, batch: BATCH_ID || mskBatch(), news: todo.map(relayFields)}).then(function (res) {
-      if (res && res.ok) {
-        todo.forEach(function (it) { it.status = "✓ отправлена выпускающему"; it.statusClass = "ok"; it.include = false; });
-        render();
-        say("Готово: выпускающему отправлено новостей — " + todo.length + (res.who ? " (от имени: " + res.who + ")" : "") + ".\n" +
-            "Он увидит их на платформе в блоке «на согласование» и опубликует. Если нужно что-то поправить, исправьте карточку и отправьте ещё раз: дублей не будет.", "ok");
-      } else {
-        var e = res && res.error, msg = e === "invalid" ? ("Ретранслятор отклонил новость: " + (res.detail || "неверные данные") + ".") :
-                e === "server" ? ("Сбой на стороне ретранслятора (" + (res.detail || "ошибка") + "). Сообщите выпускающему, а пока скачайте файл и передайте ему.") :
-                (RELAY_ERRORS[e] || "Ретранслятор ответил ошибкой. Скачайте файл и передайте его выпускающему.");
-        todo.forEach(function (it) { it.status = "✗ не отправлена"; it.statusClass = "err"; });
-        render(); say(msg, "err");
-      }
-    })["catch"](function () {
-      todo.forEach(function (it) { it.status = "? нет подтверждения"; it.statusClass = "wait"; });
-      render();
-      say("Не удалось получить ответ ретранслятора. Новости могли уйти: повторная отправка безопасна (дублей не будет). Если не получается, скачайте файл и передайте его выпускающему.", "err");
-    });
-  }).then(function () { updateCount(); });
+  if (ACCESS || PRESET) { sendViaAccess(); return; }
+  say("Прямая отправка не настроена: скачайте файл и передайте его выпускающему.", "err");
 });
 
 /* Отправка по коду доступа: расшифровываем ключ, сверяем с опубликованным и кладём файлы в очередь выпускающего. */
