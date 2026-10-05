@@ -1733,6 +1733,55 @@
   }
   .chip:hover{color:var(--text);}
   .chip.active{border-color:var(--accent);color:var(--accent-strong);background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  .chip{white-space:nowrap;}
+  .chip .chip-x{margin-left:6px;opacity:.7;}
+  .chip-more{border-color:var(--accent);color:var(--accent-strong);background:transparent;}
+  .chip-more:hover{background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  :root{--tags-w:420px;}
+  body.tags-open{padding-right:var(--tags-w);transition:padding-right .22s ease;}
+  .tags-ov{position:fixed;inset:0;z-index:105;background:rgba(8,8,16,.24);opacity:0;pointer-events:none;transition:opacity .2s ease;}
+  .tags-ov.is-on{opacity:1;pointer-events:auto;}
+  :root[data-theme="light"] .tags-ov{background:rgba(20,26,56,.10);}
+  .tags-dr{position:fixed;top:0;right:0;bottom:0;width:var(--tags-w);z-index:110;display:flex;flex-direction:column;background:var(--bg-elevated);border-left:1px solid var(--border);box-shadow:-16px 0 44px rgba(0,0,0,.26);transform:translateX(102%);visibility:hidden;transition:transform .22s ease, visibility 0s linear .22s;}
+  .tags-dr.is-on{transform:none;visibility:visible;transition:transform .22s ease, visibility 0s;}
+  .td-head{display:flex;align-items:center;gap:10px;padding:18px 20px 8px;}
+  .td-head h3{margin:0;font-size:20px;}
+  .td-n{color:var(--text-dim);font-family:var(--font-mono);font-size:12px;}
+  .td-x{margin-left:auto;width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;font-size:18px;line-height:1;}
+  .td-x:hover{color:var(--text);border-color:var(--accent);}
+  .td-search{padding:6px 20px;}
+  .td-search input{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface);color:var(--text);font:inherit;font-size:14px;}
+  .td-search input:focus{outline:none;border-color:var(--accent);}
+  .td-tabs{display:flex;gap:6px;padding:8px 20px 10px;}
+  .td-tabs button{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.05em;padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-dim);cursor:pointer;}
+  .td-tabs button.on{border-color:var(--accent);color:var(--accent-strong);background:color-mix(in srgb, var(--accent) 12%, transparent);}
+  .td-body{position:relative;flex:1;min-height:0;}
+  .td-list{position:absolute;inset:0;overflow-y:auto;padding:4px 50px 24px 20px;scroll-behavior:smooth;overscroll-behavior:contain;}
+  .td-grp{margin:14px 0 6px;display:flex;align-items:baseline;gap:10px;}
+  .td-grp b{font-size:22px;font-weight:700;color:var(--accent-strong);min-width:24px;}
+  .td-grp i{font-style:normal;font-size:11px;color:var(--text-dim);font-family:var(--font-mono);}
+  .td-tags{display:flex;flex-wrap:wrap;gap:7px;}
+  .td-tag{font:inherit;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--border);background:transparent;color:var(--text-dim);display:inline-flex;gap:7px;align-items:center;cursor:pointer;}
+  .td-tag em{font-style:normal;font-size:10px;opacity:.7;font-family:var(--font-mono);}
+  .td-tag:hover{color:var(--text);border-color:var(--text-dim);}
+  .td-tag.on{border-color:var(--accent);color:var(--accent-strong);background:color-mix(in srgb, var(--accent) 14%, transparent);}
+  .td-none{padding:18px 4px;color:var(--text-dim);font-size:14px;}
+  .td-rail{position:absolute;right:8px;top:6px;bottom:6px;width:30px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;}
+  .td-rail[hidden]{display:none;}
+  .td-rail button{width:26px;border:0;background:transparent;border-radius:6px;padding:1px 0;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);cursor:pointer;line-height:1.2;}
+  .td-rail button:hover{color:var(--text);}
+  .td-rail button.on{background:var(--accent);color:#fff;}
+  .td-foot{border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:10px;align-items:center;}
+  .td-found{color:var(--text-dim);font-size:13px;flex:1;}
+  .td-reset{background:transparent;border:0;color:var(--text-dim);cursor:pointer;font-size:13px;}
+  .td-reset:disabled{opacity:.4;cursor:default;}
+  .td-done{background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;}
+  @media (max-width:999px){
+    body.tags-open{padding-right:0;padding-bottom:62vh;}
+    .tags-dr{top:auto;left:0;right:0;width:auto;height:62vh;border-left:0;border-top:1px solid var(--border);border-radius:16px 16px 0 0;transform:translateY(102%);box-shadow:0 -12px 36px rgba(0,0,0,.28);}
+  }
+  @media (max-width:560px){ .lib-controls .filter-row{flex:1 1 100%;} }
+  @media (prefers-reduced-motion:reduce){ .tags-dr,.tags-ov,body.tags-open{transition:none;} }
   .lib-empty{padding:30px 4px;color:var(--text-dim);font-size:14px;}
   #libraryList .media-grid{margin-top:4px;}
 
@@ -3747,41 +3796,232 @@
 
   /* ================= Library pages ================= */
 
-  function renderLibraryFilters(type){
-    var cfg = LIB_CONFIG[type];
-    var tags = [];
-    cfg.data.forEach(function(it){
-      var own = (it.tags && it.tags.length) ? it.tags : [it.tag];
-      own.forEach(function(t){ if(t && tags.indexOf(t)===-1){ tags.push(t); } });
-    });
-    var sel = libFilterState[type] || [];
-    var html = '<button type="button" class="chip' + (sel.length === 0 ? " active" : "") +
-               '" data-all="1">Все</button>';
-    html += tags.map(function(t){
-      var on = sel.indexOf(t) !== -1;
-      return '<button type="button" class="chip' + (on ? " active" : "") + '" data-tag="' +
-             escapeHtml(t) + '" aria-pressed="' + (on ? "true" : "false") + '">' +
-             escapeHtml(t) + '</button>';
-    }).join("");
+  var libFilterType = null;
+  var tagsPanel = {open: false, type: null, mode: "az", q: ""};
+  var tagsEls = null;
 
-    var filtersEl = document.getElementById("libFilters");
-    filtersEl.innerHTML = html;
-    Array.prototype.forEach.call(filtersEl.querySelectorAll(".chip"), function(chip){
-      chip.addEventListener("click", function(){
-        if(chip.getAttribute("data-all")){
-          libFilterState[type] = [];              // «Все» снимает выбор целиком
-        } else {
-          var t = chip.getAttribute("data-tag");
-          var list = (libFilterState[type] || []).slice();
-          var i = list.indexOf(t);
-          if(i === -1){ list.push(t); } else { list.splice(i, 1); }   // включить / выключить
-          libFilterState[type] = list;
-        }
-        renderLibraryFilters(type);
-        renderLibraryList(type);
-      });
+  function tagCmp(a, b){
+    function rank(s){ var c = s.charAt(0); return /[А-Яа-яЁё]/.test(c) ? 0 : (/[A-Za-z]/.test(c) ? 1 : 2); }
+    return rank(a) - rank(b) || a.localeCompare(b, "ru");
+  }
+  function tagLetter(t){
+    var c = t.charAt(0).toUpperCase();
+    if(c === "Ё") c = "Е";
+    if(/[А-Я]/.test(c)) return c;
+    if(/[A-Z]/.test(c)) return "A–Z";
+    return "#";
+  }
+  function libTagCounts(type){
+    var counts = {};
+    LIB_CONFIG[type].data.forEach(function(it){
+      var own = (it.tags && it.tags.length) ? it.tags : [it.tag];
+      own.forEach(function(t){ if(t) counts[t] = (counts[t] || 0) + 1; });
+    });
+    return counts;
+  }
+  function libToggleTag(type, t){
+    var list = (libFilterState[type] || []).slice(), i = list.indexOf(t);
+    if(i === -1){ list.push(t); } else { list.splice(i, 1); }
+    libFilterState[type] = list;
+    libRefresh(type);
+  }
+  function libClearTags(type){
+    libFilterState[type] = [];
+    libRefresh(type);
+  }
+  function libRefresh(type){
+    renderLibraryFilters(type);
+    renderLibraryList(type);
+    if(tagsPanel.open && tagsPanel.type === type) renderTagsPanel(true);
+  }
+
+  function renderLibraryFilters(type){
+    libFilterType = type;
+    var counts = libTagCounts(type), all = Object.keys(counts), sel = libFilterState[type] || [];
+    var el = document.getElementById("libFilters");
+    var byPop = all.filter(function(t){ return sel.indexOf(t) === -1; })
+                   .sort(function(a, b){ return counts[b] - counts[a] || tagCmp(a, b); });
+    function chip(t, on){
+      return '<button type="button" class="chip' + (on ? " active" : "") + '" data-tag="' + escapeHtml(t) +
+             '" aria-pressed="' + (on ? "true" : "false") + '">' + escapeHtml(t) +
+             (on ? '<span class="chip-x" aria-hidden="true">×</span>' : "") + "</button>";
+    }
+    function build(n){
+      var shown = sel.concat(byPop.slice(0, n)).sort(tagCmp);
+      var html = '<button type="button" class="chip' + (sel.length === 0 ? " active" : "") + '" data-all="1">Все</button>';
+      html += shown.map(function(t){ return chip(t, sel.indexOf(t) !== -1); }).join("");
+      if(n < byPop.length){
+        html += '<button type="button" class="chip chip-more" data-more="1" aria-haspopup="dialog">Все теги · ' + all.length + " ›</button>";
+      }
+      return html;
+    }
+    function fits(n){
+      el.innerHTML = build(n);
+      var first = el.firstElementChild;
+      return !first || el.getBoundingClientRect().height <= first.getBoundingClientRect().height * 2 + 9;
+    }
+    var best = 0;
+    if(!el.getBoundingClientRect().width){
+      best = Math.min(byPop.length, 12);
+    } else {
+      var lo = 0, hi = byPop.length;
+      while(lo <= hi){
+        var mid = (lo + hi) >> 1;
+        if(fits(mid)){ best = mid; lo = mid + 1; } else { hi = mid - 1; }
+      }
+    }
+    el.innerHTML = build(best);
+    el.onclick = function(e){
+      var b = e.target.closest ? e.target.closest("button") : null;
+      if(!b) return;
+      if(b.getAttribute("data-all")){ libClearTags(type); }
+      else if(b.getAttribute("data-more")){ openTagsPanel(type); }
+      else if(b.getAttribute("data-tag")){ libToggleTag(type, b.getAttribute("data-tag")); }
+    };
+  }
+
+  function tagsBuild(){
+    if(tagsEls) return tagsEls;
+    var wrap = document.createElement("div");
+    wrap.innerHTML =
+      '<div class="tags-ov" id="tagsOv"></div>' +
+      '<aside class="tags-dr" id="tagsDr" role="dialog" aria-label="Все теги" aria-hidden="true">' +
+        '<div class="td-head"><h3>Теги</h3><span class="td-n" id="tdN"></span>' +
+          '<button type="button" class="td-x" id="tdClose" aria-label="Закрыть">×</button></div>' +
+        '<div class="td-search"><input type="search" id="tdQ" placeholder="Найти тег…" autocomplete="off" aria-label="Найти тег"></div>' +
+        '<div class="td-tabs"><button type="button" class="on" data-mode="az">По алфавиту</button>' +
+          '<button type="button" data-mode="pop">Частые</button></div>' +
+        '<div class="td-body"><div class="td-list" id="tdList"></div><nav class="td-rail" id="tdRail" aria-label="Буквы"></nav></div>' +
+        '<div class="td-foot"><span class="td-found" id="tdFound" role="status"></span>' +
+          '<button type="button" class="td-reset" id="tdReset">Сбросить</button>' +
+          '<button type="button" class="td-done" id="tdDone">Готово</button></div>' +
+      '</aside>';
+    while(wrap.firstChild) document.body.appendChild(wrap.firstChild);
+    var e = tagsEls = {
+      ov: document.getElementById("tagsOv"), dr: document.getElementById("tagsDr"),
+      list: document.getElementById("tdList"), rail: document.getElementById("tdRail"),
+      q: document.getElementById("tdQ"), n: document.getElementById("tdN"),
+      found: document.getElementById("tdFound"), reset: document.getElementById("tdReset")
+    };
+    e.ov.addEventListener("click", function(){ closeTagsPanel(); });
+    document.getElementById("tdClose").addEventListener("click", function(){ closeTagsPanel(); });
+    document.getElementById("tdDone").addEventListener("click", function(){ closeTagsPanel(); });
+    e.reset.addEventListener("click", function(){ if(tagsPanel.type) libClearTags(tagsPanel.type); });
+    e.q.addEventListener("input", function(){ tagsPanel.q = e.q.value; renderTagsPanel(false); });
+    e.dr.querySelector(".td-tabs").addEventListener("click", function(ev){
+      var b = ev.target.closest ? ev.target.closest("button[data-mode]") : null;
+      if(!b) return;
+      tagsPanel.mode = b.getAttribute("data-mode");
+      Array.prototype.forEach.call(e.dr.querySelectorAll(".td-tabs button"), function(x){ x.classList.toggle("on", x === b); });
+      renderTagsPanel(false);
+    });
+    e.list.addEventListener("click", function(ev){
+      var b = ev.target.closest ? ev.target.closest(".td-tag") : null;
+      if(b && tagsPanel.type) libToggleTag(tagsPanel.type, b.getAttribute("data-tag"));
+    });
+    e.rail.addEventListener("click", function(ev){
+      var b = ev.target.closest ? ev.target.closest("button[data-letter]") : null;
+      if(!b) return;
+      var g = e.list.querySelector('.td-grp[data-letter="' + b.getAttribute("data-letter") + '"]');
+      if(g) e.list.scrollTo({top: Math.max(0, g.offsetTop - 4), behavior: "smooth"});
+    });
+    var railTick = false;
+    e.list.addEventListener("scroll", function(){
+      if(railTick) return;
+      railTick = true;
+      window.requestAnimationFrame(function(){ railTick = false; tagsRailActive(); });
+    });
+    document.addEventListener("keydown", function(ev){ if(ev.key === "Escape" && tagsPanel.open) closeTagsPanel(); });
+    return e;
+  }
+  function tagsRailActive(){
+    var e = tagsEls;
+    if(!e || e.rail.hidden) return;
+    var groups = e.list.querySelectorAll(".td-grp"), cur = null, i;
+    for(i = 0; i < groups.length; i++){ if(groups[i].offsetTop <= e.list.scrollTop + 14) cur = groups[i].getAttribute("data-letter"); }
+    if(!cur && groups.length) cur = groups[0].getAttribute("data-letter");
+    if(groups.length && e.list.scrollTop + e.list.clientHeight >= e.list.scrollHeight - 2) cur = groups[groups.length - 1].getAttribute("data-letter");
+    Array.prototype.forEach.call(e.rail.querySelectorAll("button"), function(b){
+      b.classList.toggle("on", b.getAttribute("data-letter") === cur);
     });
   }
+  function renderTagsPanel(keep){
+    var e = tagsEls, type = tagsPanel.type;
+    if(!e || !type) return;
+    var counts = libTagCounts(type), sel = libFilterState[type] || [], q = tagsPanel.q.trim().toLowerCase();
+    var all = Object.keys(counts);
+    var tags = all.filter(function(t){ return !q || t.toLowerCase().indexOf(q) !== -1; });
+    var top = e.list.scrollTop, html = "", rail = "";
+    function tag(t){
+      var on = sel.indexOf(t) !== -1;
+      return '<button type="button" class="td-tag' + (on ? " on" : "") + '" data-tag="' + escapeHtml(t) +
+             '" aria-pressed="' + (on ? "true" : "false") + '">' + escapeHtml(t) + "<em>" + counts[t] + "</em></button>";
+    }
+    if(!tags.length){
+      html = '<p class="td-none">Такого тега нет.</p>';
+    } else if(tagsPanel.mode === "pop"){
+      html = '<div class="td-tags">' + tags.slice().sort(function(a, b){ return counts[b] - counts[a] || tagCmp(a, b); }).map(tag).join("") + "</div>";
+    } else {
+      var groups = {}, order = [];
+      tags.sort(tagCmp).forEach(function(t){
+        var l = tagLetter(t);
+        if(!groups[l]){ groups[l] = []; order.push(l); }
+        groups[l].push(t);
+      });
+      order.forEach(function(l){
+        html += '<div class="td-grp" data-letter="' + l + '"><b>' + l + "</b><i>" + groups[l].length + '</i></div><div class="td-tags">' +
+                groups[l].map(tag).join("") + "</div>";
+      });
+      rail = order.map(function(l){ return '<button type="button" data-letter="' + l + '" aria-label="Буква ' + l + '">' + l + "</button>"; }).join("");
+    }
+    e.list.innerHTML = html;
+    e.rail.innerHTML = rail;
+    e.rail.hidden = !rail;
+    e.list.style.scrollBehavior = "auto";
+    e.list.scrollTop = keep ? top : 0;
+    e.list.style.scrollBehavior = "";
+    e.n.textContent = all.length;
+    var found = libFilteredItems(type).length;
+    e.found.textContent = sel.length
+      ? "Найдено: " + found + " " + plural(found, "материал", "материала", "материалов")
+      : "Выберите теги: список на странице обновится сразу";
+    e.reset.disabled = !sel.length;
+    tagsRailActive();
+  }
+  function openTagsPanel(type){
+    var e = tagsBuild();
+    tagsPanel.open = true; tagsPanel.type = type; tagsPanel.q = ""; e.q.value = "";
+    e.dr.setAttribute("aria-hidden", "false");
+    document.body.classList.add("tags-open");
+    e.ov.classList.add("is-on"); e.dr.classList.add("is-on");
+    renderTagsPanel(false);
+    setTimeout(function(){ e.q.focus({preventScroll: true}); }, 60);
+    setTimeout(function(){ if(tagsPanel.open) renderLibraryFilters(type); }, 270);
+  }
+  function closeTagsPanel(instant){
+    if(!tagsPanel.open) return;
+    tagsPanel.open = false;
+    var e = tagsEls, type = tagsPanel.type;
+    e.dr.classList.remove("is-on"); e.ov.classList.remove("is-on");
+    e.dr.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("tags-open");
+    setTimeout(function(){
+      var lib = document.getElementById("viewLibrary");
+      if(tagsPanel.open || libFilterType !== type || !lib || lib.hidden) return;
+      renderLibraryFilters(type);
+      var more = document.querySelector("#libFilters .chip-more");
+      if(more && !instant) more.focus({preventScroll: true});
+    }, 270);
+  }
+  var tagsResizeTimer = null;
+  window.addEventListener("resize", function(){
+    clearTimeout(tagsResizeTimer);
+    tagsResizeTimer = setTimeout(function(){
+      var lib = document.getElementById("viewLibrary");
+      if(libFilterType && lib && !lib.hidden) renderLibraryFilters(libFilterType);
+    }, 150);
+  });
+  window.addEventListener("hashchange", function(){ closeTagsPanel(true); });
 
   /* Сортировка списка раздела.
      По дате: у новостей есть date и time, у подкастов, шоу и гайдов дат нет —
@@ -3807,16 +4047,20 @@
     return out;
   }
 
-  function renderLibraryList(type, focusId){
-    var cfg = LIB_CONFIG[type];
+  function libFilteredItems(type){
     var sel = libFilterState[type] || [];
-    var items = cfg.data.filter(function(it){
+    return LIB_CONFIG[type].data.filter(function(it){
       if(!sel.length) return true;
       var own = (it.tags && it.tags.length) ? it.tags : [it.tag];
-      // достаточно совпадения по любому из выбранных тегов
       for(var i=0;i<own.length;i++){ if(sel.indexOf(own[i]) !== -1) return true; }
       return false;
     });
+  }
+
+  function renderLibraryList(type, focusId){
+    var cfg = LIB_CONFIG[type];
+    var sel = libFilterState[type] || [];
+    var items = libFilteredItems(type);
     items = sortItems(items, libSortState[type] || "date-desc");
 
     var countEl = document.getElementById("libCount");
