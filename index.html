@@ -1737,6 +1737,10 @@
   .chip .chip-x{margin-left:6px;opacity:.7;}
   .chip-more{border-color:var(--accent);color:var(--accent-strong);background:transparent;}
   .chip-more:hover{background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  .chip-reset{border-color:#9b2c45;color:#e58a9d;background:transparent;}
+  .chip-reset:hover{color:#f4b3c0;background:color-mix(in srgb, #9b2c45 18%, transparent);}
+  :root[data-theme="light"] .chip-reset{border-color:#8c1d3a;color:#8c1d3a;}
+  :root[data-theme="light"] .chip-reset:hover{color:#6e1229;background:color-mix(in srgb, #8c1d3a 10%, transparent);}
   :root{--tags-w:420px;}
   body.tags-open{padding-right:var(--tags-w);transition:padding-right .22s ease;}
   .tags-ov{position:fixed;inset:0;z-index:105;background:rgba(8,8,16,.24);opacity:0;pointer-events:none;transition:opacity .2s ease;}
@@ -3853,6 +3857,9 @@
       if(n < byPop.length){
         html += '<button type="button" class="chip chip-more" data-more="1" aria-haspopup="dialog">Все теги · ' + all.length + " ›</button>";
       }
+      if(sel.length){
+        html += '<button type="button" class="chip chip-reset" data-reset="1" title="Снять выбранные теги">Сбросить</button>';
+      }
       return html;
     }
     function fits(n){
@@ -3874,7 +3881,7 @@
     el.onclick = function(e){
       var b = e.target.closest ? e.target.closest("button") : null;
       if(!b) return;
-      if(b.getAttribute("data-all")){ libClearTags(type); }
+      if(b.getAttribute("data-all") || b.getAttribute("data-reset")){ libClearTags(type); }
       else if(b.getAttribute("data-more")){ openTagsPanel(type); }
       else if(b.getAttribute("data-tag")){ libToggleTag(type, b.getAttribute("data-tag")); }
     };
