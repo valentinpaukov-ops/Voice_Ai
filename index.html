@@ -1738,6 +1738,12 @@
   .chip .chip-x{margin-left:6px;opacity:.7;}
   .chip-more{border-color:var(--accent);color:var(--accent-strong);background:transparent;}
   .chip-more:hover{background:color-mix(in srgb, var(--accent) 10%, transparent);}
+  .news-tag[role="button"]{cursor:pointer;transition:border-color .15s, color .15s, background .15s;}
+  .news-tag[role="button"]:hover{border-color:var(--accent);color:var(--accent-strong);}
+  .news-tag[role="button"]:focus-visible, .fm-card .t[role="button"]:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .news-tag.is-picked{border-color:var(--accent);color:var(--accent-strong);background:color-mix(in srgb, var(--accent) 12%, transparent);}
+  .fm-card .t[role="button"]{cursor:pointer;}
+  .fm-card .t[role="button"]:hover{border-color:var(--accent);color:var(--accent-strong);}
   .chip-reset{border-color:#9b2c45;color:#e58a9d;background:transparent;}
   .chip-reset:hover{color:#f4b3c0;background:color-mix(in srgb, #9b2c45 18%, transparent);}
   :root[data-theme="light"] .chip-reset{border-color:#8c1d3a;color:#8c1d3a;}
@@ -2923,6 +2929,7 @@
   /* Выбранные теги на каждой странице. Пустой список = показываем всё.
      Теги складываются по «или»: выбрали HR и Продукт — увидите и то, и другое. */
   var libFilterState = {news:[], podcasts:[], shows:[], guides:[]};
+  var libPendingTag = null;
   // порядок показа на страницах разделов, у каждого раздела свой
   var libSortState = {news:"date-desc", podcasts:"date-desc", shows:"date-desc", guides:"date-desc"};
 
@@ -3709,7 +3716,9 @@
 
   function newsRowHtml(n){
     var tagsHtml = n.tags.map(function(t){
-      return '<span class="news-tag">' + escapeHtml(t) + '</span>';
+      var picked = (libFilterState.news || []).indexOf(t) !== -1;
+      return '<span class="news-tag' + (picked ? " is-picked" : "") + '" role="button" tabindex="0" data-news-tag="' + escapeHtml(t) +
+             '" title="Новости с тегом «' + escapeHtml(t) + '»">' + escapeHtml(t) + '</span>';
     }).join("");
 
     var meta = [];
@@ -3921,6 +3930,30 @@
     libFilterState[type] = list;
     libRefresh(type);
   }
+  function libPickTag(type, tag){
+    var lib = document.getElementById("viewLibrary");
+    if(lib && !lib.hidden && libFilterType === type){
+      var wasPicked = (libFilterState[type] || []).indexOf(tag) !== -1;
+      libToggleTag(type, tag);
+      if(!wasPicked) window.scrollTo({top: 0, behavior: "smooth"});
+      return;
+    }
+    libPendingTag = {type: type, tag: tag};
+    if(location.hash === "#/" + type){ showLibrary(type); } else { location.hash = "#/" + type; }
+  }
+  document.addEventListener("click", function(e){
+    var el = e.target && e.target.closest ? e.target.closest("[data-news-tag]") : null;
+    if(!el) return;
+    e.preventDefault(); e.stopPropagation();
+    libPickTag("news", el.getAttribute("data-news-tag"));
+  }, true);
+  document.addEventListener("keydown", function(e){
+    if(e.key !== "Enter" && e.key !== " ") return;
+    var el = e.target && e.target.closest ? e.target.closest("[data-news-tag], [data-fm-tag]") : null;
+    if(!el) return;
+    e.preventDefault();
+    el.click();
+  });
   function libClearTags(type){
     libFilterState[type] = [];
     libRefresh(type);
@@ -4213,6 +4246,12 @@
     document.getElementById("viewLibrary").hidden = false;
     document.getElementById("libTitle").textContent = LIB_CONFIG[type].title;
     if(!focusId){ libFilterState[type] = []; window.scrollTo({top:0}); }
+    if(libPendingTag && libPendingTag.type === type){
+      libFilterState[type] = [libPendingTag.tag];
+      var pickedTag = libPendingTag.tag;
+      libPendingTag = null;
+      if(typeof forMe !== "undefined" && forMe) forMe.tag(pickedTag);
+    }
     var sortEl = document.getElementById("libSort");
     if(sortEl){
       sortEl.value = libSortState[type] || "date-desc";
@@ -6695,7 +6734,7 @@
       return src.filter(function(t){
         return !t.demo && !t.placeholder && t.file && t.day && t.day <= today && !isExpiredNow(t);
       }).map(function(t){
-        return {kind: "rec", key: t.id, id: t.id, title: t.title, desc: t.desc || "", tags: tagsOf(t), day: t.day, dur: t.dur || 0, host: t.host || "Voice Ai"};
+        return {kind: "rec", key: t.id, id: t.id, sec: t.tag || "", title: t.title, desc: t.desc || "", tags: tagsOf(t), day: t.day, dur: t.dur || 0, host: t.host || "Voice Ai"};
       });
     }
     function newsCandidates(){
@@ -6830,7 +6869,10 @@
     function cardHtml(x){
       var c = x.c, mt = {};
       topInterests(12).forEach(function(i){ mt[i[0]] = 1; });
-      var tags = c.tags.slice(0, 5).map(function(t){ return '<span class="t' + (mt[t] ? " m" : "") + '">' + escapeHtml(t) + "</span>"; }).join("");
+      var kindType = c.kind === "news" ? "news" : ({"Подкаст": "podcasts", "Шоу": "shows", "Гайд": "guides"})[c.sec] || "";
+      var tags = c.tags.slice(0, 5).map(function(t){
+        return '<span class="t' + (mt[t] ? " m" : "") + '"' + (kindType ? ' role="button" tabindex="0" data-fm-tag="' + escapeHtml(t) + '" data-fm-type="' + kindType + '" title="Показать материалы с тегом «' + escapeHtml(t) + '»"' : "") + ">" + escapeHtml(t) + "</span>";
+      }).join("");
       var meta = c.kind === "rec" ? "▶ Запись · " + (c.dur ? fmt(c.dur) : "аудио") : "▤ Новость · " + (c.day ? humanDay(c.day) : "");
       if(x.fresh) meta = "✦ Новое для вас · " + meta.replace(/^[^ ]+ /, "");
       return '<article class="fm-card" data-fm-open="' + c.kind + '" data-id="' + escapeHtml(c.id) + '">' +
@@ -6951,33 +6993,44 @@
       if(cur.last != null && ct >= cur.last && ct - cur.last < 2.5) cur.acc += ct - cur.last;
       cur.last = ct;
       var dur = tr.dur || audioEl.duration || 0, tags = tagsOf(tr);
-      var need = dur && dur < 75 ? dur * 0.4 : 30;
+      var need = dur && dur < 75 ? dur * 0.4 : 30, k = (mode === "me" || playingOutsideAir()) ? 1 : 0.5;
+      var seen = P.seen[tr.id] || (P.seen[tr.id] = {});
       if(!cur.counted && cur.acc >= need){
         cur.counted = true; playedNow[tr.id] = 1;
-        tags.forEach(function(t){ bump(t, 1, "l"); });
-        P.seen[tr.id] = P.seen[tr.id] || {};
-        P.seen[tr.id].l = nowMs();
-        logEvent("l", "Слушали «" + tr.title + "»");
+        if(!(seen.l && nowMs() - seen.l < DAY)){
+          tags.forEach(function(t){ bump(t, k, "l"); });
+          seen.l = nowMs();
+          logEvent("l", "Слушали «" + tr.title + "»");
+        }
         save();
       }
       if(cur.counted && !cur.done && dur && cur.acc / dur >= 0.9){
         cur.done = true;
-        tags.forEach(function(t){ bump(t, 1.5, "l"); });
-        P.seen[tr.id].d = nowMs();
-        logEvent("l", "Дослушали «" + tr.title + "»");
+        if(!(seen.d && nowMs() - seen.d < DAY)){
+          tags.forEach(function(t){ bump(t, 1.5 * k, "l"); });
+          logEvent("l", "Дослушали «" + tr.title + "»");
+        }
+        seen.d = nowMs();
         save();
       }
     }
-    function readNews(id){
+    function readNews(id, strong){
       if(!collecting()) return;
-      var key = "n:" + id;
-      if(P.seen[key] && P.seen[key].r) return;
+      var key = "n:" + id, was = P.seen[key];
+      if(was && was.r){
+        if(strong && !was.o){
+          var old = null;
+          newsCandidates().forEach(function(x){ if(String(x.id) === String(id)) old = x; });
+          if(old){ old.tags.forEach(function(t){ bump(t, 1, "r"); }); was.o = nowMs(); save(); }
+        }
+        return;
+      }
       var n = null;
       newsCandidates().forEach(function(x){ if(String(x.id) === String(id)) n = x; });
       if(!n) return;
       n = {title: n.title, tags: n.tags};
-      (n.tags || []).forEach(function(t){ bump(t, 1.5, "r"); });
-      P.seen[key] = {r: nowMs()};
+      (n.tags || []).forEach(function(t){ bump(t, strong ? 2.5 : 1.5, "r"); });
+      P.seen[key] = {r: nowMs(), o: strong ? nowMs() : 0};
       logEvent("r", "Читали «" + n.title + "»");
       save();
     }
@@ -7081,6 +7134,8 @@
       if(sw && !t.closest("[data-fm-skip]")){ setMode(sw.getAttribute("data-fm")); return; }
       var sk = t.closest("[data-fm-skip]");
       if(sk){ e.stopPropagation(); skip(sk.getAttribute("data-fm-skip")); return; }
+      var tg = t.closest("[data-fm-tag]");
+      if(tg){ e.stopPropagation(); closeDrawer(); libPickTag(tg.getAttribute("data-fm-type"), tg.getAttribute("data-fm-tag")); return; }
       var mu = t.closest("[data-fm-mute]");
       if(mu){ P.muted[mu.getAttribute("data-fm-mute")] = nowMs(); logEvent("x", "Меньше про «" + mu.getAttribute("data-fm-mute") + "»"); afterProfileChange(); return; }
       var um = t.closest("[data-fm-unmute]");
@@ -7138,20 +7193,36 @@
         sTimer = setTimeout(function(){ searchSignal(sIn.value); }, 1600);
       });
     }
+    var lastAct = nowMs();
+    ["scroll", "mousemove", "keydown", "touchstart", "wheel", "click"].forEach(function(ev){
+      window.addEventListener(ev, function(){ lastAct = nowMs(); }, {passive: true, capture: true});
+    });
+    function needSec(el){
+      var box = el.querySelector(".news-body") || el, words = (box.textContent || "").trim().split(/\s+/).length;
+      return Math.max(4, Math.min(16, Math.round(words / 5)));
+    }
     setInterval(function(){
-      if(document.hidden || !collecting()) return;
-      var rows = document.querySelectorAll(".news-row[data-id]"), vh = window.innerHeight;
+      if(document.hidden || !collecting() || nowMs() - lastAct > 20000) return;
+      var rows = document.querySelectorAll(".news-row[data-id]"), vh = window.innerHeight, best = null, bd = 1e9;
       Array.prototype.forEach.call(rows, function(el){
         var r = el.getBoundingClientRect();
         if(!r.height) return;
-        var vis = Math.min(r.bottom, vh) - Math.max(r.top, 0), mid = r.top + r.height / 2;
-        if(vis >= Math.min(r.height, vh) * 0.6 && mid > vh * 0.2 && mid < vh * 0.8){
-          var id = el.getAttribute("data-id");
-          dwell[id] = (dwell[id] || 0) + 1;
-          if(dwell[id] === 6) readNews(id);
-        }
+        var vis = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+        if(vis < Math.min(r.height, vh) * 0.5) return;
+        var d = Math.abs(r.top + r.height / 2 - vh / 2);
+        if(d < bd){ bd = d; best = el; }
       });
+      if(!best || bd > vh * 0.35) return;
+      var id = best.getAttribute("data-id");
+      dwell[id] = (dwell[id] || 0) + 1;
+      if(dwell[id] === needSec(best)) readNews(id);
     }, 1000);
+    document.addEventListener("click", function(e){
+      var a = e.target && e.target.closest ? e.target.closest(".news-source") : null;
+      if(!a) return;
+      var row = a.closest(".news-row");
+      if(row) readNews(row.getAttribute("data-id"), true);
+    }, true);
 
     forMe = {
       active: function(){ return mode === "me" && P.on; },
