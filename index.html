@@ -1786,6 +1786,93 @@
     .tags-dr{top:auto;left:0;right:0;width:auto;height:62vh;border-left:0;border-top:1px solid var(--border);border-radius:16px 16px 0 0;transform:translateY(102%);box-shadow:0 -12px 36px rgba(0,0,0,.28);}
   }
   @media (prefers-reduced-motion:reduce){ .tags-dr,.tags-ov,body.tags-open{transition:none;} }
+  #air.fm-ready{padding-top:92px;}
+  .hero-grid > div{min-width:0;}
+  .show-title{overflow-wrap:anywhere;hyphens:auto;}
+  .fm-ov{position:absolute;z-index:3;}
+  #air.fm-off .fm-ov{display:none !important;}
+  #air.fm-ready.fm-off{padding-top:52px;}
+  .fm-switch{left:0;right:0;top:16px;display:flex;justify-content:center;pointer-events:none;}
+  .fm-seg{pointer-events:auto;display:inline-flex;gap:4px;padding:4px;border-radius:999px;border:1px solid var(--border);background:color-mix(in srgb, var(--bg-elevated) 82%, transparent);backdrop-filter:blur(8px);}
+  .fm-seg button{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px 18px;border-radius:999px;border:0;background:transparent;color:var(--text-dim);cursor:pointer;display:inline-flex;gap:8px;align-items:center;white-space:nowrap;}
+  .fm-seg button:hover{color:var(--text);}
+  .fm-seg button.on{background:var(--accent);color:#fff;}
+  .fm-cnt{font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.2);}
+  .fm-cnt:empty{display:none;}
+  .fm-arrow{top:50%;width:44px;height:44px;margin-top:-22px;border-radius:50%;border:1px solid var(--border);background:color-mix(in srgb, var(--bg-elevated) 72%, transparent);display:none;align-items:center;justify-content:center;color:var(--text);font-size:22px;line-height:1;cursor:pointer;padding:0;}
+  .fm-arrow:hover{border-color:var(--accent);}
+  .fm-arrow.l{left:14px;}.fm-arrow.r{right:14px;}
+  @media (min-width:1360px){ #air:not(.fm-me) .fm-arrow.r{display:flex;} #air.fm-me .fm-arrow.l{display:flex;} }
+  .fm-dots{left:0;right:0;bottom:16px;display:flex;justify-content:center;gap:8px;}
+  .fm-dots button{width:8px;height:8px;border-radius:8px;border:0;padding:0;background:var(--border);cursor:pointer;}
+  .fm-dots button.on{width:26px;background:var(--accent);}
+  .fm-why{margin:18px 0 32px;max-width:600px;border:1px solid color-mix(in srgb, var(--accent) 50%, var(--border));background:color-mix(in srgb, var(--accent) 9%, transparent);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start;}
+  .fm-why[hidden]{display:none;}
+  .fm-ic{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;}
+  .fm-why b{display:block;font-size:11px;font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent-strong);margin-bottom:3px;}
+  .fm-why p{margin:0;font-size:14px;line-height:1.45;color:var(--text);}
+  .fm-why .fm-more{margin-top:6px;font-size:13px;color:var(--text-dim);}
+  .fm-acts{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap;}
+  .fm-acts button{background:none;border:0;padding:0;font:inherit;font-size:12px;color:var(--text-dim);text-decoration:underline;text-decoration-color:var(--border);cursor:pointer;}
+  .fm-acts button:hover{color:var(--text);}
+  .fm-sec{padding:34px 0 10px;}
+  .fm-sec[hidden]{display:none;}
+  .fm-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
+  .fm-eye{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-strong);}
+  .fm-head h2{margin:4px 0 0;font-size:34px;line-height:1.1;text-transform:uppercase;}
+  .fm-tools{display:flex;gap:8px;flex-wrap:wrap;}
+  .fm-must{display:flex;align-items:center;gap:14px;border:1px solid color-mix(in srgb, var(--date) 55%, var(--border));background:color-mix(in srgb, var(--date) 8%, transparent);border-radius:12px;padding:12px 16px;margin:0 0 18px;cursor:pointer;}
+  .fm-must .lb{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--date);white-space:nowrap;}
+  .fm-must .tt{font-size:15px;font-weight:600;flex:1;}
+  .fm-must .go{font-size:12px;color:var(--text-dim);white-space:nowrap;}
+  .fm-int{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 20px;font-size:13px;color:var(--text-dim);}
+  .fm-int .chip i{font-style:normal;letter-spacing:.1em;margin-left:7px;color:var(--accent-strong);}
+  .fm-int .chip i span{opacity:.25;}
+  .fm-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .fm-card{position:relative;border:1px solid var(--border);border-radius:14px;background:var(--bg-elevated);padding:16px 18px 14px;cursor:pointer;}
+  .fm-card:hover{border-color:var(--accent);}
+  .fm-card .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .fm-card .kind{font-family:var(--font-mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);}
+  .fm-card .kind.rec{color:var(--accent-strong);}
+  .fm-card .kind.fresh{color:var(--date);}
+  .fm-card .x{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-size:15px;background:transparent;cursor:pointer;padding:0;}
+  .fm-card .x:hover{border-color:#9b2c45;color:#e58a9d;}
+  .fm-card h3{margin:0 0 6px;font-size:18px;line-height:1.25;}
+  .fm-card .d{margin:0 0 10px;font-size:14px;line-height:1.45;color:var(--text-dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .fm-card .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .fm-card .t{font-family:var(--font-mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--border);color:var(--text-dim);}
+  .fm-card .t.m{border-color:var(--accent);color:var(--accent-strong);background:color-mix(in srgb, var(--accent) 12%, transparent);}
+  .fm-card .why{font-size:12px;color:var(--text-dim);border-top:1px dashed var(--border);padding-top:9px;}
+  .fm-empty{border:1px dashed var(--border);border-radius:14px;padding:26px 22px;color:var(--text-dim);font-size:15px;line-height:1.6;}
+  .fm-empty button{margin-top:12px;}
+  .fm-foot{margin:18px 0 0;font-size:12px;color:var(--text-dim);line-height:1.7;}
+  .fm-foot button{background:none;border:0;padding:0;font:inherit;color:var(--text-dim);text-decoration:underline;cursor:pointer;}
+  .fm-foot .rs{color:#e58a9d;}
+  :root[data-theme="light"] .fm-foot .rs{color:#8c1d3a;}
+  .fm-dr-intro{margin:6px 20px 0;font-size:13px;color:var(--text-dim);line-height:1.5;}
+  .fm-sw{margin:14px 20px 4px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;cursor:pointer;background:none;color:var(--text);width:calc(100% - 40px);font-family:inherit;text-align:left;}
+  .fm-sw .tg{flex:none;width:42px;height:24px;border-radius:24px;background:var(--border);position:relative;}
+  .fm-sw .tg:after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s;}
+  .fm-sw.on .tg{background:var(--accent);}
+  .fm-sw.on .tg:after{left:21px;}
+  .fm-h{margin:18px 20px 8px;font-family:var(--font-mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);}
+  .fm-row{margin:0 20px;padding:9px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;font-size:14px;}
+  .fm-row .n{width:120px;color:var(--text);overflow:hidden;text-overflow:ellipsis;}
+  .fm-row .bar{flex:1;height:6px;border-radius:6px;background:var(--border);overflow:hidden;}
+  .fm-row .bar i{display:block;height:100%;background:var(--accent);border-radius:6px;}
+  .fm-row .w{width:62px;text-align:right;font-size:11px;font-family:var(--font-mono);color:var(--text-dim);}
+  .fm-row .x{width:24px;height:24px;border-radius:50%;border:1px solid var(--border);color:var(--text-dim);display:flex;align-items:center;justify-content:center;font-size:14px;background:none;cursor:pointer;padding:0;}
+  .fm-row .x:hover{border-color:#9b2c45;color:#e58a9d;}
+  .fm-row .back{margin-left:auto;background:none;border:0;color:var(--accent-strong);font-size:12px;cursor:pointer;}
+  .fm-ev{margin:0 20px;padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;font-size:13px;align-items:baseline;}
+  .fm-ev .ic{flex:none;width:18px;color:var(--accent-strong);font-family:var(--font-mono);}
+  .fm-ev .tm{margin-left:auto;font-size:11px;color:var(--text-dim);white-space:nowrap;}
+  .fm-q{display:flex;gap:7px;margin:0 20px;flex-wrap:wrap;}
+  .fm-none{margin:0 20px;font-size:13px;color:var(--text-dim);}
+  .fm-scroll{flex:1;overflow-y:auto;padding-bottom:12px;overscroll-behavior:contain;}
+  .fm-btn-reset{background:transparent;border:0;color:#e58a9d;cursor:pointer;font-size:13px;}
+  :root[data-theme="light"] .fm-btn-reset{color:#8c1d3a;}
+  @media (max-width:700px){ .fm-grid{grid-template-columns:1fr;} .fm-must{flex-wrap:wrap;} .fm-seg button{padding:8px 14px;} #air.fm-ready{padding-top:84px;} }
   .lib-empty{padding:30px 4px;color:var(--text-dim);font-size:14px;}
   #libraryList .media-grid{margin-top:4px;}
 
@@ -3334,6 +3421,7 @@
     setDialCover(tr && tr.cover ? tr.cover : "");
     updateDurationDisplays();
     updateProgressFromAudio();
+    if(typeof forMe !== "undefined" && forMe) forMe.afterRender();
   }
 
   /* Как широкая картинка ложится в круг: "cover" — обрезаем по центру,
@@ -3385,6 +3473,7 @@
   function setPlayingUI(playing){
     state.playing = playing;
     liveLabel.textContent = playing ? "В эфире" : "На паузе";
+    if(typeof forMe !== "undefined" && forMe && forMe.active()) liveLabel.textContent = "Для меня · по моим интересам";
     liveDot.classList.toggle("is-live", playing);
     /* Новая запись — следующий рисунок эквалайзера по кругу; пауза и
        продолжение той же записи его не меняют. */
@@ -3489,12 +3578,14 @@
   }
 
   function advanceNext(){
+    if(typeof forMe !== "undefined" && forMe && forMe.step(1)) return;
     if(tracks.length === 0) return;
     var idx = currentIndex();
     var next = tracks[(idx + 1 + tracks.length) % tracks.length];
     selectTrack(next.id, true);
   }
   function goPrev(){
+    if(typeof forMe !== "undefined" && forMe && forMe.step(-1)) return;
     if(tracks.length === 0) return;
     var idx = currentIndex();
     var prev = tracks[(idx - 1 + tracks.length) % tracks.length];
@@ -3765,6 +3856,7 @@
   }
 
   function renderHomePreviews(){
+    if(typeof forMe !== "undefined" && forMe) forMe.dataChanged();
     // на главной — три свежие новости, остальные на странице «Новости»
     document.getElementById("homeNews").innerHTML = visibleNewsItems().slice(0,3).map(newsRowHtml).join("");
     // везде один порядок по умолчанию: от свежего к старому
@@ -3825,7 +3917,7 @@
   }
   function libToggleTag(type, t){
     var list = (libFilterState[type] || []).slice(), i = list.indexOf(t);
-    if(i === -1){ list.push(t); } else { list.splice(i, 1); }
+    if(i === -1){ list.push(t); if(typeof forMe !== "undefined" && forMe) forMe.tag(t); } else { list.splice(i, 1); }
     libFilterState[type] = list;
     libRefresh(type);
   }
@@ -6555,6 +6647,520 @@
     }
     document.addEventListener("visibilitychange", sync);
     sync();
+  })();
+
+  var FOR_ME = true;
+  var forMe = null;
+
+  (function forMeInit(){
+    var hero = document.getElementById("air");
+    if(!FOR_ME || !hero) return;
+    var KEY = "voiceai_forme_v1", DAY = 86400000, HALF_LIFE_DAYS = 14;
+    var P = loadProfile();
+    var mode = "air", airId = null, queue = [], cards = [], mustItem = null, cold = true, qtoks = [], playedNow = {};
+    var cur = {id: null, acc: 0, last: null, counted: false, done: false};
+    var dwell = {};
+
+    function loadProfile(){
+      try{
+        var o = JSON.parse(localStorage.getItem(KEY) || "null");
+        if(o && o.v === 1) return o;
+      }catch(e){}
+      return {v: 1, on: true, tags: {}, seen: {}, hidden: {}, muted: {}, queries: [], events: []};
+    }
+    function save(){ try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} }
+    function nowMs(){ return Date.now(); }
+    function decay(w, t){ return w * Math.pow(0.5, (nowMs() - t) / (HALF_LIFE_DAYS * DAY)); }
+    function weight(tag){ var o = P.tags[tag]; return o ? decay(o.w, o.t) : 0; }
+    function bump(tag, inc, src){
+      var o = P.tags[tag] || (P.tags[tag] = {w: 0, t: nowMs(), l: 0, r: 0, c: 0, s: 0});
+      o.w = Math.max(0, decay(o.w, o.t) + inc); o.t = nowMs();
+      if(inc > 0) o[src] = (o[src] || 0) + 1;
+    }
+    function logEvent(kind, text){
+      P.events.unshift({k: kind, x: text, t: nowMs()});
+      if(P.events.length > 30) P.events.length = 30;
+    }
+    function collecting(){ return P.on && !isAdmin; }
+    function tagsOf(tr){ return (tr.tags && tr.tags.length) ? tr.tags : (tr.tag ? [tr.tag] : []); }
+    function ageDays(day){
+      if(!day) return 30;
+      var a = new Date(day + "T00:00:00").getTime(), b = new Date(todayStr() + "T00:00:00").getTime();
+      return Math.max(0, (b - a) / DAY);
+    }
+    function short(s, n){ s = String(s || "").replace(/\s+/g, " ").trim(); return s.length <= n ? s : s.slice(0, n).replace(/\s+\S*$/, "") + "…"; }
+
+    function recCandidates(){
+      var today = todayStr(), src = (typeof allTracks !== "undefined" && allTracks) ? allTracks : [];
+      return src.filter(function(t){
+        return !t.demo && !t.placeholder && t.file && t.day && t.day <= today && !isExpiredNow(t);
+      }).map(function(t){
+        return {kind: "rec", key: t.id, id: t.id, title: t.title, desc: t.desc || "", tags: tagsOf(t), day: t.day, dur: t.dur || 0, host: t.host || "Voice Ai"};
+      });
+    }
+    function newsCandidates(){
+      var list = [];
+      try{ list = visibleNewsItems() || []; }catch(e){}
+      return list.map(function(n){
+        return {kind: "news", key: "n:" + n.id, id: n.id, title: n.title, desc: n.text || "", tags: n.tags || [], day: newsDayKey(n) || "", important: !!n.important, date: n.date};
+      });
+    }
+    function muted(c){
+      for(var i = 0; i < c.tags.length; i++){ if(P.muted[c.tags[i]]) return true; }
+      return false;
+    }
+    function scoreOf(c){
+      var s = 0, best = [];
+      c.tags.forEach(function(t){ var w = weight(t); if(w > 0.05){ s += w; best.push([t, w]); } });
+      if(c.tags.length) s = s / Math.sqrt(c.tags.length);
+      var text = (c.title + " " + c.desc).toLowerCase(), q = 0;
+      qtoks.forEach(function(k){ if(text.indexOf(k) > -1) q++; });
+      var tagPart = s;
+      s += Math.min(q, 3) * 0.8;
+      var fresh = 0.6 * Math.exp(-ageDays(c.day) / 21);
+      s += fresh + (c.important ? 0.6 : 0);
+      best.sort(function(a, b){ return b[1] - a[1]; });
+      return {s: s, tagPart: tagPart, best: best, q: q};
+    }
+    function lastQuery(){ return P.queries.length ? P.queries[0].q : ""; }
+    function reasonOf(c, sc, fresh){
+      if(cold) return c.important ? "Важное для всех сотрудников" : "Свежее в компании";
+      if(fresh) return "Новое для вас" + (c.tags[0] ? ": " + c.tags[0] : "");
+      if(!sc.best.length){
+        return sc.q ? "Вы искали «" + lastQuery() + "»" : "Свежее в компании";
+      }
+      var top = sc.best.slice(0, 2).map(function(x){ return x[0]; }), o = P.tags[top[0]] || {}, src = "l", mx = -1;
+      ["l", "r", "c", "s"].forEach(function(k){ if((o[k] || 0) > mx){ mx = o[k] || 0; src = k; } });
+      if(src === "s" && lastQuery()) return "Вы искали «" + lastQuery() + "»";
+      var lead = src === "l" ? "Вы слушали про " : (src === "r" ? "Вы читали про " : "Вы выбирали тег ");
+      return lead + top.join(" и ");
+    }
+    function prepare(list, withFresh){
+      var out = list.map(function(c){
+        var sc = scoreOf(c);
+        return {c: c, sc: sc, fresh: false};
+      });
+      out.sort(function(a, b){ return b.sc.s - a.sc.s; });
+      if(withFresh && !cold){
+        var known = out.filter(function(x){ return x.sc.tagPart > 0.05 || x.sc.q; });
+        var unknown = out.filter(function(x){ return !(x.sc.tagPart > 0.05 || x.sc.q); });
+        if(known.length && unknown.length){
+          var res = [], k = 0, u = 0, n = known.length + unknown.length;
+          for(var i = 0; i < n; i++){
+            if((i + 1) % 5 === 0 && u < unknown.length){ unknown[u].fresh = true; res.push(unknown[u++]); }
+            else if(k < known.length){ res.push(known[k++]); }
+            else if(u < unknown.length){ unknown[u].fresh = true; res.push(unknown[u++]); }
+          }
+          out = res;
+        }
+      }
+      return out;
+    }
+    function build(){
+      var cut = nowMs() - 14 * DAY;
+      qtoks = [];
+      P.queries.forEach(function(q){
+        if(q.t > cut) q.q.toLowerCase().split(/\s+/).forEach(function(k){ if(k.length >= 3) qtoks.push(k); });
+      });
+      var total = 0;
+      Object.keys(P.tags).forEach(function(t){ total += weight(t); });
+      cold = total < 1 && !qtoks.length;
+      var rc = recCandidates().filter(function(c){
+        var s = P.seen[c.key];
+        return !P.hidden[c.key] && !muted(c) && !(s && s.d) && !playedNow[c.key];
+      });
+      if(!rc.length) rc = recCandidates().filter(function(c){ return !P.hidden[c.key] && !muted(c); });
+      var nc = newsCandidates().filter(function(c){
+        return !P.hidden[c.key] && !muted(c) && !P.seen[c.key];
+      });
+      var rr = prepare(rc, true), nn = prepare(nc, true);
+      queue = rr.map(function(x){ return {c: x.c, sc: x.sc, fresh: x.fresh, reason: reasonOf(x.c, x.sc, x.fresh)}; });
+      var recCards = queue.slice(1, 3), newsCards = nn.slice(0, 4).map(function(x){ return {c: x.c, sc: x.sc, fresh: x.fresh, reason: reasonOf(x.c, x.sc, x.fresh)}; });
+      cards = [];
+      var a = 0, b = 0;
+      while(cards.length < 6 && (a < recCards.length || b < newsCards.length)){
+        if(b < newsCards.length) cards.push(newsCards[b++]);
+        if(cards.length < 6 && a < recCards.length) cards.push(recCards[a++]);
+      }
+      var lim = nowMs();
+      mustItem = null;
+      newsCandidates().forEach(function(c){
+        if(c.important && ageDays(c.day) <= 14 && !(P.seen[c.key] && P.seen[c.key].r) && (!mustItem || c.day > mustItem.day)) mustItem = c;
+      });
+    }
+    function qIndex(id){
+      for(var i = 0; i < queue.length; i++){ if(queue[i].c.id === id) return i; }
+      return -1;
+    }
+
+    var ov = document.createElement("div");
+    ov.className = "fm-ov fm-switch";
+    ov.innerHTML = '<div class="fm-seg" role="tablist">' +
+      '<button type="button" role="tab" data-fm="air" class="on">Эфир сегодня</button>' +
+      '<button type="button" role="tab" data-fm="me">Для меня <span class="fm-cnt" id="fmCnt"></span></button></div>';
+    hero.appendChild(ov);
+    var arL = document.createElement("button"); arL.type = "button"; arL.className = "fm-ov fm-arrow l"; arL.setAttribute("aria-label", "Эфир сегодня"); arL.setAttribute("data-fm", "air"); arL.textContent = "‹";
+    var arR = document.createElement("button"); arR.type = "button"; arR.className = "fm-ov fm-arrow r"; arR.setAttribute("aria-label", "Для меня"); arR.setAttribute("data-fm", "me"); arR.textContent = "›";
+    var dots = document.createElement("div"); dots.className = "fm-ov fm-dots";
+    dots.innerHTML = '<button type="button" class="on" data-fm="air" aria-label="Эфир сегодня"></button><button type="button" data-fm="me" aria-label="Для меня"></button>';
+    hero.appendChild(arL); hero.appendChild(arR); hero.appendChild(dots);
+    hero.classList.add("fm-ready");
+
+    var why = document.createElement("div");
+    why.className = "fm-why"; why.hidden = true;
+    why.innerHTML = '<span class="fm-ic">✦</span><div><b>Почему это здесь</b><p id="fmWhyText"></p>' +
+      '<div class="fm-acts"><button type="button" data-fm-act="skip">Не интересно</button><button type="button" data-fm-act="why">Почему так?</button><button type="button" data-fm-act="mine">Мои интересы ›</button></div>' +
+      '<p class="fm-more" id="fmWhyMore" hidden></p></div>';
+    var controls = hero.querySelector(".hero-controls");
+    controls.parentNode.insertBefore(why, controls);
+    var whyText = why.querySelector("#fmWhyText"), whyMore = why.querySelector("#fmWhyMore");
+
+    var sec = document.createElement("section");
+    sec.className = "fm-sec"; sec.id = "fmSec"; sec.hidden = true;
+    hero.parentNode.insertBefore(sec, hero.nextSibling);
+    var queueWrap = document.querySelector(".queue-wrap");
+    var cntEl = document.getElementById("fmCnt");
+
+    function levelOf(w, mx){ return Math.max(1, Math.min(5, Math.ceil(5 * w / mx))); }
+    function topInterests(n){
+      var arr = Object.keys(P.tags).map(function(t){ return [t, weight(t)]; }).filter(function(x){ return x[1] > 0.3 && !P.muted[x[0]]; });
+      arr.sort(function(a, b){ return b[1] - a[1]; });
+      return arr.slice(0, n);
+    }
+    function cardHtml(x){
+      var c = x.c, mt = {};
+      topInterests(12).forEach(function(i){ mt[i[0]] = 1; });
+      var tags = c.tags.slice(0, 5).map(function(t){ return '<span class="t' + (mt[t] ? " m" : "") + '">' + escapeHtml(t) + "</span>"; }).join("");
+      var meta = c.kind === "rec" ? "▶ Запись · " + (c.dur ? fmt(c.dur) : "аудио") : "▤ Новость · " + (c.day ? humanDay(c.day) : "");
+      if(x.fresh) meta = "✦ Новое для вас · " + meta.replace(/^[^ ]+ /, "");
+      return '<article class="fm-card" data-fm-open="' + c.kind + '" data-id="' + escapeHtml(c.id) + '">' +
+        '<div class="top"><span class="kind ' + (x.fresh ? "fresh" : (c.kind === "rec" ? "rec" : "")) + '">' + escapeHtml(meta) + '</span>' +
+        '<button type="button" class="x" data-fm-skip="' + escapeHtml(c.key) + '" title="Не интересно" aria-label="Не интересно">×</button></div>' +
+        '<h3>' + escapeHtml(c.title) + '</h3><p class="d">' + escapeHtml(short(c.desc, 140)) + '</p>' +
+        '<div class="tags">' + tags + '</div><div class="why">✦ ' + escapeHtml(x.reason) + '</div></article>';
+    }
+    function render(){
+      cntEl.textContent = P.on && cards.length ? String(cards.length) : "";
+      if(mode !== "me") return;
+      if(!P.on){
+        sec.innerHTML = '<div class="wrap"><div class="fm-head"><div><span class="fm-eye">Подбор выключен</span><h2>Для меня</h2></div></div>' +
+          '<div class="fm-empty">Подбор по интересам выключен, ничего не запоминается и ничего не подбирается. Включите его, чтобы здесь появились материалы, которые подходят именно вам.<br><button type="button" class="chip chip-more" data-fm-act="on">Включить подбор</button></div></div>';
+        return;
+      }
+      var ints = topInterests(5), mx = ints.length ? ints[0][1] : 1;
+      var must = mustItem ? '<div class="fm-must" data-fm-open="news" data-id="' + escapeHtml(mustItem.id) + '"><span class="lb">Обязательное · для всех</span><span class="tt">' + escapeHtml(mustItem.title) + '</span><span class="go">важное от редакции · читать ›</span></div>' : "";
+      var intHtml = ints.length
+        ? '<div class="fm-int"><span>Мои интересы:</span>' + ints.map(function(i){
+            var l = levelOf(i[1], mx);
+            return '<button type="button" class="chip active" data-fm-act="mine">' + escapeHtml(i[0]) + '<i>' + "●".repeat(l) + "<span>" + "●".repeat(5 - l) + "</span></i></button>";
+          }).join("") + "</div>"
+        : '<div class="fm-int"><span>Пока вас мало знаю: слушайте, читайте, ищите и выбирайте теги, и подборка станет точнее.</span></div>';
+      var grid = cards.length ? '<div class="fm-grid">' + cards.map(cardHtml).join("") + "</div>"
+        : '<div class="fm-empty">Подходящих материалов пока нет: вы посмотрели или скрыли всё, что есть. Загляните позже.</div>';
+      sec.innerHTML = '<div class="wrap"><div class="fm-head"><div><span class="fm-eye">' +
+        (cold ? "Свежее и важное в компании" : "Подобрано по тому, что вы слушали, читали и искали") + '</span><h2>Для меня</h2></div>' +
+        '<div class="fm-tools"><button type="button" class="chip" data-fm-act="refresh">Обновить подборку</button>' +
+        '<button type="button" class="chip chip-more" data-fm-act="mine">Мои интересы ›</button></div></div>' +
+        must + intHtml + grid +
+        '<p class="fm-foot">Подбор строится в вашем браузере и никуда не отправляется. <button type="button" data-fm-act="off">Выключить подбор</button> · <button type="button" class="rs" data-fm-act="reset">Сбросить профиль</button></p></div>';
+    }
+    function syncHero(){
+      var inQ = mode === "me" && P.on && qIndex(state.currentId) > -1;
+      why.hidden = !inQ;
+      if(inQ){
+        var x = queue[qIndex(state.currentId)], matched = x.c.tags.filter(function(t){ return weight(t) > 0.05; });
+        whyText.textContent = cold
+          ? "Вы только начали, поэтому показываем свежее и важное. Чем больше вы слушаете и читаете, тем точнее подборка."
+          : (x.fresh ? "Редкий гость в ваших интересах: тема «" + (x.c.tags[0] || "новое") + "» вам пока не встречалась, поэтому предлагаем попробовать."
+                     : x.reason + (matched.length ? ". Здесь совпало: " + matched.slice(0, 4).join(", ") + "." : "."));
+        whyMore.hidden = true;
+      }
+      if(mode === "me") liveLabel.textContent = "Для меня · по моим интересам";
+    }
+    function setTabs(){
+      Array.prototype.forEach.call(document.querySelectorAll(".fm-seg button, .fm-dots button"), function(b){
+        b.classList.toggle("on", b.getAttribute("data-fm") === mode);
+        b.setAttribute("aria-selected", b.getAttribute("data-fm") === mode ? "true" : "false");
+      });
+      hero.classList.toggle("fm-me", mode === "me");
+    }
+    function setMode(m){
+      if(m === mode) return;
+      var playing = !audioEl.paused;
+      if(m === "me"){
+        airId = state.currentId;
+        mode = "me";
+        build();
+        sec.hidden = false; if(queueWrap) queueWrap.style.display = "none";
+        render(); setTabs();
+        if(P.on && queue.length) selectTrack(queue[0].c.id, playing);
+        syncHero();
+      } else {
+        mode = "air";
+        sec.hidden = true; if(queueWrap) queueWrap.style.display = "";
+        setTabs(); why.hidden = true;
+        var back = airId && getTrack(airId) ? airId : (tracks[0] && tracks[0].id);
+        if(back) selectTrack(back, playing);
+      }
+    }
+    function stepQueue(dir){
+      if(!P.on) return false;
+      if(!queue.length){ build(); if(!queue.length) return false; }
+      var i = qIndex(state.currentId);
+      if(dir > 0){
+        i = i < 0 ? 0 : i + 1;
+        if(i >= queue.length){ playedNow = {}; build(); render(); i = 0; }
+      } else {
+        if(audioEl.currentTime > 3){ audioEl.currentTime = 0; return true; }
+        i = i <= 0 ? 0 : i - 1;
+      }
+      if(!queue.length) return false;
+      selectTrack(queue[i].c.id, true);
+      return true;
+    }
+    function skip(key){
+      if(!collecting()){ P.hidden[key] = nowMs(); }
+      else {
+        P.hidden[key] = nowMs();
+        var item = null;
+        queue.concat(cards).forEach(function(x){ if(x.c.key === key) item = x.c; });
+        if(item) item.tags.forEach(function(t){ bump(t, -0.4, "l"); });
+        logEvent("x", "Скрыли «" + (item ? item.title : "материал") + "»");
+      }
+      save();
+      var wasCurrent = queue.length && qIndex(state.currentId) > -1 && queue[qIndex(state.currentId)].c.key === key;
+      var playing = !audioEl.paused;
+      build(); render(); refreshCount();
+      if(wasCurrent){
+        if(queue.length) selectTrack(queue[0].c.id, playing); else syncHero();
+      } else { syncHero(); }
+    }
+    function refreshCount(){
+      var keepMode = mode;
+      if(mode !== "me"){ build(); }
+      cntEl.textContent = P.on && cards.length ? String(cards.length) : "";
+      hero.classList.toggle("fm-off", !recCandidates().length);
+    }
+
+    function listenTick(){
+      if(!collecting() || mode === null) return;
+      var tr = getTrack(state.currentId);
+      if(!tr || tr.demo || !tr.file || audioEl.paused) return;
+      var ct = audioEl.currentTime;
+      if(cur.id !== tr.id){ cur = {id: tr.id, acc: 0, last: ct, counted: false, done: false}; return; }
+      if(cur.last != null && ct >= cur.last && ct - cur.last < 2.5) cur.acc += ct - cur.last;
+      cur.last = ct;
+      var dur = tr.dur || audioEl.duration || 0, tags = tagsOf(tr);
+      var need = dur && dur < 75 ? dur * 0.4 : 30;
+      if(!cur.counted && cur.acc >= need){
+        cur.counted = true; playedNow[tr.id] = 1;
+        tags.forEach(function(t){ bump(t, 1, "l"); });
+        P.seen[tr.id] = P.seen[tr.id] || {};
+        P.seen[tr.id].l = nowMs();
+        logEvent("l", "Слушали «" + tr.title + "»");
+        save();
+      }
+      if(cur.counted && !cur.done && dur && cur.acc / dur >= 0.9){
+        cur.done = true;
+        tags.forEach(function(t){ bump(t, 1.5, "l"); });
+        P.seen[tr.id].d = nowMs();
+        logEvent("l", "Дослушали «" + tr.title + "»");
+        save();
+      }
+    }
+    function readNews(id){
+      if(!collecting()) return;
+      var key = "n:" + id;
+      if(P.seen[key] && P.seen[key].r) return;
+      var n = null;
+      newsCandidates().forEach(function(x){ if(String(x.id) === String(id)) n = x; });
+      if(!n) return;
+      n = {title: n.title, tags: n.tags};
+      (n.tags || []).forEach(function(t){ bump(t, 1.5, "r"); });
+      P.seen[key] = {r: nowMs()};
+      logEvent("r", "Читали «" + n.title + "»");
+      save();
+    }
+    function tagClick(tag){
+      if(!collecting()) return;
+      bump(tag, 1.5, "c");
+      logEvent("c", "Выбрали тег «" + tag + "»");
+      save();
+    }
+    function searchSignal(q){
+      if(!collecting()) return;
+      q = q.trim();
+      if(q.length < 3) return;
+      var low = q.toLowerCase(), toks = low.split(/\s+/).filter(function(k){ return k.length >= 2; }), seen = {}, hit = false;
+      recCandidates().concat(newsCandidates()).forEach(function(c){
+        c.tags.forEach(function(t){
+          if(seen[t]) return;
+          var tl = t.toLowerCase();
+          for(var i = 0; i < toks.length; i++){
+            if(tl.indexOf(toks[i]) > -1 || (tl.length >= 2 && toks[i].indexOf(tl) > -1)){ seen[t] = 1; bump(t, 1, "s"); hit = true; break; }
+          }
+        });
+      });
+      P.queries = P.queries.filter(function(x){ return x.q.toLowerCase() !== low; });
+      P.queries.unshift({q: q, t: nowMs()});
+      if(P.queries.length > 20) P.queries.length = 20;
+      logEvent("s", "Искали «" + q + "»");
+      save();
+    }
+
+    var drEls = null;
+    function ago(t){
+      var d = Math.floor((nowMs() - t) / DAY);
+      return d <= 0 ? "сегодня" : (d === 1 ? "вчера" : d + " " + plural(d, "день", "дня", "дней") + " назад");
+    }
+    function drawerBuild(){
+      if(drEls) return drEls;
+      var w = document.createElement("div");
+      w.innerHTML = '<div class="tags-ov" id="fmOv"></div><aside class="tags-dr" id="fmDr" role="dialog" aria-label="Мои интересы" aria-hidden="true">' +
+        '<div class="td-head"><h3>Мои интересы</h3><button type="button" class="td-x" id="fmDrClose" aria-label="Закрыть">×</button></div>' +
+        '<div class="fm-scroll" id="fmDrBody"></div>' +
+        '<div class="td-foot"><button type="button" class="fm-btn-reset" data-fm-act="reset">Сбросить профиль</button><span class="td-found"></span><button type="button" class="td-done" id="fmDrDone">Готово</button></div></aside>';
+      while(w.firstChild) document.body.appendChild(w.firstChild);
+      drEls = {ov: document.getElementById("fmOv"), dr: document.getElementById("fmDr"), body: document.getElementById("fmDrBody")};
+      drEls.ov.addEventListener("click", closeDrawer);
+      document.getElementById("fmDrClose").addEventListener("click", closeDrawer);
+      document.getElementById("fmDrDone").addEventListener("click", closeDrawer);
+      document.addEventListener("keydown", function(ev){ if(ev.key === "Escape" && drEls.dr.classList.contains("is-on")) closeDrawer(); });
+      return drEls;
+    }
+    function drawerRender(){
+      var ints = Object.keys(P.tags).map(function(t){ return [t, weight(t)]; }).filter(function(x){ return x[1] > 0.3 && !P.muted[x[0]]; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 10);
+      var mx = ints.length ? ints[0][1] : 1, words = ["", "редко", "иногда", "часто", "часто", "очень"];
+      var mu = Object.keys(P.muted);
+      drEls.body.innerHTML =
+        '<p class="fm-dr-intro">Всё хранится только в этом браузере и никуда не отправляется. Подбор строится по тому, что вы слушаете, читаете и ищете.</p>' +
+        '<button type="button" class="fm-sw' + (P.on ? " on" : "") + '" data-fm-act="toggle"><span>Подбирать материалы по моим интересам</span><span class="tg"></span></button>' +
+        '<div class="fm-h">Что вы любите</div>' +
+        (ints.length ? ints.map(function(i){
+          var l = levelOf(i[1], mx);
+          return '<div class="fm-row"><span class="n">' + escapeHtml(i[0]) + '</span><span class="bar"><i style="width:' + (l * 20) + '%"></i></span><span class="w">' + words[l] + '</span>' +
+                 '<button type="button" class="x" data-fm-mute="' + escapeHtml(i[0]) + '" title="Меньше про это" aria-label="Меньше про ' + escapeHtml(i[0]) + '">×</button></div>';
+        }).join("") : '<p class="fm-none">Пока пусто: слушайте записи, читайте новости, выбирайте теги.</p>') +
+        (mu.length ? '<div class="fm-h">Скрытые темы</div>' + mu.map(function(t){
+          return '<div class="fm-row"><span class="n">' + escapeHtml(t) + '</span><button type="button" class="back" data-fm-unmute="' + escapeHtml(t) + '">вернуть</button></div>';
+        }).join("") : "") +
+        '<div class="fm-h">Недавно</div>' +
+        (P.events.length ? P.events.slice(0, 6).map(function(e){
+          var ic = {l: "▶", r: "▤", s: "⌕", c: "#", x: "×"}[e.k] || "•";
+          return '<div class="fm-ev"><span class="ic">' + ic + '</span><span>' + escapeHtml(e.x) + '</span><span class="tm">' + ago(e.t) + '</span></div>';
+        }).join("") : '<p class="fm-none">Пока ничего.</p>') +
+        '<div class="fm-h">Ваши поисковые запросы</div>' +
+        (P.queries.length ? '<div class="fm-q">' + P.queries.slice(0, 8).map(function(q, i){
+          return '<button type="button" class="chip" data-fm-dq="' + i + '">' + escapeHtml(q.q) + " ×</button>";
+        }).join("") + "</div>" : '<p class="fm-none">Пока нет.</p>');
+    }
+    function openDrawer(){
+      if(typeof closeTagsPanel === "function") closeTagsPanel(true);
+      var e = drawerBuild();
+      drawerRender();
+      e.dr.setAttribute("aria-hidden", "false");
+      document.body.classList.add("tags-open");
+      e.ov.classList.add("is-on"); e.dr.classList.add("is-on");
+    }
+    function closeDrawer(){
+      if(!drEls) return;
+      drEls.dr.classList.remove("is-on"); drEls.ov.classList.remove("is-on");
+      drEls.dr.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("tags-open");
+    }
+    function afterProfileChange(){
+      save(); build(); render(); refreshCount();
+      if(drEls && drEls.dr.classList.contains("is-on")) drawerRender();
+      syncHero();
+    }
+
+    document.addEventListener("click", function(e){
+      var t = e.target;
+      if(!t || !t.closest) return;
+      var sw = t.closest("[data-fm]");
+      if(sw && !t.closest("[data-fm-skip]")){ setMode(sw.getAttribute("data-fm")); return; }
+      var sk = t.closest("[data-fm-skip]");
+      if(sk){ e.stopPropagation(); skip(sk.getAttribute("data-fm-skip")); return; }
+      var mu = t.closest("[data-fm-mute]");
+      if(mu){ P.muted[mu.getAttribute("data-fm-mute")] = nowMs(); logEvent("x", "Меньше про «" + mu.getAttribute("data-fm-mute") + "»"); afterProfileChange(); return; }
+      var um = t.closest("[data-fm-unmute]");
+      if(um){ delete P.muted[um.getAttribute("data-fm-unmute")]; afterProfileChange(); return; }
+      var dq = t.closest("[data-fm-dq]");
+      if(dq){ P.queries.splice(+dq.getAttribute("data-fm-dq"), 1); afterProfileChange(); return; }
+      var act = t.closest("[data-fm-act]");
+      if(act){
+        var a = act.getAttribute("data-fm-act");
+        if(a === "mine") openDrawer();
+        else if(a === "skip"){ var x = queue[qIndex(state.currentId)]; if(x) skip(x.c.key); }
+        else if(a === "why"){ whyMore.hidden = !whyMore.hidden; var cx = queue[qIndex(state.currentId)]; if(cx){ var m = cx.c.tags.map(function(g){ var l = weight(g); return g + (l > 0.05 ? " (учтено)" : ""); }); whyMore.textContent = "Теги записи: " + m.join(", ") + ". Подбор считает совпадения с тем, что вы слушали, читали и искали, добавляет свежесть и иногда предлагает что-то новое."; } }
+        else if(a === "refresh"){ playedNow = {}; build(); render(); }
+        else if(a === "off"){ P.on = false; closeDrawer(); afterProfileChange(); }
+        else if(a === "on"){ P.on = true; afterProfileChange(); }
+        else if(a === "toggle"){ P.on = !P.on; afterProfileChange(); }
+        else if(a === "reset"){
+          if(window.confirm("Сбросить всё, что подбор запомнил о вас в этом браузере?")){
+            var on = P.on; P = {v: 1, on: on, tags: {}, seen: {}, hidden: {}, muted: {}, queries: [], events: []}; playedNow = {};
+            afterProfileChange();
+          }
+        }
+        return;
+      }
+      var op = t.closest("[data-fm-open]");
+      if(op){
+        var kind = op.getAttribute("data-fm-open"), id = op.getAttribute("data-id");
+        if(kind === "rec"){
+          var q = qIndex(id);
+          if(q < 0){ build(); q = qIndex(id); }
+          selectTrack(id, true);
+        } else {
+          readNews(id);
+          closeDrawer();
+          location.hash = "#/news";
+          setTimeout(function(){ showLibrary("news", id); }, 40);
+        }
+      }
+    });
+
+    var tx = null;
+    hero.addEventListener("touchstart", function(e){ tx = e.touches.length === 1 ? {x: e.touches[0].clientX, y: e.touches[0].clientY} : null; }, {passive: true});
+    hero.addEventListener("touchend", function(e){
+      if(!tx || !e.changedTouches.length) return;
+      var dx = e.changedTouches[0].clientX - tx.x, dy = e.changedTouches[0].clientY - tx.y;
+      tx = null;
+      if(Math.abs(dx) > 70 && Math.abs(dy) < 45){ setMode(dx < 0 ? "me" : "air"); }
+    }, {passive: true});
+
+    audioEl.addEventListener("timeupdate", listenTick);
+    var sIn = document.getElementById("searchInput"), sTimer = null;
+    if(sIn){
+      sIn.addEventListener("input", function(){
+        clearTimeout(sTimer);
+        sTimer = setTimeout(function(){ searchSignal(sIn.value); }, 1600);
+      });
+    }
+    setInterval(function(){
+      if(document.hidden || !collecting()) return;
+      var rows = document.querySelectorAll(".news-row[data-id]"), vh = window.innerHeight;
+      Array.prototype.forEach.call(rows, function(el){
+        var r = el.getBoundingClientRect();
+        if(!r.height) return;
+        var vis = Math.min(r.bottom, vh) - Math.max(r.top, 0), mid = r.top + r.height / 2;
+        if(vis >= Math.min(r.height, vh) * 0.6 && mid > vh * 0.2 && mid < vh * 0.8){
+          var id = el.getAttribute("data-id");
+          dwell[id] = (dwell[id] || 0) + 1;
+          if(dwell[id] === 6) readNews(id);
+        }
+      });
+    }, 1000);
+
+    forMe = {
+      active: function(){ return mode === "me" && P.on; },
+      step: function(dir){ return mode === "me" ? stepQueue(dir) : false; },
+      afterRender: function(){ syncHero(); },
+      dataChanged: function(){ refreshCount(); if(mode === "me"){ build(); render(); syncHero(); } },
+      tag: tagClick
+    };
+    refreshCount();
   })();
 
   /* ================= Контакт редакции =================
