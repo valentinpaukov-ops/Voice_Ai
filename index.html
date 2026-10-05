@@ -1692,11 +1692,12 @@
        центру «Порядок» повисал между строками. Прижимаем к верху — тогда
        он всегда стоит на одной линии с первым рядом тегов. */
     display:flex;align-items:flex-start;justify-content:space-between;
-    gap:18px;flex-wrap:wrap;margin:18px 0 26px;
+    gap:15px;flex-wrap:nowrap;margin:18px 0 26px;
   }
   .lib-controls .filter-row{margin:0;flex:1;min-width:0;}
-  .sort-wrap{display:inline-flex;align-items:center;gap:9px;flex:none;min-height:34px;}
+  .sort-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:none;}
   .sort-wrap > span{
+    height:27px;display:flex;align-items:center;
     font-family:var(--font-mono);font-size:10px;text-transform:uppercase;
     letter-spacing:.06em;color:var(--text-dim);
   }
@@ -1705,15 +1706,15 @@
     background:var(--bg-elevated);
     border:1px solid var(--border);border-radius:999px;
     color:var(--text);cursor:pointer;
-    font-family:var(--font-body);font-size:13px;
-    padding:7px 30px 7px 14px;outline:none;
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    height:27px;box-sizing:border-box;padding:0 30px 0 13px;outline:none;
     background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat:no-repeat;background-position:right 10px center;background-size:13px;
+    background-repeat:no-repeat;background-position:right 10px center;background-size:12px;
   }
   .sort-wrap select:hover, .sort-wrap select:focus{border-color:var(--accent);}
   @media (max-width:560px){
-    .lib-controls{align-items:stretch;}
-    .sort-wrap{justify-content:space-between;}
+    .lib-controls{flex-direction:column;align-items:stretch;}
+    .sort-wrap{flex-direction:row;align-items:center;justify-content:space-between;}
   }
 
   .lib-count{
@@ -1784,7 +1785,6 @@
     body.tags-open{padding-right:0;padding-bottom:62vh;}
     .tags-dr{top:auto;left:0;right:0;width:auto;height:62vh;border-left:0;border-top:1px solid var(--border);border-radius:16px 16px 0 0;transform:translateY(102%);box-shadow:0 -12px 36px rgba(0,0,0,.28);}
   }
-  @media (max-width:560px){ .lib-controls .filter-row{flex:1 1 100%;} }
   @media (prefers-reduced-motion:reduce){ .tags-dr,.tags-ov,body.tags-open{transition:none;} }
   .lib-empty{padding:30px 4px;color:var(--text-dim);font-size:14px;}
   #libraryList .media-grid{margin-top:4px;}
@@ -4020,14 +4020,24 @@
       if(more && !instant) more.focus({preventScroll: true});
     }, 270);
   }
+  function libRefit(){
+    var lib = document.getElementById("viewLibrary");
+    if(libFilterType && lib && !lib.hidden) renderLibraryFilters(libFilterType);
+  }
   var tagsResizeTimer = null;
   window.addEventListener("resize", function(){
     clearTimeout(tagsResizeTimer);
-    tagsResizeTimer = setTimeout(function(){
-      var lib = document.getElementById("viewLibrary");
-      if(libFilterType && lib && !lib.hidden) renderLibraryFilters(libFilterType);
-    }, 150);
+    tagsResizeTimer = setTimeout(libRefit, 150);
   });
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(libRefit);
+  if(document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", libRefit);
+  if(window.ResizeObserver){
+    var libFiltersW = 0;
+    new ResizeObserver(function(es){
+      var w = Math.round(es[0].contentRect.width);
+      if(Math.abs(w - libFiltersW) > 1){ libFiltersW = w; libRefit(); }
+    }).observe(document.getElementById("libFilters"));
+  }
   window.addEventListener("hashchange", function(){ closeTagsPanel(true); });
 
   /* Сортировка списка раздела.
