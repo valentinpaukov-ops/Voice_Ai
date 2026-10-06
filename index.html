@@ -453,6 +453,9 @@
   }
   .skip-btn:hover{border-color:var(--accent);color:var(--accent-strong);transform:scale(1.06);}
   .skip-btn svg{width:18px;height:18px;}
+  .mode-btn{position:relative;color:var(--text-dim);}
+  .mode-btn.is-on{color:var(--accent-strong);border-color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent);}
+  .mode-btn.is-on:after,.pb-mode.is-on:after{content:"";position:absolute;bottom:4px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--accent-strong);}
 
   .vu{
     display:flex;
@@ -1855,6 +1858,21 @@
   .fm-foot button{background:none;border:0;padding:0;font:inherit;color:var(--text-dim);text-decoration:underline;cursor:pointer;}
   .fm-foot .rs{color:#e58a9d;}
   :root[data-theme="light"] .fm-foot .rs{color:#8c1d3a;}
+  .fm-hist{margin:30px 0 8px;}
+  .fm-hhead h3{margin:0;font-size:26px;text-transform:uppercase;}
+  .fm-hhead p{margin:6px 0 14px;font-size:14px;color:var(--text-dim);}
+  .fm-hgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
+  .fm-hrow{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border);border-radius:12px;background:var(--bg-elevated);padding:12px 14px;}
+  .fm-hrow .ic{flex:none;width:22px;height:22px;border-radius:50%;background:color-mix(in srgb, var(--accent) 16%, transparent);color:var(--accent-strong);display:flex;align-items:center;justify-content:center;font-size:11px;font-family:var(--font-mono);margin-top:1px;}
+  .fm-hrow .bd{flex:1;min-width:0;}
+  .fm-hrow .tt{font-size:14px;line-height:1.4;overflow-wrap:anywhere;}
+  .fm-hrow .tt b{color:var(--text-dim);font-weight:600;}
+  .fm-hrow .n{font-style:normal;font-size:11px;font-family:var(--font-mono);color:var(--accent-strong);margin-left:4px;}
+  .fm-hrow .cr{margin-top:4px;font-size:12px;color:var(--text-dim);overflow-wrap:anywhere;}
+  .fm-hrow .tm{flex:none;font-size:11px;color:var(--text-dim);white-space:nowrap;margin-top:2px;}
+  .fm-hrow .go{flex:none;align-self:center;background:none;border:1px solid var(--border);border-radius:999px;color:var(--accent-strong);font-size:12px;padding:5px 11px;cursor:pointer;white-space:nowrap;}
+  .fm-hrow .go:hover{border-color:var(--accent);}
+  @media (max-width:700px){ .fm-hgrid{grid-template-columns:1fr;} .fm-hrow{flex-wrap:wrap;} .fm-hrow .go{margin-left:34px;} }
   .fm-dr-intro{margin:6px 20px 0;font-size:13px;color:var(--text-dim);line-height:1.5;}
   .fm-sw{margin:14px 20px 4px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:14px;cursor:pointer;background:none;color:var(--text);width:calc(100% - 40px);font-family:inherit;text-align:left;}
   .fm-sw .tg{flex:none;width:42px;height:24px;border-radius:24px;background:var(--border);position:relative;}
@@ -1912,6 +1930,9 @@
   }
   .pb-btn svg{width:18px;height:18px;}
   .pb-btn:disabled{opacity:.35;cursor:default;}
+  .pb-mode{position:relative;color:var(--text-dim);}
+  .pb-mode.is-on{color:var(--accent-strong);}
+  .pb-mode.is-on:after{bottom:0;}
   .pb-play{
     width:36px;height:36px;border-radius:50%;
     background:var(--accent);color:var(--accent-ink);
@@ -2014,7 +2035,7 @@
     /* Плеер в шапке: четыре кнопки и полоски в один ряд по центру —
        прижатые влево они выглядели случайно брошенными. */
     .hero-controls{justify-content:center;gap:14px;}
-    .hero-nav-group{justify-content:center;}
+    .hero-nav-group{justify-content:center;flex-wrap:wrap;}
     .vu{justify-content:center;width:100%;}
     .topbar .search-wrap{display:none;}
     .menu-btn{display:flex;}
@@ -2177,6 +2198,10 @@
             <button class="skip-btn" id="heroNext" type="button" aria-label="Следующий материал в эфире" title="Следующий материал">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM6 6l8.5 6L6 18z"/></svg>
             </button>
+            <button class="skip-btn mode-btn" id="heroShuffle" type="button" aria-pressed="false"
+                    aria-label="Случайный порядок" title="Случайный порядок: выключен"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+            <button class="skip-btn mode-btn" id="heroRepeat" type="button" aria-pressed="false"
+                    aria-label="Повтор одной записи" title="Повтор одной записи: выключен"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z"/></svg></button>
             <button class="skip-btn hand-btn" id="heroHandoff" type="button"
                     aria-label="Продолжить на телефоне" title="Продолжить на телефоне">
               <svg viewBox="0 0 24 24" fill="currentColor">
@@ -2690,6 +2715,7 @@
 
     <div class="pb-controls">
       <div class="pb-buttons">
+        <button class="pb-btn pb-mode" id="pbShuffle" type="button" aria-pressed="false" aria-label="Случайный порядок" title="Случайный порядок: выключен"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
         <button class="pb-btn" id="pbPrev" aria-label="Предыдущий трек">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM20 6L10 12l10 6z"/></svg>
         </button>
@@ -2700,6 +2726,7 @@
         <button class="pb-btn" id="pbNext" aria-label="Следующий трек">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM4 6l10 6-10 6z"/></svg>
         </button>
+        <button class="pb-btn pb-mode" id="pbRepeat" type="button" aria-pressed="false" aria-label="Повтор одной записи" title="Повтор одной записи: выключен"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z"/></svg></button>
       </div>
       <div class="pb-seek-row">
         <span class="pb-time tabular" id="pbElapsed">00:00</span>
@@ -3501,6 +3528,10 @@
   }
 
   function selectTrack(id, autoplay){
+    if(state.currentId && state.currentId !== id && !histMute){
+      playHistory.push(state.currentId);
+      if(playHistory.length > 50) playHistory.shift();
+    }
     state.currentId = id;
     var tr = getTrack(id);
     audioEl.pause();
@@ -3584,14 +3615,65 @@
     }
   }
 
-  function advanceNext(){
+  var playMode = {shuffle: false, repeat: false};
+  try{
+    var storedMode = JSON.parse(localStorage.getItem("voiceai_playmode") || "null");
+    if(storedMode){ playMode.shuffle = !!storedMode.shuffle; playMode.repeat = !!storedMode.repeat; }
+  }catch(e){}
+  var playHistory = [], histMute = false, shuffleRound = {sig: "", played: {}};
+
+  function renderPlayMode(){
+    [["heroShuffle", "pbShuffle", "shuffle", "Случайный порядок"], ["heroRepeat", "pbRepeat", "repeat", "Повтор одной записи"]].forEach(function(m){
+      var on = !!playMode[m[2]];
+      [m[0], m[1]].forEach(function(id){
+        var b = document.getElementById(id);
+        if(!b) return;
+        b.classList.toggle("is-on", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+        b.setAttribute("title", m[3] + ": " + (on ? "включён" : "выключен"));
+      });
+    });
+  }
+  function togglePlayMode(key){
+    playMode[key] = !playMode[key];
+    try{ localStorage.setItem("voiceai_playmode", JSON.stringify(playMode)); }catch(e){}
+    if(key === "shuffle") shuffleRound = {sig: "", played: {}};
+    renderPlayMode();
+  }
+  function pickShuffle(ids, curId){
+    var sig = ids.slice().sort().join("|");
+    if(shuffleRound.sig !== sig) shuffleRound = {sig: sig, played: {}};
+    shuffleRound.played[curId] = true;
+    var pool = ids.filter(function(id){ return !shuffleRound.played[id] && id !== curId; });
+    if(!pool.length){
+      shuffleRound.played = {};
+      shuffleRound.played[curId] = true;
+      pool = ids.filter(function(id){ return id !== curId; });
+    }
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : curId;
+  }
+  function advanceNext(auto){
+    if(auto === true && playMode.repeat){
+      audioEl.currentTime = 0;
+      playCurrent();
+      return;
+    }
     if(typeof forMe !== "undefined" && forMe && forMe.step(1)) return;
     if(tracks.length === 0) return;
-    var idx = currentIndex();
-    var next = tracks[(idx + 1 + tracks.length) % tracks.length];
+    var idx = currentIndex(), next;
+    if(playMode.shuffle && tracks.length > 1){
+      var nid = pickShuffle(tracks.map(function(t){ return t.id; }), state.currentId);
+      next = getTrack(nid) || tracks[(idx + 1 + tracks.length) % tracks.length];
+    } else {
+      next = tracks[(idx + 1 + tracks.length) % tracks.length];
+    }
     selectTrack(next.id, true);
   }
   function goPrev(){
+    if(playMode.shuffle && playHistory.length){
+      var back = playHistory.pop();
+      if(getTrack(back)){ histMute = true; selectTrack(back, true); histMute = false; return; }
+    }
     if(typeof forMe !== "undefined" && forMe && forMe.step(-1)) return;
     if(tracks.length === 0) return;
     var idx = currentIndex();
@@ -4464,6 +4546,38 @@
   }
   function normalize(str){ return (str||"").toLowerCase().replace(/ё/g,"е"); }
 
+  var TR_PAIRS = [["sch", "щ"], ["sh", "ш"], ["ch", "ч"], ["zh", "ж"], ["kh", "х"], ["ts", "ц"], ["th", "т"], ["ph", "ф"], ["ck", "к"], ["ee", "и"], ["oo", "у"], ["ya", "я"], ["yu", "ю"], ["yo", "е"]];
+  var TR_ONE = {a: "а", b: "б", c: "к", d: "д", e: "е", f: "ф", g: "г", h: "х", i: "и", j: "ж", k: "к", l: "л", m: "м", n: "н", o: "о", p: "п", q: "к", r: "р", s: "с", t: "т", u: "у", v: "в", w: "в", x: "кс", y: "и", z: "з"};
+  function translitRu(s){
+    var out = "", i = 0, d, hit;
+    while(i < s.length){
+      hit = null;
+      for(d = 0; d < TR_PAIRS.length; d++){ if(s.substr(i, TR_PAIRS[d][0].length) === TR_PAIRS[d][0]){ hit = TR_PAIRS[d]; break; } }
+      if(hit){ out += hit[1]; i += hit[0].length; continue; }
+      out += TR_ONE[s.charAt(i)] !== undefined ? TR_ONE[s.charAt(i)] : s.charAt(i);
+      i++;
+    }
+    return out;
+  }
+  function stemKey(w){
+    w = normalize(w).replace(/[^a-zа-я0-9]/g, "");
+    if(!w) return "";
+    if(/[a-z]/.test(w)) w = translitRu(w);
+    return w.length > 5 ? w.slice(0, 5) : w;
+  }
+  function stemMatch(a, b){
+    if(!a || !b) return false;
+    if(a.length < 3 || b.length < 3) return a === b;
+    if(a.indexOf(b) === 0 || b.indexOf(a) === 0) return true;
+    return a.length >= 5 && b.length >= 5 && a.slice(0, 4) === b.slice(0, 4);
+  }
+  function wordTokens(text){
+    var out = [], re = /[A-Za-zА-Яа-яЁё0-9]+/g, m;
+    text = text || "";
+    while((m = re.exec(text))){ out.push({raw: m[0], key: stemKey(m[0])}); }
+    return out;
+  }
+
   function cleanText(el){ return el ? el.textContent.replace(/\s+/g," ").trim() : ""; }
   function closestEl(el, sel){
     if(!el) return null;
@@ -4586,6 +4700,9 @@
 
     var idx = buildSearchIndex();
     var results = [];
+    var qSets = candidates.map(function(c){
+      return c.split(/\s+/).map(stemKey).filter(function(k){ return k.length >= 3; });
+    }).filter(function(a){ return a.length; });
     // вес поля: чем меньше, тем выше результат в выдаче
     var WEIGHT = {title:0, tag:1, snippet:2, extra:3};
     idx.forEach(function(item){
@@ -4595,7 +4712,7 @@
         ["snippet", normalize(item.snippet)],
         ["extra",   normalize(item.extra)]
       ];
-      var matched = null, field = null;
+      var matched = null, field = null, fuzzy = false;
       for(var i=0;i<candidates.length && !matched;i++){
         for(var f=0; f<fields.length; f++){
           if(fields[f][1] && fields[f][1].indexOf(candidates[i])!==-1){
@@ -4603,9 +4720,25 @@
           }
         }
       }
-      if(matched){ results.push({item:item, q:matched, field:field}); }
+      if(!matched && qSets.length){
+        for(var f2 = 0; f2 < fields.length && !matched; f2++){
+          if(!fields[f2][1]) continue;
+          var toks = wordTokens(fields[f2][1]);
+          for(var s2 = 0; s2 < qSets.length && !matched; s2++){
+            var qs = qSets[s2], first = null;
+            var okAll = qs.every(function(qt){
+              for(var ti = 0; ti < toks.length; ti++){
+                if(stemMatch(qt, toks[ti].key)){ if(!first) first = toks[ti].raw; return true; }
+              }
+              return false;
+            });
+            if(okAll && first){ matched = normalize(first); field = fields[f2][0]; fuzzy = true; }
+          }
+        }
+      }
+      if(matched){ results.push({item:item, q:matched, field:field, fuzzy:!!fuzzy}); }
     });
-    results.sort(function(a,b){ return WEIGHT[a.field] - WEIGHT[b.field]; });
+    results.sort(function(a,b){ return (WEIGHT[a.field] - WEIGHT[b.field]) || ((a.fuzzy ? 1 : 0) - (b.fuzzy ? 1 : 0)); });
     return results.slice(0,8);
   }
 
@@ -4742,10 +4875,13 @@
 
   heroPlayBtn.addEventListener("click", togglePlay);
   pbPlayBtn.addEventListener("click", togglePlay);
-  document.getElementById("pbNext").addEventListener("click", advanceNext);
+  document.getElementById("pbNext").addEventListener("click", function(){ advanceNext(false); });
   document.getElementById("pbPrev").addEventListener("click", goPrev);
-  document.getElementById("heroNext").addEventListener("click", advanceNext);
+  document.getElementById("heroNext").addEventListener("click", function(){ advanceNext(false); });
   document.getElementById("heroPrev").addEventListener("click", goPrev);
+  ["heroShuffle", "pbShuffle"].forEach(function(id){ document.getElementById(id).addEventListener("click", function(){ togglePlayMode("shuffle"); }); });
+  ["heroRepeat", "pbRepeat"].forEach(function(id){ document.getElementById(id).addEventListener("click", function(){ togglePlayMode("repeat"); }); });
+  renderPlayMode();
 
   seek.addEventListener("input", function(){
     var tr = getTrack(state.currentId);
@@ -4828,7 +4964,7 @@
 
   audioEl.addEventListener("play", function(){ setPlayingUI(true); });
   audioEl.addEventListener("pause", function(){ setPlayingUI(false); });
-  audioEl.addEventListener("ended", advanceNext);
+  audioEl.addEventListener("ended", function(){ advanceNext(true); });
   audioEl.addEventListener("timeupdate", function(){ updateProgressFromAudio(); saveResume(); });
   audioEl.addEventListener("loadedmetadata", function(){
     var tr = getTrack(state.currentId);
@@ -6701,11 +6837,11 @@
     var dwell = {};
 
     function loadProfile(){
-      try{
-        var o = JSON.parse(localStorage.getItem(KEY) || "null");
-        if(o && o.v === 1) return o;
-      }catch(e){}
-      return {v: 1, on: true, tags: {}, seen: {}, hidden: {}, muted: {}, queries: [], events: []};
+      var o = null;
+      try{ o = JSON.parse(localStorage.getItem(KEY) || "null"); }catch(e){}
+      if(!o || o.v !== 1) o = {v: 1, on: true, tags: {}, seen: {}, hidden: {}, muted: {}, queries: [], events: []};
+      o.kw = o.kw || {}; o.kmuted = o.kmuted || {};
+      return o;
     }
     function save(){ try{ localStorage.setItem(KEY, JSON.stringify(P)); }catch(e){} }
     function nowMs(){ return Date.now(); }
@@ -6716,9 +6852,20 @@
       o.w = Math.max(0, decay(o.w, o.t) + inc); o.t = nowMs();
       if(inc > 0) o[src] = (o[src] || 0) + 1;
     }
-    function logEvent(kind, text){
-      P.events.unshift({k: kind, x: text, t: nowMs()});
-      if(P.events.length > 30) P.events.length = 30;
+    function logEvent(kind, text, extra){
+      extra = extra || {};
+      var key = kind + "|" + (extra.id || extra.q || extra.tag || text), found = -1, ev;
+      P.events.forEach(function(e, i){ if(found < 0 && e.key === key) found = i; });
+      if(found > -1){
+        ev = P.events.splice(found, 1)[0];
+        ev.x = text; ev.t = nowMs();
+        if(!extra.noCount) ev.n = (ev.n || 1) + 1;
+        if(extra.cr && extra.cr.length) ev.cr = extra.cr;
+      } else {
+        ev = {k: kind, x: text, t: nowMs(), key: key, n: 1, id: extra.id, q: extra.q, tag: extra.tag, cr: extra.cr || []};
+      }
+      P.events.unshift(ev);
+      if(P.events.length > 40) P.events.length = 40;
     }
     function collecting(){ return P.on && !isAdmin; }
     function tagsOf(tr){ return (tr.tags && tr.tags.length) ? tr.tags : (tr.tag ? [tr.tag] : []); }
@@ -6729,49 +6876,109 @@
     }
     function short(s, n){ s = String(s || "").replace(/\s+/g, " ").trim(); return s.length <= n ? s : s.slice(0, n).replace(/\s+\S*$/, "") + "…"; }
 
+    var KW_STOP = {};
+    ("этот этого этой этих такой когда чтобы который которая которое которые также более после перед между через только очень всех свой своих может могут будет будут были было быть есть если или для при про над под без его они она оно вас нас мне вам нам что как где кто все тоже ещё уже нужно можно новый новая новое новые года году годы день дня дней время итоги обзор запущен запущена запущено запуск ваш ваша ваше ваши наш наша наше наши этом этим того тому тем том там тут здесь чем чего").split(" ").forEach(function(w){ KW_STOP[w] = 1; });
+    var GENERIC_TAGS = {"voice ai": 1};
+    var idfTag = function(){ return 1; }, idfKw = function(){ return 1; };
+    function titleKeys(title){
+      var seen = {}, out = [];
+      wordTokens(title).forEach(function(t){
+        var w = normalize(t.raw);
+        if(w.length < 4 || /^\d+$/.test(w) || KW_STOP[w] || t.key.length < 3 || seen[t.key]) return;
+        seen[t.key] = 1; out.push({k: t.key, l: t.raw});
+      });
+      return out;
+    }
+    function descKeys(text){
+      var seen = {}, out = [];
+      wordTokens(String(text || "").slice(0, 400)).forEach(function(t){
+        var w = normalize(t.raw);
+        if(w.length < 5 || /^\d+$/.test(w) || KW_STOP[w] || t.key.length < 3 || seen[t.key]) return;
+        seen[t.key] = 1; out.push(t.key);
+      });
+      return out;
+    }
+    function kwWeight(k){ var o = P.kw[k]; return o ? decay(o.w, o.t) : 0; }
+    function bumpKw(items, inc, src, qlabel){
+      items.forEach(function(x){
+        var o = P.kw[x.k] || (P.kw[x.k] = {w: 0, t: nowMs(), l: x.l || "", q: "", c: {l: 0, r: 0, s: 0}});
+        o.w = Math.max(0, decay(o.w, o.t) + inc); o.t = nowMs();
+        if(x.l && !o.l) o.l = x.l;
+        if(inc > 0){ o.c[src] = (o.c[src] || 0) + 1; if(src === "s" && qlabel) o.q = qlabel; }
+      });
+      var keys = Object.keys(P.kw);
+      if(keys.length > 80){
+        keys.sort(function(a, b){ return kwWeight(a) - kwWeight(b); });
+        keys.slice(0, keys.length - 80).forEach(function(k){ delete P.kw[k]; });
+      }
+    }
+    function kwLabel(k, fallback){ var o = P.kw[k] || {}; return o.l || o.q || fallback || k; }
+    function quoted(list){ return list.map(function(x){ return "«" + x + "»"; }); }
+    function lsRecent(id){
+      var s = P.seen[id], cut = nowMs() - 7 * DAY;
+      return s && s.ls ? s.ls.filter(function(t){ return t > cut; }) : [];
+    }
+    function isFav(id){ return lsRecent(id).length >= 3; }
+    function lastListen(id){ var s = P.seen[id]; return s && s.ls && s.ls.length ? s.ls[0] : 0; }
+    function mk(c){
+      c.tk = titleKeys(c.title); c.dk = descKeys(c.desc); c.tkSet = {};
+      c.tk.forEach(function(x){ c.tkSet[x.k] = 1; });
+      return c;
+    }
+
     function recCandidates(){
       var today = todayStr(), src = (typeof allTracks !== "undefined" && allTracks) ? allTracks : [];
       return src.filter(function(t){
         return !t.demo && !t.placeholder && t.file && t.day && t.day <= today && !isExpiredNow(t);
       }).map(function(t){
-        return {kind: "rec", key: t.id, id: t.id, sec: t.tag || "", title: t.title, desc: t.desc || "", tags: tagsOf(t), day: t.day, dur: t.dur || 0, host: t.host || "Voice Ai"};
+        return mk({kind: "rec", key: t.id, id: t.id, sec: t.tag || "", title: t.title, desc: t.desc || "", tags: tagsOf(t), day: t.day, dur: t.dur || 0, host: t.host || "Voice Ai"});
       });
     }
     function newsCandidates(){
       var list = [];
       try{ list = visibleNewsItems() || []; }catch(e){}
       return list.map(function(n){
-        return {kind: "news", key: "n:" + n.id, id: n.id, title: n.title, desc: n.text || "", tags: n.tags || [], day: newsDayKey(n) || "", important: !!n.important, date: n.date};
+        return mk({kind: "news", key: "n:" + n.id, id: n.id, title: n.title, desc: n.text || "", tags: n.tags || [], day: newsDayKey(n) || "", important: !!n.important, date: n.date});
       });
     }
     function muted(c){
-      for(var i = 0; i < c.tags.length; i++){ if(P.muted[c.tags[i]]) return true; }
+      var i;
+      for(i = 0; i < c.tags.length; i++){ if(P.muted[c.tags[i]]) return true; }
+      for(i = 0; i < c.tk.length; i++){ if(P.kmuted[c.tk[i].k]) return true; }
       return false;
     }
     function scoreOf(c){
-      var s = 0, best = [];
-      c.tags.forEach(function(t){ var w = weight(t); if(w > 0.05){ s += w; best.push([t, w]); } });
+      var s = 0, best = [], kw = 0, kbest = [];
+      c.tags.forEach(function(t){ var w = weight(t) * idfTag(t); if(w > 0.05){ s += w; best.push([t, w]); } });
       if(c.tags.length) s = s / Math.sqrt(c.tags.length);
-      var text = (c.title + " " + c.desc).toLowerCase(), q = 0;
-      qtoks.forEach(function(k){ if(text.indexOf(k) > -1) q++; });
-      var tagPart = s;
-      s += Math.min(q, 3) * 0.8;
+      c.tk.forEach(function(x){ var w = kwWeight(x.k) * idfKw(x.k); if(w > 0.05){ kw += w; kbest.push([x.k, w, x.l]); } });
+      c.dk.forEach(function(k){
+        if(c.tkSet[k]) return;
+        var w = 0.5 * kwWeight(k) * idfKw(k);
+        if(w > 0.05){ kw += w; kbest.push([k, w, ""]); }
+      });
+      kw = Math.min(kw, 4) * 0.9;
       var fresh = 0.6 * Math.exp(-ageDays(c.day) / 21);
-      s += fresh + (c.important ? 0.6 : 0);
       best.sort(function(a, b){ return b[1] - a[1]; });
-      return {s: s, tagPart: tagPart, best: best, q: q};
+      kbest.sort(function(a, b){ return b[1] - a[1]; });
+      return {s: s + kw + fresh + (c.important ? 0.6 : 0) + (c.again ? 0.5 : 0), tagPart: s, kwPart: kw, best: best, kbest: kbest};
     }
     function lastQuery(){ return P.queries.length ? P.queries[0].q : ""; }
     function reasonOf(c, sc, fresh){
       if(cold) return c.important ? "Важное для всех сотрудников" : "Свежее в компании";
+      if(c.again){ var n = lsRecent(c.key).length; return "Вы слушали это " + n + " " + plural(n, "раз", "раза", "раз") + " за неделю, послушать ещё раз"; }
       if(fresh) return "Новое для вас" + (c.tags[0] ? ": " + c.tags[0] : "");
-      if(!sc.best.length){
-        return sc.q ? "Вы искали «" + lastQuery() + "»" : "Свежее в компании";
+      if(sc.kbest.length && sc.kwPart >= sc.tagPart){
+        var k = sc.kbest[0][0], o = P.kw[k] || {c: {}}, src = "l", mx = -1;
+        ["l", "r", "s"].forEach(function(x){ if(((o.c || {})[x] || 0) > mx){ mx = (o.c || {})[x] || 0; src = x; } });
+        var lab = src === "s" ? (o.q || kwLabel(k, sc.kbest[0][2])) : kwLabel(k, sc.kbest[0][2]);
+        return (src === "s" ? "Вы искали «" : (src === "r" ? "Вы читали про «" : "Вы слушали «")) + lab + "»";
       }
-      var top = sc.best.slice(0, 2).map(function(x){ return x[0]; }), o = P.tags[top[0]] || {}, src = "l", mx = -1;
-      ["l", "r", "c", "s"].forEach(function(k){ if((o[k] || 0) > mx){ mx = o[k] || 0; src = k; } });
-      if(src === "s" && lastQuery()) return "Вы искали «" + lastQuery() + "»";
-      var lead = src === "l" ? "Вы слушали про " : (src === "r" ? "Вы читали про " : "Вы выбирали тег ");
+      if(!sc.best.length) return "Свежее в компании";
+      var top = sc.best.slice(0, 2).map(function(x){ return x[0]; }), o2 = P.tags[top[0]] || {}, src2 = "l", mx2 = -1;
+      ["l", "r", "c", "s"].forEach(function(x){ if((o2[x] || 0) > mx2){ mx2 = o2[x] || 0; src2 = x; } });
+      if(src2 === "s" && P.queries.length) return "Вы искали «" + P.queries[0].q + "»";
+      var lead = src2 === "l" ? "Вы слушали про " : (src2 === "r" ? "Вы читали про " : "Вы выбирали тег ");
       return lead + top.join(" и ");
     }
     function prepare(list, withFresh){
@@ -6781,8 +6988,8 @@
       });
       out.sort(function(a, b){ return b.sc.s - a.sc.s; });
       if(withFresh && !cold){
-        var known = out.filter(function(x){ return x.sc.tagPart > 0.05 || x.sc.q; });
-        var unknown = out.filter(function(x){ return !(x.sc.tagPart > 0.05 || x.sc.q); });
+        var known = out.filter(function(x){ return x.sc.tagPart > 0.05 || x.sc.kwPart > 0.05; });
+        var unknown = out.filter(function(x){ return !(x.sc.tagPart > 0.05 || x.sc.kwPart > 0.05); });
         if(known.length && unknown.length){
           var res = [], k = 0, u = 0, n = known.length + unknown.length;
           for(var i = 0; i < n; i++){
@@ -6796,22 +7003,35 @@
       return out;
     }
     function build(){
-      var cut = nowMs() - 14 * DAY;
-      qtoks = [];
-      P.queries.forEach(function(q){
-        if(q.t > cut) q.q.toLowerCase().split(/\s+/).forEach(function(k){ if(k.length >= 3) qtoks.push(k); });
+      var all = recCandidates().concat(newsCandidates()), nAll = all.length || 1, dfT = {}, dfK = {};
+      all.forEach(function(c){
+        c.tags.forEach(function(t){ dfT[t] = (dfT[t] || 0) + 1; });
+        var ks = {};
+        c.tk.forEach(function(x){ ks[x.k] = 1; });
+        c.dk.forEach(function(k){ ks[k] = 1; });
+        Object.keys(ks).forEach(function(k){ dfK[k] = (dfK[k] || 0) + 1; });
       });
-      var total = 0;
+      idfTag = function(t){
+        var f = 1 - (dfT[t] || 0) / nAll, v = Math.max(0.15, f * f);
+        return GENERIC_TAGS[String(t).toLowerCase()] ? Math.min(v, 0.1) : v;
+      };
+      idfKw = function(k){ return Math.max(0.25, 1 - (dfK[k] || 0) / nAll); };
+      var total = 0, ktotal = 0;
       Object.keys(P.tags).forEach(function(t){ total += weight(t); });
-      cold = total < 1 && !qtoks.length;
-      var rc = recCandidates().filter(function(c){
+      Object.keys(P.kw).forEach(function(k){ ktotal += kwWeight(k); });
+      cold = total < 1 && ktotal < 1;
+      var recAll = all.filter(function(c){ return c.kind === "rec"; });
+      var rc = recAll.filter(function(c){
         var s = P.seen[c.key];
-        return !P.hidden[c.key] && !muted(c) && !(s && s.d) && !playedNow[c.key];
+        if(P.hidden[c.key] || muted(c) || playedNow[c.key]) return false;
+        if(s && s.d){
+          if(isFav(c.key) && nowMs() - lastListen(c.key) > 3 * DAY){ c.again = true; return true; }
+          return false;
+        }
+        return true;
       });
-      if(!rc.length) rc = recCandidates().filter(function(c){ return !P.hidden[c.key] && !muted(c); });
-      var nc = newsCandidates().filter(function(c){
-        return !P.hidden[c.key] && !muted(c) && !P.seen[c.key];
-      });
+      if(!rc.length) rc = recAll.filter(function(c){ return !P.hidden[c.key] && !muted(c); });
+      var nc = all.filter(function(c){ return c.kind === "news" && !P.hidden[c.key] && !muted(c) && !P.seen[c.key]; });
       var rr = prepare(rc, true), nn = prepare(nc, true);
       queue = rr.map(function(x){ return {c: x.c, sc: x.sc, fresh: x.fresh, reason: reasonOf(x.c, x.sc, x.fresh)}; });
       var recCards = queue.slice(1, 3), newsCards = nn.slice(0, 4).map(function(x){ return {c: x.c, sc: x.sc, fresh: x.fresh, reason: reasonOf(x.c, x.sc, x.fresh)}; });
@@ -6821,10 +7041,9 @@
         if(b < newsCards.length) cards.push(newsCards[b++]);
         if(cards.length < 6 && a < recCards.length) cards.push(recCards[a++]);
       }
-      var lim = nowMs();
       mustItem = null;
-      newsCandidates().forEach(function(c){
-        if(c.important && ageDays(c.day) <= 14 && !(P.seen[c.key] && P.seen[c.key].r) && (!mustItem || c.day > mustItem.day)) mustItem = c;
+      all.forEach(function(c){
+        if(c.kind === "news" && c.important && ageDays(c.day) <= 14 && !(P.seen[c.key] && P.seen[c.key].r) && (!mustItem || c.day > mustItem.day)) mustItem = c;
       });
     }
     function qIndex(id){
@@ -6862,9 +7081,42 @@
 
     function levelOf(w, mx){ return Math.max(1, Math.min(5, Math.ceil(5 * w / mx))); }
     function topInterests(n){
-      var arr = Object.keys(P.tags).map(function(t){ return [t, weight(t)]; }).filter(function(x){ return x[1] > 0.3 && !P.muted[x[0]]; });
+      var arr = Object.keys(P.tags).map(function(t){ return [t, weight(t)]; }).filter(function(x){ return x[1] > 0.3 && !P.muted[x[0]] && !GENERIC_TAGS[String(x[0]).toLowerCase()]; });
       arr.sort(function(a, b){ return b[1] - a[1]; });
       return arr.slice(0, n);
+    }
+    function topKw(n){
+      var arr = Object.keys(P.kw).map(function(k){ return [k, kwWeight(k)]; }).filter(function(x){ return x[1] > 0.3 && !P.kmuted[x[0]]; });
+      arr.sort(function(a, b){ return b[1] - a[1]; });
+      return arr.slice(0, n);
+    }
+    function ago(t){
+      var d = Math.floor((nowMs() - t) / DAY);
+      return d <= 0 ? "сегодня" : (d === 1 ? "вчера" : d + " " + plural(d, "день", "дня", "дней") + " назад");
+    }
+    function histHtml(){
+      var ev = P.events.slice(0, 8);
+      var head = '<div class="fm-hist"><div class="fm-hhead"><h3>Вы смотрели и слушали</h3><p>Из этого строится подборка: что вы слушали, читали, искали и выбирали.</p></div>';
+      if(!ev.length) return head + '<p class="fm-none">Пока пусто: послушайте запись, прочитайте новость, поищите что-нибудь, и здесь появится то, на чём строится подборка.</p></div>';
+      var kinds = {l: "▶", r: "▤", s: "⌕", c: "#", x: "×"}, go = {l: "Ещё раз", r: "Открыть", s: "Искать снова", c: "Новости по тегу"};
+      return head + '<div class="fm-hgrid">' + ev.map(function(e, i){
+        var at = e.x.indexOf("«"), verb = at > 0 ? e.x.slice(0, at).trim() : e.x, rest = at > 0 ? e.x.slice(at) : "";
+        return '<div class="fm-hrow"><span class="ic">' + (kinds[e.k] || "•") + '</span><div class="bd"><div class="tt"><b>' + escapeHtml(verb) + '</b> ' + escapeHtml(rest) +
+          (e.n > 1 ? ' <i class="n">×' + e.n + '</i>' : '') + '</div>' +
+          (e.cr && e.cr.length ? '<div class="cr">Учтено: ' + e.cr.map(escapeHtml).join(" · ") + '</div>' : '') + '</div>' +
+          '<span class="tm">' + ago(e.t) + '</span>' +
+          (go[e.k] ? '<button type="button" class="go" data-fm-hist-go="' + i + '">' + go[e.k] + '</button>' : '') + '</div>';
+      }).join("") + '</div></div>';
+    }
+    function histGo(ev){
+      if(!ev) return;
+      closeDrawer();
+      if(ev.k === "l" && ev.id){ selectTrack(ev.id, true); window.scrollTo({top: 0, behavior: "smooth"}); }
+      else if(ev.k === "r" && ev.id){ location.hash = "#/news"; setTimeout(function(){ showLibrary("news", ev.id); }, 40); }
+      else if(ev.k === "s" && ev.q){
+        var si = document.getElementById("searchInput");
+        if(si){ si.value = ev.q; si.dispatchEvent(new Event("input", {bubbles: true})); si.focus(); }
+      } else if(ev.k === "c" && ev.tag){ libPickTag("news", ev.tag); }
     }
     function cardHtml(x){
       var c = x.c, mt = {};
@@ -6875,6 +7127,7 @@
       }).join("");
       var meta = c.kind === "rec" ? "▶ Запись · " + (c.dur ? fmt(c.dur) : "аудио") : "▤ Новость · " + (c.day ? humanDay(c.day) : "");
       if(x.fresh) meta = "✦ Новое для вас · " + meta.replace(/^[^ ]+ /, "");
+      if(c.again) meta = "↻ Послушать ещё раз · " + (c.dur ? fmt(c.dur) : "аудио");
       return '<article class="fm-card" data-fm-open="' + c.kind + '" data-id="' + escapeHtml(c.id) + '">' +
         '<div class="top"><span class="kind ' + (x.fresh ? "fresh" : (c.kind === "rec" ? "rec" : "")) + '">' + escapeHtml(meta) + '</span>' +
         '<button type="button" class="x" data-fm-skip="' + escapeHtml(c.key) + '" title="Не интересно" aria-label="Не интересно">×</button></div>' +
@@ -6889,13 +7142,15 @@
           '<div class="fm-empty">Подбор по интересам выключен, ничего не запоминается и ничего не подбирается. Включите его, чтобы здесь появились материалы, которые подходят именно вам.<br><button type="button" class="chip chip-more" data-fm-act="on">Включить подбор</button></div></div>';
         return;
       }
-      var ints = topInterests(5), mx = ints.length ? ints[0][1] : 1;
+      var ints = topInterests(5), kws = topKw(2), mx = Math.max(ints.length ? ints[0][1] : 0, kws.length ? kws[0][1] : 0, 1);
       var must = mustItem ? '<div class="fm-must" data-fm-open="news" data-id="' + escapeHtml(mustItem.id) + '"><span class="lb">Обязательное · для всех</span><span class="tt">' + escapeHtml(mustItem.title) + '</span><span class="go">важное от редакции · читать ›</span></div>' : "";
-      var intHtml = ints.length
-        ? '<div class="fm-int"><span>Мои интересы:</span>' + ints.map(function(i){
-            var l = levelOf(i[1], mx);
-            return '<button type="button" class="chip active" data-fm-act="mine">' + escapeHtml(i[0]) + '<i>' + "●".repeat(l) + "<span>" + "●".repeat(5 - l) + "</span></i></button>";
-          }).join("") + "</div>"
+      function chipHtml(label, w){
+        var l = levelOf(w, mx);
+        return '<button type="button" class="chip active" data-fm-act="mine">' + escapeHtml(label) + '<i>' + "●".repeat(l) + "<span>" + "●".repeat(5 - l) + "</span></i></button>";
+      }
+      var intHtml = ints.length || kws.length
+        ? '<div class="fm-int"><span>Мои интересы:</span>' + ints.map(function(i){ return chipHtml(i[0], i[1]); }).join("") +
+          kws.map(function(i){ return chipHtml("«" + kwLabel(i[0]) + "»", i[1]); }).join("") + "</div>"
         : '<div class="fm-int"><span>Пока вас мало знаю: слушайте, читайте, ищите и выбирайте теги, и подборка станет точнее.</span></div>';
       var grid = cards.length ? '<div class="fm-grid">' + cards.map(cardHtml).join("") + "</div>"
         : '<div class="fm-empty">Подходящих материалов пока нет: вы посмотрели или скрыли всё, что есть. Загляните позже.</div>';
@@ -6903,7 +7158,7 @@
         (cold ? "Свежее и важное в компании" : "Подобрано по тому, что вы слушали, читали и искали") + '</span><h2>Для меня</h2></div>' +
         '<div class="fm-tools"><button type="button" class="chip" data-fm-act="refresh">Обновить подборку</button>' +
         '<button type="button" class="chip chip-more" data-fm-act="mine">Мои интересы ›</button></div></div>' +
-        must + intHtml + grid +
+        must + intHtml + grid + histHtml() +
         '<p class="fm-foot">Подбор строится в вашем браузере и никуда не отправляется. <button type="button" data-fm-act="off">Выключить подбор</button> · <button type="button" class="rs" data-fm-act="reset">Сбросить профиль</button></p></div>';
     }
     function syncHero(){
@@ -6911,10 +7166,12 @@
       why.hidden = !inQ;
       if(inQ){
         var x = queue[qIndex(state.currentId)], matched = x.c.tags.filter(function(t){ return weight(t) > 0.05; });
+        var names = x.sc.kbest.slice(0, 2).map(function(b){ return "«" + kwLabel(b[0], b[2]) + "»"; });
+        var extra = matched.length || names.length ? ". Здесь совпало: " + matched.slice(0, 4).concat(names).join(", ") + "." : ".";
         whyText.textContent = cold
           ? "Вы только начали, поэтому показываем свежее и важное. Чем больше вы слушаете и читаете, тем точнее подборка."
           : (x.fresh ? "Редкий гость в ваших интересах: тема «" + (x.c.tags[0] || "новое") + "» вам пока не встречалась, поэтому предлагаем попробовать."
-                     : x.reason + (matched.length ? ". Здесь совпало: " + matched.slice(0, 4).join(", ") + "." : "."));
+                     : x.reason + extra);
         whyMore.hidden = true;
       }
       if(mode === "me") liveLabel.textContent = "Для меня · по моим интересам";
@@ -6950,8 +7207,13 @@
       if(!queue.length){ build(); if(!queue.length) return false; }
       var i = qIndex(state.currentId);
       if(dir > 0){
-        i = i < 0 ? 0 : i + 1;
-        if(i >= queue.length){ playedNow = {}; build(); render(); i = 0; }
+        if(playMode.shuffle && queue.length > 1){
+          i = qIndex(pickShuffle(queue.map(function(x){ return x.c.id; }), state.currentId));
+          if(i < 0) i = 0;
+        } else {
+          i = i < 0 ? 0 : i + 1;
+          if(i >= queue.length){ playedNow = {}; build(); render(); i = 0; }
+        }
       } else {
         if(audioEl.currentTime > 3){ audioEl.currentTime = 0; return true; }
         i = i <= 0 ? 0 : i - 1;
@@ -6966,7 +7228,7 @@
         P.hidden[key] = nowMs();
         var item = null;
         queue.concat(cards).forEach(function(x){ if(x.c.key === key) item = x.c; });
-        if(item) item.tags.forEach(function(t){ bump(t, -0.4, "l"); });
+        if(item){ item.tags.forEach(function(t){ bump(t, -0.4, "l"); }); bumpKw(item.tk.slice(0, 4), -0.4, "l"); }
         logEvent("x", "Скрыли «" + (item ? item.title : "материал") + "»");
       }
       save();
@@ -6988,19 +7250,29 @@
       if(!collecting() || mode === null) return;
       var tr = getTrack(state.currentId);
       if(!tr || tr.demo || !tr.file || audioEl.paused) return;
-      var ct = audioEl.currentTime;
+      var ct = audioEl.currentTime, dur = tr.dur || audioEl.duration || 0, need = dur && dur < 75 ? dur * 0.4 : 30;
       if(cur.id !== tr.id){ cur = {id: tr.id, acc: 0, last: ct, counted: false, done: false}; return; }
+      if(cur.counted && cur.acc >= need && ct < 5 && cur.last != null && cur.last > 10){ cur = {id: tr.id, acc: 0, last: ct, counted: false, done: false}; return; }
       if(cur.last != null && ct >= cur.last && ct - cur.last < 2.5) cur.acc += ct - cur.last;
       cur.last = ct;
-      var dur = tr.dur || audioEl.duration || 0, tags = tagsOf(tr);
-      var need = dur && dur < 75 ? dur * 0.4 : 30, k = (mode === "me" || playingOutsideAir()) ? 1 : 0.5;
+      var tags = tagsOf(tr), keys = titleKeys(tr.title).slice(0, 3);
+      var deliberate = mode === "me" || playingOutsideAir() || playMode.repeat, k = deliberate ? 1 : 0.5;
+      var credit = tags.filter(function(t){ return !GENERIC_TAGS[String(t).toLowerCase()]; }).slice(0, 3).concat(quoted(keys.slice(0, 2).map(function(x){ return x.l; })));
       var seen = P.seen[tr.id] || (P.seen[tr.id] = {});
       if(!cur.counted && cur.acc >= need){
         cur.counted = true; playedNow[tr.id] = 1;
+        seen.ls = seen.ls || [];
+        seen.ls.unshift(nowMs());
+        if(seen.ls.length > 12) seen.ls.length = 12;
         if(!(seen.l && nowMs() - seen.l < DAY)){
           tags.forEach(function(t){ bump(t, k, "l"); });
-          seen.l = nowMs();
-          logEvent("l", "Слушали «" + tr.title + "»");
+          bumpKw(keys, k, "l");
+          seen.l = nowMs(); seen.rp = null;
+          logEvent("l", "Слушали «" + tr.title + "»", {id: tr.id, cr: credit});
+        } else if(deliberate){
+          var day = todayStr(), rp = seen.rp && seen.rp.d === day ? seen.rp : (seen.rp = {d: day, n: 0});
+          if(rp.n < 3){ rp.n++; tags.forEach(function(t){ bump(t, 0.5, "l"); }); bumpKw(keys, 0.5, "l"); }
+          logEvent("l", "Слушали «" + tr.title + "»", {id: tr.id, cr: credit});
         }
         save();
       }
@@ -7008,7 +7280,8 @@
         cur.done = true;
         if(!(seen.d && nowMs() - seen.d < DAY)){
           tags.forEach(function(t){ bump(t, 1.5 * k, "l"); });
-          logEvent("l", "Дослушали «" + tr.title + "»");
+          bumpKw(keys, 1.5 * k, "l");
+          logEvent("l", "Дослушали «" + tr.title + "»", {id: tr.id, cr: credit, noCount: true});
         }
         seen.d = nowMs();
         save();
@@ -7016,56 +7289,54 @@
     }
     function readNews(id, strong){
       if(!collecting()) return;
-      var key = "n:" + id, was = P.seen[key];
-      if(was && was.r){
-        if(strong && !was.o){
-          var old = null;
-          newsCandidates().forEach(function(x){ if(String(x.id) === String(id)) old = x; });
-          if(old){ old.tags.forEach(function(t){ bump(t, 1, "r"); }); was.o = nowMs(); save(); }
-        }
-        return;
-      }
-      var n = null;
+      var key = "n:" + id, was = P.seen[key], n = null;
       newsCandidates().forEach(function(x){ if(String(x.id) === String(id)) n = x; });
       if(!n) return;
-      n = {title: n.title, tags: n.tags};
-      (n.tags || []).forEach(function(t){ bump(t, strong ? 2.5 : 1.5, "r"); });
+      var keys = n.tk.slice(0, 3);
+      if(was && was.r){
+        if(strong && !was.o){ n.tags.forEach(function(t){ bump(t, 1, "r"); }); bumpKw(keys, 1, "r"); was.o = nowMs(); save(); }
+        return;
+      }
+      n.tags.forEach(function(t){ bump(t, strong ? 2.5 : 1.5, "r"); });
+      bumpKw(keys, strong ? 2.5 : 1.5, "r");
       P.seen[key] = {r: nowMs(), o: strong ? nowMs() : 0};
-      logEvent("r", "Читали «" + n.title + "»");
+      logEvent("r", "Читали «" + n.title + "»", {id: String(id), cr: n.tags.filter(function(t){ return !GENERIC_TAGS[String(t).toLowerCase()]; }).slice(0, 3).concat(quoted(keys.slice(0, 2).map(function(x){ return x.l; })))});
       save();
     }
     function tagClick(tag){
       if(!collecting()) return;
       bump(tag, 1.5, "c");
-      logEvent("c", "Выбрали тег «" + tag + "»");
+      logEvent("c", "Выбрали тег «" + tag + "»", {tag: tag, cr: [tag]});
       save();
     }
     function searchSignal(q){
       if(!collecting()) return;
       q = q.trim();
       if(q.length < 3) return;
-      var low = q.toLowerCase(), toks = low.split(/\s+/).filter(function(k){ return k.length >= 2; }), seen = {}, hit = false;
+      var low = normalize(q), toks = q.split(/\s+/).filter(function(k){ return k.length >= 2; });
+      var qkeys = toks.map(function(x){ return {k: stemKey(x), l: x}; }).filter(function(x){ return x.k.length >= 3 && !KW_STOP[normalize(x.l)]; });
+      var seen = {}, credit = [];
       recCandidates().concat(newsCandidates()).forEach(function(c){
         c.tags.forEach(function(t){
           if(seen[t]) return;
-          var tl = t.toLowerCase();
+          var tl = normalize(t), tk = stemKey(t);
           for(var i = 0; i < toks.length; i++){
-            if(tl.indexOf(toks[i]) > -1 || (tl.length >= 2 && toks[i].indexOf(tl) > -1)){ seen[t] = 1; bump(t, 1, "s"); hit = true; break; }
+            var tn = normalize(toks[i]);
+            if(tl.indexOf(tn) > -1 || (tl.length >= 2 && tn.indexOf(tl) > -1) || (i < qkeys.length && stemMatch(qkeys[i].k, tk))){
+              seen[t] = 1; bump(t, 1, "s"); credit.push(t); break;
+            }
           }
         });
       });
-      P.queries = P.queries.filter(function(x){ return x.q.toLowerCase() !== low; });
+      qkeys.slice(0, 4).forEach(function(x){ bumpKw([x], 1.5, "s", x.l); credit.push("«" + kwLabel(x.k, x.l) + "»"); });
+      P.queries = P.queries.filter(function(x){ return normalize(x.q) !== low; });
       P.queries.unshift({q: q, t: nowMs()});
       if(P.queries.length > 20) P.queries.length = 20;
-      logEvent("s", "Искали «" + q + "»");
+      logEvent("s", "Искали «" + q + "»", {q: q, cr: credit.slice(0, 5)});
       save();
     }
 
     var drEls = null;
-    function ago(t){
-      var d = Math.floor((nowMs() - t) / DAY);
-      return d <= 0 ? "сегодня" : (d === 1 ? "вчера" : d + " " + plural(d, "день", "дня", "дней") + " назад");
-    }
     function drawerBuild(){
       if(drEls) return drEls;
       var w = document.createElement("div");
@@ -7082,25 +7353,35 @@
       return drEls;
     }
     function drawerRender(){
-      var ints = Object.keys(P.tags).map(function(t){ return [t, weight(t)]; }).filter(function(x){ return x[1] > 0.3 && !P.muted[x[0]]; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 10);
-      var mx = ints.length ? ints[0][1] : 1, words = ["", "редко", "иногда", "часто", "часто", "очень"];
-      var mu = Object.keys(P.muted);
+      var ints = Object.keys(P.tags).map(function(t){ return [t, weight(t)]; }).filter(function(x){ return x[1] > 0.3 && !P.muted[x[0]] && !GENERIC_TAGS[String(x[0]).toLowerCase()]; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 10);
+      var kws = Object.keys(P.kw).map(function(k){ return [k, kwWeight(k)]; }).filter(function(x){ return x[1] > 0.3 && !P.kmuted[x[0]]; }).sort(function(a, b){ return b[1] - a[1]; }).slice(0, 8);
+      var mx = Math.max(ints.length ? ints[0][1] : 0, kws.length ? kws[0][1] : 0, 1), words = ["", "редко", "иногда", "часто", "часто", "очень"];
+      var mu = Object.keys(P.muted), kmu = Object.keys(P.kmuted);
+      var favs = Object.keys(P.seen).filter(function(id){ return isFav(id) && getTrack(id); }).sort(function(a, b){ return lsRecent(b).length - lsRecent(a).length; }).slice(0, 4);
+      function row(label, w, attr, val, aria){
+        var l = levelOf(w, mx);
+        return '<div class="fm-row"><span class="n">' + escapeHtml(label) + '</span><span class="bar"><i style="width:' + (l * 20) + '%"></i></span><span class="w">' + words[l] + '</span>' +
+               '<button type="button" class="x" ' + attr + '="' + escapeHtml(val) + '" title="Меньше про это" aria-label="Меньше про ' + escapeHtml(aria) + '">×</button></div>';
+      }
       drEls.body.innerHTML =
         '<p class="fm-dr-intro">Всё хранится только в этом браузере и никуда не отправляется. Подбор строится по тому, что вы слушаете, читаете и ищете.</p>' +
         '<button type="button" class="fm-sw' + (P.on ? " on" : "") + '" data-fm-act="toggle"><span>Подбирать материалы по моим интересам</span><span class="tg"></span></button>' +
         '<div class="fm-h">Что вы любите</div>' +
-        (ints.length ? ints.map(function(i){
-          var l = levelOf(i[1], mx);
-          return '<div class="fm-row"><span class="n">' + escapeHtml(i[0]) + '</span><span class="bar"><i style="width:' + (l * 20) + '%"></i></span><span class="w">' + words[l] + '</span>' +
-                 '<button type="button" class="x" data-fm-mute="' + escapeHtml(i[0]) + '" title="Меньше про это" aria-label="Меньше про ' + escapeHtml(i[0]) + '">×</button></div>';
-        }).join("") : '<p class="fm-none">Пока пусто: слушайте записи, читайте новости, выбирайте теги.</p>') +
-        (mu.length ? '<div class="fm-h">Скрытые темы</div>' + mu.map(function(t){
+        (ints.length ? ints.map(function(i){ return row(i[0], i[1], "data-fm-mute", i[0], i[0]); }).join("") : '<p class="fm-none">Пока пусто: слушайте записи, читайте новости, выбирайте теги.</p>') +
+        (kws.length ? '<div class="fm-h">Слова и названия</div>' + kws.map(function(i){ return row("«" + kwLabel(i[0]) + "»", i[1], "data-fm-kmute", i[0], kwLabel(i[0])); }).join("") : "") +
+        (favs.length ? '<div class="fm-h">Любимые записи</div>' + favs.map(function(id){
+          var n = lsRecent(id).length;
+          return '<div class="fm-row"><span class="n" style="width:auto;flex:1">' + escapeHtml(getTrack(id).title) + '</span><span class="w" style="width:auto">' + n + " " + plural(n, "раз", "раза", "раз") + ' за неделю</span><button type="button" class="back" data-fm-play="' + escapeHtml(id) + '">▶</button></div>';
+        }).join("") : "") +
+        ((mu.length || kmu.length) ? '<div class="fm-h">Скрытые темы и слова</div>' + mu.map(function(t){
           return '<div class="fm-row"><span class="n">' + escapeHtml(t) + '</span><button type="button" class="back" data-fm-unmute="' + escapeHtml(t) + '">вернуть</button></div>';
+        }).join("") + kmu.map(function(k){
+          return '<div class="fm-row"><span class="n">«' + escapeHtml(kwLabel(k)) + '»</span><button type="button" class="back" data-fm-kunmute="' + escapeHtml(k) + '">вернуть</button></div>';
         }).join("") : "") +
         '<div class="fm-h">Недавно</div>' +
         (P.events.length ? P.events.slice(0, 6).map(function(e){
           var ic = {l: "▶", r: "▤", s: "⌕", c: "#", x: "×"}[e.k] || "•";
-          return '<div class="fm-ev"><span class="ic">' + ic + '</span><span>' + escapeHtml(e.x) + '</span><span class="tm">' + ago(e.t) + '</span></div>';
+          return '<div class="fm-ev"><span class="ic">' + ic + '</span><span>' + escapeHtml(e.x) + (e.n > 1 ? " ×" + e.n : "") + '</span><span class="tm">' + ago(e.t) + '</span></div>';
         }).join("") : '<p class="fm-none">Пока ничего.</p>') +
         '<div class="fm-h">Ваши поисковые запросы</div>' +
         (P.queries.length ? '<div class="fm-q">' + P.queries.slice(0, 8).map(function(q, i){
@@ -7140,6 +7421,14 @@
       if(mu){ P.muted[mu.getAttribute("data-fm-mute")] = nowMs(); logEvent("x", "Меньше про «" + mu.getAttribute("data-fm-mute") + "»"); afterProfileChange(); return; }
       var um = t.closest("[data-fm-unmute]");
       if(um){ delete P.muted[um.getAttribute("data-fm-unmute")]; afterProfileChange(); return; }
+      var km = t.closest("[data-fm-kmute]");
+      if(km){ var kk = km.getAttribute("data-fm-kmute"); P.kmuted[kk] = nowMs(); logEvent("x", "Меньше про «" + kwLabel(kk) + "»", {tag: "kw:" + kk}); afterProfileChange(); return; }
+      var ku = t.closest("[data-fm-kunmute]");
+      if(ku){ delete P.kmuted[ku.getAttribute("data-fm-kunmute")]; afterProfileChange(); return; }
+      var hg = t.closest("[data-fm-hist-go]");
+      if(hg){ histGo(P.events[+hg.getAttribute("data-fm-hist-go")]); return; }
+      var pl = t.closest("[data-fm-play]");
+      if(pl){ selectTrack(pl.getAttribute("data-fm-play"), true); return; }
       var dq = t.closest("[data-fm-dq]");
       if(dq){ P.queries.splice(+dq.getAttribute("data-fm-dq"), 1); afterProfileChange(); return; }
       var act = t.closest("[data-fm-act]");
@@ -7154,7 +7443,7 @@
         else if(a === "toggle"){ P.on = !P.on; afterProfileChange(); }
         else if(a === "reset"){
           if(window.confirm("Сбросить всё, что подбор запомнил о вас в этом браузере?")){
-            var on = P.on; P = {v: 1, on: on, tags: {}, seen: {}, hidden: {}, muted: {}, queries: [], events: []}; playedNow = {};
+            var on = P.on; P = {v: 1, on: on, tags: {}, seen: {}, hidden: {}, muted: {}, queries: [], events: [], kw: {}, kmuted: {}}; playedNow = {};
             afterProfileChange();
           }
         }

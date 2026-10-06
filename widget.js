@@ -481,6 +481,9 @@
     ".ctrl button:hover{border-color:#0048f4;}",
     ".ctrl .play{width:46px;height:46px;background:#0048f4;border-color:#0048f4;color:#ffffff;font-size:15px;}",
     ".ctrl .play:hover{background:#3c6df4;}",
+    ".ctrl button.mode{width:30px;height:30px;color:#a19cae;}",
+    ".ctrl button.mode svg{width:15px;height:15px;}",
+    ".ctrl button.mode.on{color:#92b6fd;border-color:#0048f4;background:#1b2a63;}",
     ".vol{display:flex;align-items:center;gap:7px;flex:none;}",
     ".vol button{width:26px;height:26px;font-size:12px;background:none;border:none;color:#a19cae;}",
     ".vol button:hover{color:#0048f4;}",
@@ -588,6 +591,22 @@
   audio.volume = isFinite(savedVol) ? Math.min(1, Math.max(0, savedVol)) : 0.8;
 
   var queue = [], idx = -1, peek = 0, day = "", opened = false, started = false;
+  var mode = {shuffle: recall("shuffle") === "1", repeat: recall("repeat") === "1"};
+  var hist = [], histMute = false, bag = {sig: "", played: {}};
+  var ICO_SHUF = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>';
+  var ICO_REP = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4zm-4-2V9h-1l-2 1v1h1.5v4H13z"/></svg>';
+  function pickShuffle() {
+    var sig = queue.map(function (t) { return t.file; }).join("|");
+    if (bag.sig !== sig) bag = {sig: sig, played: {}};
+    bag.played[idx] = true;
+    var pool = [], k;
+    for (k = 0; k < queue.length; k++) { if (!bag.played[k] && k !== idx) pool.push(k); }
+    if (!pool.length) {
+      bag.played = {}; bag.played[idx] = true;
+      for (k = 0; k < queue.length; k++) { if (k !== idx) pool.push(k); }
+    }
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : idx;
+  }
 
   function pickDay(air, tracks) {
     var t = todayStr();
@@ -690,6 +709,8 @@
         '<button id="prev" title="Предыдущая запись" aria-label="Предыдущая">◀</button>' +
         '<button class="play" id="play" aria-label="Слушать">▶</button>' +
         '<button id="next" title="Следующая запись" aria-label="Следующая">▶</button>' +
+        '<button class="mode' + (mode.shuffle ? " on" : "") + '" id="shuf" aria-pressed="' + mode.shuffle + '" aria-label="Случайный порядок" title="Случайный порядок: ' + (mode.shuffle ? "включён" : "выключен") + '">' + ICO_SHUF + '</button>' +
+        '<button class="mode' + (mode.repeat ? " on" : "") + '" id="rep" aria-pressed="' + mode.repeat + '" aria-label="Повтор одной записи" title="Повтор одной записи: ' + (mode.repeat ? "включён" : "выключен") + '">' + ICO_REP + '</button>' +
         '<span class="sp"></span>' +
         '<span class="vol">' +
           '<button id="mute" title="Звук" aria-label="Звук">' + volIcon() + '</button>' +
@@ -702,6 +723,8 @@
     $("play").addEventListener("click", toggle);
     $("prev").addEventListener("click", function () { step(-1); });
     $("next").addEventListener("click", function () { step(1); });
+    $("shuf").addEventListener("click", function () { toggleMode("shuffle"); });
+    $("rep").addEventListener("click", function () { toggleMode("repeat"); });
     $("mute").addEventListener("click", function () {
       audio.muted = !audio.muted;
       $("mute").textContent = volIcon();
@@ -724,7 +747,7 @@
      запись. Панель от этого не растёт, сколько бы записей ни было в эфире. */
   function peekHtml() {
     var t = queue[peek] || queue[0];
-    var label = peek === (idx + 1) % queue.length ? "далее" :
+    var label = (!mode.shuffle && peek === (idx + 1) % queue.length) ? "далее" :
                 (peek === idx ? "сейчас играет" : "в этом эфире · " + (peek + 1) + " из " + queue.length);
     return '<div class="peek">' +
         '<button class="nav" id="up" title="Предыдущая в списке" aria-label="Выше">▲</button>' +
@@ -788,15 +811,41 @@
   /* ------------------------------ воспроизведение ------------------------ */
   function select(i, play) {
     if (i < 0 || i >= queue.length) return;
+    if (!histMute && idx >= 0 && idx !== i) { hist.push(idx); if (hist.length > 50) hist.shift(); }
     idx = i;
     peek = queue.length > 1 ? (i + 1) % queue.length : 0;
     audio.src = audioUrl(queue[i].file);
     render();
     if (play) { started = true; var p = audio.play(); if (p && p["catch"]) p["catch"](function () {}); }
   }
-  function step(d) {
+  function step(d, auto) {
     if (!queue.length) return;
-    select((idx + d + queue.length) % queue.length, !audio.paused || started);
+    if (auto && mode.repeat) {
+      audio.currentTime = 0;
+      started = true;
+      var rp = audio.play(); if (rp && rp["catch"]) rp["catch"](function () {});
+      return;
+    }
+    var play = !audio.paused || started;
+    if (d < 0 && mode.shuffle && hist.length) {
+      histMute = true; select(hist.pop(), play); histMute = false;
+      return;
+    }
+    if (d > 0 && mode.shuffle && queue.length > 1) { select(pickShuffle(), play); return; }
+    select((idx + d + queue.length) % queue.length, play);
+  }
+  function toggleMode(key) {
+    mode[key] = !mode[key];
+    remember(key, mode[key] ? "1" : "0");
+    if (key === "shuffle") bag = {sig: "", played: {}};
+    var b = $(key === "shuffle" ? "shuf" : "rep");
+    if (b) {
+      b.className = "mode" + (mode[key] ? " on" : "");
+      b.setAttribute("aria-pressed", mode[key] ? "true" : "false");
+      b.title = (key === "shuffle" ? "Случайный порядок" : "Повтор одной записи") + ": " + (mode[key] ? "включён" : "выключен");
+    }
+    var box = $("body").querySelector(".peek");
+    if (box) { box.outerHTML = peekHtml(); bindPeek(); }
   }
   function toggle() {
     if (!audio.src) audio.src = audioUrl(queue[idx].file);
@@ -813,7 +862,7 @@
 
   audio.addEventListener("play", syncPlay);
   audio.addEventListener("pause", syncPlay);
-  audio.addEventListener("ended", function () { step(1); });
+  audio.addEventListener("ended", function () { step(1, true); });
   audio.addEventListener("timeupdate", paint);
   audio.addEventListener("loadedmetadata", paint);
 
