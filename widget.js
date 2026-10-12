@@ -2,7 +2,10 @@
    Voice Ai — виджет корпоративного радио для встраивания на другие сайты.
 
    Ставится одной строкой:
-     <script src="https://valentinpaukov-ops.github.io/Voice_Ai/widget.js" async></script>
+     <script src="https://voice-ai.dev.tedo.ru/widget.js" async></script>
+
+   Готовый код для портала (угол, отступы, название) — в README, раздел
+   «Виджет на портале».
 
    Адрес радио виджет определяет сам — по тому, откуда его загрузили. Ничего
    настраивать не нужно, но при желании можно: data-position="left",
@@ -422,9 +425,15 @@
     "  letter-spacing:.03em;transform:translateY(-3px);}",
     ".fab b i{font-style:normal;color:#92b6fd;margin-left:.12em;}",
     ".fab .eq{position:absolute;bottom:13px;display:flex;gap:2px;align-items:flex-end;height:9px;}",
-    ".fab .eq span{width:2px;background:#0048f4;border-radius:1px;animation:eq .9s ease-in-out infinite;}",
+    ".fab .eq span{width:2px;background:#ffffff;border-radius:1px;animation:eq .9s ease-in-out infinite;}",
     ".fab .eq span:nth-child(2){animation-delay:.15s}.fab .eq span:nth-child(3){animation-delay:.3s}",
     "@keyframes eq{0%,100%{height:3px}50%{height:9px}}",
+    /* подсказка «нажмите — эфир продолжится» над кнопкой */
+    ".nudge{position:absolute;bottom:70px;" + SIDE + ":0;display:flex;align-items:center;gap:6px;white-space:nowrap;",
+    "  padding:8px 6px 8px 12px;border-radius:12px;background:#131319;font-size:13px;cursor:pointer;",
+    "  box-shadow:0 10px 30px -8px rgba(0,0,0,.55),0 0 0 1px rgba(60,109,244,.45);}",
+    ".nudge[hidden],.panel.on~.nudge{display:none;}",
+    ".nudge button{border:none;background:none;color:#a19cae;font-size:16px;line-height:1;cursor:pointer;padding:0 4px;}",
     /* панель */
     ".panel{",
     "  position:absolute;bottom:74px;" + SIDE + ":0;width:340px;max-width:calc(100vw - 32px);",
@@ -546,13 +555,17 @@
       '</div>' +
       '<div id="body"><div class="msg">Загружаю эфир…</div></div>' +
       '<div class="foot">' +
-        '<a id="open" href="' + esc(SITE) + '" target="_blank" rel="noopener">Открыть Voice Ai →</a>' +
+        '<a id="open" href="' + esc(SITE) + '" target="_blank" rel="nofollow noopener">Открыть Voice Ai →</a>' +
         '<button class="qrbtn" id="qrbtn" title="Продолжить на телефоне" aria-label="Продолжить на телефоне">' +
           '<svg viewBox="0 0 24 24" fill="currentColor">' +
           '<path d="M3 3h8v8H3V3zm2 2v4h4V5H5zm8-2h8v8h-8V3zm2 2v4h4V5h-4zM3 13h8v8H3v-8zm2 2v4h4v-4H5zm8-2h3v3h-3v-3zm5 0h3v3h-3v-3zm-5 5h3v3h-3v-3zm5 0h3v3h-3v-3z"/>' +
           '</svg>' +
         '</button>' +
       '</div>' +
+    '</div>' +
+    '<div class="nudge" id="nudge" role="status" hidden>' +
+      '<span>🔊 Нажмите в любом месте — эфир продолжится</span>' +
+      '<button id="nudgeX" title="Не продолжать" aria-label="Не продолжать">×</button>' +
     '</div>' +
     '<button class="fab" id="fab" aria-label="' + esc(TITLE) + ' — слушать эфир">' +
       '<b>V<i>AI</i></b>' +
@@ -574,6 +587,7 @@
   }
 
   var $ = function (id) { return root.getElementById ? root.getElementById(id) : document.getElementById(id); };
+  var nudge = $("nudge");
   var panel = $("panel"), fab = $("fab"), body = $("body"), eq = $("eq"), live = $("live");
 
   /* ------------------------- память между заходами ---------------------- */
@@ -591,6 +605,8 @@
   audio.volume = isFinite(savedVol) ? Math.min(1, Math.max(0, savedVol)) : 0.8;
 
   var queue = [], idx = -1, peek = 0, day = "", opened = false, started = false;
+  var pendingT = null;   // место, куда перемотать, как только запись загрузится (продолжение с прошлой страницы)
+  function pos() { return pendingT != null ? pendingT : (audio.currentTime || 0); }
   var mode = {shuffle: recall("shuffle") === "1", repeat: recall("repeat") === "1"};
   var hist = [], histMute = false, bag = {sig: "", played: {}};
   var ICO_SHUF = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>';
@@ -667,7 +683,9 @@
 
         idx = queue.length ? 0 : -1;
         peek = queue.length > 1 ? 1 : 0;
+        var resume = restoreState();
         render();
+        if (resume) resumePlay();
       })
       ["catch"](function () {
         body.innerHTML = '<div class="msg">Эфир сейчас не загрузился.<br>' +
@@ -789,6 +807,7 @@
       var d = duration();
       if (!d) return;
       if (!audio.src) audio.src = audioUrl(queue[idx].file);
+      pendingT = null;
       audio.currentTime = at(e) * d;
       paint();
     }
@@ -803,9 +822,9 @@
     var tm = $("tm"), tr = $("tr"), fill = $("fill");
     if (!tm || !fill) return;
     var d = duration();
-    tm.textContent = fmt(audio.currentTime);
+    tm.textContent = fmt(pos());
     if (tr) tr.textContent = d ? fmt(d) : "—:—";
-    fill.style.width = (d ? Math.min(100, audio.currentTime / d * 100) : 0) + "%";
+    fill.style.width = (d ? Math.min(100, pos() / d * 100) : 0) + "%";
   }
 
   /* ------------------------------ воспроизведение ------------------------ */
@@ -814,6 +833,7 @@
     if (!histMute && idx >= 0 && idx !== i) { hist.push(idx); if (hist.length > 50) hist.shift(); }
     idx = i;
     peek = queue.length > 1 ? (i + 1) % queue.length : 0;
+    pendingT = null;
     audio.src = audioUrl(queue[i].file);
     render();
     if (play) { started = true; var p = audio.play(); if (p && p["catch"]) p["catch"](function () {}); }
@@ -882,12 +902,117 @@
     var tm = $("tm"); if (tm) tm.textContent = "записи не читаются";
   });
 
+  /* ---- переход по страницам портала: эфир продолжается ------------------ */
+  /* Каждая страница портала — новая загрузка, и виджет на ней создаётся заново.
+     Поэтому он помнит запись, место и играл ли звук, а на следующей странице
+     продолжает с того же места. Браузер может не дать включить звук до первого
+     действия на странице — тогда над кнопкой появляется подсказка, и эфир
+     продолжается по первому нажатию в любом месте. */
+  var RESUME_FOR = 30 * 60 * 1000;     // ушли больше получаса назад — сам звук уже не включаем
+  var TAB = Math.random().toString(36).slice(2);
+  var waitGesture = false, yielded = false, stateAt = 0;
+
+  function saveState(closing) {
+    var t = queue[idx];
+    if (!t || !t.file || yielded) return;
+    stateAt = Date.now();
+    remember("state", JSON.stringify({
+      file: t.file, t: Math.floor(pos()),
+      playing: !audio.paused || waitGesture,   // ждём нажатия — значит, человек всё ещё слушает
+      closed: !!closing, at: stateAt
+    }));
+  }
+  /* Возвращает true, если звук надо включить: страницу закрыли во время игры
+     и недавно. Просто открытая рядом вкладка с играющим эфиром не в счёт —
+     иначе две вкладки заиграли бы хором. */
+  function restoreState() {
+    var s = null;
+    try { s = JSON.parse(recall("state") || "null"); } catch (e) {}
+    if (!s || !s.file) return false;
+    for (var i = 0; i < queue.length; i++) {
+      if (queue[i].file !== s.file) continue;
+      idx = i;
+      peek = queue.length > 1 ? (i + 1) % queue.length : 0;
+      audio.src = audioUrl(queue[i].file);
+      pendingT = s.t > 1 ? s.t : null;
+      return !!(s.playing && s.closed && Date.now() - (s.at || 0) < RESUME_FOR);
+    }
+    return false;
+  }
+  function resumePlay() {
+    started = true;
+    var p = audio.play();
+    if (p && p["catch"]) p["catch"](function () { if (audio.paused) waitForGesture(); });
+  }
+  function waitForGesture() {
+    if (waitGesture) return;
+    waitGesture = true;
+    started = false;
+    nudge.hidden = false;
+    document.addEventListener("pointerup", onGesture, true);
+    document.addEventListener("keydown", onGesture, true);
+  }
+  function stopWaiting() {
+    if (!waitGesture) return;
+    waitGesture = false;
+    nudge.hidden = true;
+    document.removeEventListener("pointerup", onGesture, true);
+    document.removeEventListener("keydown", onGesture, true);
+  }
+  function onGesture(e) {
+    if (e.type === "keydown" && /^(Shift|Control|Alt|Meta)$/.test(e.key)) return;
+    // набор текста в поиске или форме портала — не повод включать звук
+    var el = e.target;
+    if (e.type === "keydown" && el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return;
+    var path = e.composedPath ? e.composedPath() : [];
+    // «×» на подсказке и кнопка ▶ в панели справляются сами
+    if (path.indexOf($("nudgeX")) !== -1 || ($("play") && path.indexOf($("play")) !== -1)) return;
+    stopWaiting();
+    resumePlay();
+  }
+  $("nudgeX").addEventListener("click", function (e) {
+    e.stopPropagation();
+    stopWaiting();
+    saveState();               // больше не продолжаем на следующих страницах
+  });
+
+  audio.addEventListener("loadedmetadata", function () {
+    if (pendingT == null) return;
+    var t = pendingT;
+    pendingT = null;
+    if (isFinite(audio.duration) && t < audio.duration - 2) audio.currentTime = t;
+  });
+  audio.addEventListener("play", function () {
+    yielded = false;
+    stopWaiting();
+    saveState();
+    remember("owner", TAB + ":" + Date.now());   // остальные вкладки с виджетом замолкают
+  });
+  audio.addEventListener("pause", function () { if (!audio.ended) saveState(); });
+  audio.addEventListener("timeupdate", function () { if (Date.now() - stateAt > 3000) saveState(); });
+  window.addEventListener("pagehide", function () { saveState(true); });
+  /* «Назад» в браузере может вернуть страницу из памяти целиком, без новой
+     загрузки, — тогда продолжаем отсюда же, а не со старого места. */
+  window.addEventListener("pageshow", function (e) {
+    if (!e.persisted || !queue.length || !audio.paused) return;
+    yielded = false;
+    var resume = restoreState();
+    render();
+    if (resume) resumePlay();
+  });
+  window.addEventListener("storage", function (e) {
+    if (e.key !== "voiceAiWidget.owner" || !e.newValue || e.newValue.split(":")[0] === TAB) return;
+    stopWaiting();
+    if (!audio.paused) audio.pause();
+    yielded = true;            // играет другая вкладка — её место в памяти не перетираем
+  });
+
   /* ---- код для телефона: та же ссылка, только картинкой ---------------- */
   function resumeUrl() {
     var t = queue[idx];
     if (!t || !t.file) return SITE;
     return SITE + "?play=" + encodeURIComponent(t.file) +
-           "&at=" + Math.floor(audio.currentTime || 0) + "#air";
+           "&at=" + Math.floor(pos()) + "#air";
   }
   function showQr() {
     var t = queue[idx];

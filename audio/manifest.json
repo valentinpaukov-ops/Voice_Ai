@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-05T07:25:49Z",
+  "updated": "2026-10-09T12:23:18Z",
   "tracks": [
     {
       "file": "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
@@ -21,7 +21,7 @@
       "desc": "Приветственное интро для новой медиа-платформы Voice AI, где контент об ИИ создаёт сам искусственный интеллект. Полезно для всех сотрудников компании, кто хочет узнать о возможностях ИИ и начать пользоваться платформой."
     },
     {
-      "file": "2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.mp3",
+      "file": "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
       "title": "Козьма Прутков: Лучшая деловая книга года",
       "host": "Козьма Прутков",
       "tag": "Подкаст",
@@ -37,7 +37,7 @@
         "Радио",
         "Подкаст"
       ],
-      "cover": "covers/2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.webp",
+      "cover": "covers/2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.webp",
       "desc": "Литературная рецензия от Козьмы Пруткова о лучших деловых книгах года в трёх номинациях: российские авторы, зарубежные издания и прикладные руководства. Полезно для предпринимателей, менеджеров и всех, кто ищет вдохновение и практические инструменты для бизнеса."
     },
     {
@@ -112,7 +112,7 @@
       "desc": "Музыкальный трек от Therr Maitz — My Love Is Like. Для тех, кто ценит современную музыку и атмосферу в рабочем пространстве."
     },
     {
-      "file": "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "file": "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "title": "Fontaines D.C. — Starburster",
       "host": "Voice Ai",
       "tag": "Музыка",
@@ -124,7 +124,7 @@
         "Культура",
         "Voice Ai"
       ],
-      "cover": "covers/2026-09-24_2026-09-23_Fontaines D.C. — Starburster.webp",
+      "cover": "covers/2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.webp",
       "desc": "Музыкальный трек от Fontaines D.C. — Starburster. Энергичная композиция для тех, кто ценит современную альтернативную музыку."
     },
     {
@@ -208,7 +208,7 @@
       "desc": "Музыкальный трек — атмосферная композиция. Для тех, кто ценит спокойную музыку и приятную атмосферу в рабочем пространстве."
     },
     {
-      "file": "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
+      "file": "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
       "title": "Max Legend   Terminal Fracture",
       "host": "Voice Ai",
       "tag": "Музыка",
@@ -217,9 +217,160 @@
       "tags": [
         "Музыка"
       ],
-      "cover": "covers/Max Legend - Terminal Fracture_(mp3sun.org).webp",
+      "cover": "covers/Max_Legend_-_Terminal_Fracture__mp3sun.org_.webp",
       "desc": "музыкальная композиция",
       "date": "2026-09-30"
+    },
+    {
+      "file": "Awards Ceremony.mp3",
+      "title": "Awards Ceremony",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 1921358,
+      "duration": 120,
+      "cover": "covers/Awards Ceremony.webp",
+      "tags": [
+        "Музыка"
+      ],
+      "date": "2026-10-07"
+    },
+    {
+      "file": "2026-10-06_Dramatic Trailer.mp3",
+      "title": "Dramatic Trailer",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 925344,
+      "duration": 115.6,
+      "date": "2026-10-06",
+      "time": "19:01",
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/2026-10-06_Dramatic Trailer.webp"
+    },
+    {
+      "file": "2026-10-06_Inspiring March Of Winners.mp3",
+      "title": "Inspiring March Of Winners",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 1454976,
+      "duration": 181.8,
+      "date": "2026-10-06",
+      "time": "19:05",
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/2026-10-06_Inspiring March Of Winners.webp"
+    },
+    {
+      "file": "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "title": "Blake Shelton Pitbull Get Ready",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 1717344,
+      "duration": 214.6,
+      "date": "2026-10-07",
+      "time": "20:22",
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).webp"
+    },
+    {
+      "file": "2026-10-08_videoplayback (1).mp3",
+      "title": "music_1",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 1504224,
+      "duration": 188,
+      "date": "2026-10-08",
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/2026-10-08_videoplayback (1).webp"
+    },
+    {
+      "file": "2026-10-08_videoplayback (2).mp3",
+      "title": "Music_2",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 809568,
+      "duration": 101.1,
+      "date": "2026-10-08",
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/2026-10-08_videoplayback (2).webp"
+    },
+    {
+      "file": "2026-10-08_videoplayback (3).mp3",
+      "title": "Music_3",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 1185984,
+      "duration": 148.2,
+      "date": "2026-10-08",
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/2026-10-08_videoplayback (3).webp"
+    },
+    {
+      "file": "2026-10-08_videoplayback (4).mp3",
+      "title": "Music_4",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 1160928,
+      "duration": 145.1,
+      "date": "2026-10-08",
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/2026-10-08_videoplayback (4).webp"
+    },
+    {
+      "file": "2026-10-08_videoplayback (5).mp3",
+      "title": "Music_5",
+      "host": "Voice Ai",
+      "tag": "Музыка",
+      "size": 1160928,
+      "duration": 145.1,
+      "date": "2026-10-08",
+      "tags": [
+        "Музыка"
+      ],
+      "cover": "covers/2026-10-08_videoplayback (5).webp"
+    },
+    {
+      "file": "2026-10-09_Первый_шаг_в_ИИ_без_страха.mp3",
+      "title": "ИИ без страха и упрёка",
+      "host": "Voice Ai и Артём",
+      "tag": "Шоу",
+      "size": 1180224,
+      "duration": 147.5,
+      "date": "2026-10-09",
+      "time": "13:01",
+      "tags": [
+        "ИИ",
+        "ТЕДОРА",
+        "TEDO INTELLIGENCE",
+        "Voice Ai",
+        "шоу",
+        "TEDORA",
+        "Ti"
+      ],
+      "desc": "Безопасный старт с ИИ. Знакомство с агентом Tedora.\nПочему данные под защитой и как задать первый правильный вопрос.\nVoice_Ai — ваш навигатор в мире нейросетей.",
+      "cover": "covers/2026-10-09_Первый_шаг_в_ИИ_без_страха.webp"
+    },
+    {
+      "file": "2026-10-09_тест.mp3",
+      "title": "Наш генератор аудио",
+      "host": "Миша и Катя",
+      "tag": "Эфир",
+      "size": 68256,
+      "duration": 8.5,
+      "date": "2026-10-09",
+      "time": "15:20"
     }
   ],
   "air": {
@@ -232,10 +383,10 @@
     "2026-09-24": [
       "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
-      "2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.mp3",
+      "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-24_2026-09-21_News_digest.mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-24_2026-09-23_Omania_intro.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
       "2026-09-24_2026-09-23_Ti2_intro_rus.mp3",
@@ -246,11 +397,11 @@
       "2026-09-24_2026-09-21_News_digest.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-24_2026-09-23_Omania_intro.mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-24_2026-09-23_Ti2_intro_rus.mp3"
     ],
     "2026-09-26": [
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
@@ -262,11 +413,11 @@
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
       "2026-09-21_2026-09-21_Music_ver5.mp3",
-      "2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.mp3",
+      "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
       "2026-09-21_2026-09-21_Music_ver4.mp3",
       "2026-09-21_Music_ver3.MP3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3"
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3"
     ],
     "2026-09-28": [
       "2026-09-21_2026-09-21_Music_ver5.mp3",
@@ -276,17 +427,17 @@
     "2026-09-29": [
       "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
-      "2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.mp3",
+      "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-24_2026-09-21_News_digest.mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-24_2026-09-23_Omania_intro.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
       "2026-09-24_2026-09-23_Ti2_intro_rus.mp3",
       "2026-09-21_2026-09-21_Music_ver5.mp3"
     ],
     "2026-09-30": [
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
       "2026-09-21_2026-09-21_Music_ver5.mp3",
       "2026-09-21_2026-09-21_Music_ver4.mp3",
       "2026-09-21_Music_ver3.MP3",
@@ -294,14 +445,14 @@
       "2026-09-22_2026-09-23_Music_ver2.mp3"
     ],
     "2026-10-01": [
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
       "2026-09-24_2026-09-21_News_digest.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
-      "2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.mp3",
+      "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
       "2026-09-24_2026-09-23_Omania_intro.mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-21_2026-09-21_Music_ver5.mp3",
       "2026-09-21_2026-09-21_Music_ver4.mp3",
       "2026-09-21_Music_ver3.MP3"
@@ -309,26 +460,26 @@
     "2026-10-02": [
       "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
-      "2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.mp3",
+      "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-24_2026-09-21_News_digest.mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-24_2026-09-23_Omania_intro.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
       "2026-09-24_2026-09-23_Ti2_intro_rus.mp3",
       "2026-09-21_2026-09-21_Music_ver5.mp3",
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
       "2026-09-21_2026-09-21_Music_ver4.mp3"
     ],
     "2026-10-05": [
       "2026-09-24_2026-09-21_News_digest.mp3",
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
-      "2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.mp3",
+      "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
       "2026-09-24_2026-09-23_Omania_intro.mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-21_2026-09-21_Music_ver5.mp3",
       "2026-09-21_2026-09-21_Music_ver4.mp3",
       "2026-09-21_Music_ver3.MP3"
@@ -339,8 +490,113 @@
       "2026-09-24_2026-09-23_Omania_intro.mp3",
       "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
-      "2026-09-24_2026-09-23_Voice AI Kozma Books Review 1_mixdown.mp3",
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3"
+      "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3"
+    ],
+    "2026-10-07": [
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
+      "Awards Ceremony.mp3",
+      "2026-09-22_2026-09-23_Music_ver2.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-09-21_2026-09-21_Music_ver5.mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-21_2026-09-21_Music_ver4.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
+      "2026-10-06_Dramatic Trailer.mp3"
+    ],
+    "2026-10-08": [
+      "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
+      "2026-10-08_videoplayback (1).mp3",
+      "2026-09-24_2026-09-21_News_digest.mp3",
+      "2026-10-08_videoplayback (2).mp3",
+      "2026-10-08_videoplayback (3).mp3",
+      "2026-10-08_videoplayback (4).mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "Awards Ceremony.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3"
+    ],
+    "2026-10-09": [
+      "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
+      "2026-10-08_videoplayback (1).mp3",
+      "2026-10-09_Первый_шаг_в_ИИ_без_страха.mp3",
+      "2026-10-09_тест.mp3",
+      "2026-10-08_videoplayback (2).mp3",
+      "Awards Ceremony.mp3",
+      "2026-10-08_videoplayback (3).mp3",
+      "2026-09-24_2026-09-21_News_digest.mp3",
+      "2026-10-08_videoplayback (4).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3"
+    ],
+    "2026-10-10": [
+      "2026-10-08_videoplayback (1).mp3",
+      "2026-10-08_videoplayback (2).mp3",
+      "Awards Ceremony.mp3",
+      "2026-10-08_videoplayback (3).mp3",
+      "2026-10-08_videoplayback (4).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
+      "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
+      "2026-09-22_2026-09-23_Music_ver2.mp3",
+      "2026-09-21_2026-09-21_Music_ver5.mp3",
+      "2026-09-21_2026-09-21_Music_ver4.mp3",
+      "2026-09-21_Music_ver3.MP3"
+    ],
+    "2026-10-11": [
+      "2026-10-08_videoplayback (1).mp3",
+      "2026-10-08_videoplayback (2).mp3",
+      "Awards Ceremony.mp3",
+      "2026-10-08_videoplayback (3).mp3",
+      "2026-10-08_videoplayback (4).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
+      "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
+      "2026-09-22_2026-09-23_Music_ver2.mp3",
+      "2026-09-21_2026-09-21_Music_ver5.mp3",
+      "2026-09-21_2026-09-21_Music_ver4.mp3",
+      "2026-09-21_Music_ver3.MP3"
+    ],
+    "2026-10-12": [
+      "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
+      "2026-10-08_videoplayback (1).mp3",
+      "2026-09-24_2026-09-21_News_digest.mp3",
+      "Awards Ceremony.mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-10-09_Первый_шаг_в_ИИ_без_страха.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-09-24_2026-09-23_Voice_AI_Kozma_Books_Review_1_mixdown.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-09-24_2026-09-23_Ti2_intro_rus.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
+      "2026-09-22_2026-09-23_Music_ver2.mp3",
+      "2026-09-21_2026-09-21_Music_ver4.mp3",
+      "2026-09-21_Music_ver3.MP3"
     ]
   },
   "repeatHide": {
@@ -351,12 +607,12 @@
       "2026-09-22_2026-09-23_Music_ver2.mp3"
     ],
     "2026-10-01": [
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
       "2026-09-24_2026-09-23_Omania_intro.mp3",
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
       "2026-09-21_2026-09-21_Music_ver5.mp3",
       "2026-09-21_2026-09-21_Music_ver4.mp3",
       "2026-09-21_Music_ver3.MP3"
@@ -366,16 +622,16 @@
       "2026-09-22_2026-09-23_Music_ver2.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
       "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-21_2026-09-21_Music_ver4.mp3"
     ],
     "2026-10-05": [
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
       "2026-09-24_2026-09-18_Music_ver1.mp3",
       "2026-09-22_2026-09-23_Music_ver2.mp3",
-      "2026-09-24_2026-09-23_Fontaines D.C. — Starburster.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
       "2026-09-21_2026-09-21_Music_ver5.mp3",
       "2026-09-21_2026-09-21_Music_ver4.mp3",
       "2026-09-21_Music_ver3.MP3"
@@ -385,7 +641,75 @@
       "2026-09-24_2026-09-23_Omania_intro.mp3",
       "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
       "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
-      "Max Legend - Terminal Fracture_(mp3sun.org).mp3"
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3"
+    ],
+    "2026-10-08": [
+      "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "Awards Ceremony.mp3"
+    ],
+    "2026-10-09": [
+      "2026-09-18_2026-09-18__Voice_Ai_intro.mp3",
+      "Awards Ceremony.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-10-08_videoplayback (1).mp3",
+      "2026-10-08_videoplayback (2).mp3",
+      "2026-10-08_videoplayback (3).mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "2026-10-08_videoplayback (4).mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3"
+    ],
+    "2026-10-10": [
+      "2026-10-08_videoplayback (1).mp3",
+      "2026-10-08_videoplayback (2).mp3",
+      "Awards Ceremony.mp3",
+      "2026-10-08_videoplayback (3).mp3",
+      "2026-10-08_videoplayback (4).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3"
+    ],
+    "2026-10-11": [
+      "2026-10-08_videoplayback (1).mp3",
+      "2026-10-08_videoplayback (2).mp3",
+      "Awards Ceremony.mp3",
+      "2026-10-08_videoplayback (3).mp3",
+      "2026-10-08_videoplayback (4).mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3",
+      "2026-09-24_2026-09-23_Fontaines_D.C.___Starburster.mp3",
+      "2026-09-22_2026-09-22_Therr_Maitz_-_My_Love_Is_Like.mp3",
+      "2026-09-22_2026-09-23_Music_ver2.mp3",
+      "2026-09-21_2026-09-21_Music_ver5.mp3",
+      "2026-09-21_2026-09-21_Music_ver4.mp3",
+      "2026-09-21_Music_ver3.MP3"
+    ],
+    "2026-10-12": [
+      "2026-10-08_videoplayback (1).mp3",
+      "Awards Ceremony.mp3",
+      "Max_Legend_-_Terminal_Fracture__mp3sun.org_.mp3",
+      "2026-09-24_2026-09-18_Music_ver1.mp3",
+      "2026-10-08_videoplayback (5).mp3",
+      "2026-10-06_Inspiring March Of Winners.mp3",
+      "2026-10-06_Dramatic Trailer.mp3",
+      "2026-10-07_Blake_Shelton_Pitbull_-_Get_Ready_(musmore.org).mp3"
     ]
   }
 }
