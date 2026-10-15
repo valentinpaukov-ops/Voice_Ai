@@ -290,6 +290,10 @@
   .search-wrap:focus-within{width:360px;}
   /* 38px + 12px flex-gap у .topbar-right = ровно 50px до часов/даты */
   .topbar .search-wrap{margin-right:38px;}
+  /* Поле поиска — type="search", а токены — обычные текстовые поля со скрытыми символами: иначе менеджер паролей
+     Chrome принимает поиск за логин и вписывает в него сохранённое имя пользователя. */
+  .search-input::-webkit-search-cancel-button{-webkit-appearance:none;display:none;}
+  .secret-input{-webkit-text-security:disc;}
   .search-input{
     width:100%;
     padding:8px 12px 8px 32px;
@@ -2321,7 +2325,7 @@
   <div class="topbar-right">
     <div class="search-wrap">
       <svg class="search-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5L20.49 19zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>
-      <input type="text" id="searchInput" class="search-input" placeholder="Искать в эфире и материалах…" autocomplete="off">
+      <input type="search" id="searchInput" name="voiceai-searchInput" class="search-input" placeholder="Искать в эфире и материалах…" autocomplete="off" spellcheck="false">
       <div class="search-results" id="searchResults" hidden></div>
     </div>
     <button type="button" class="inbox-badge admin-only" id="inboxBadge" hidden
@@ -2354,7 +2358,7 @@
 <div class="mobile-panel" id="mobilePanel" hidden>
   <div class="search-wrap" style="width:100%;">
     <svg class="search-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5L20.49 19zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>
-    <input type="text" id="searchInputMobile" class="search-input" placeholder="Искать в эфире и материалах…" autocomplete="off">
+    <input type="search" id="searchInputMobile" name="voiceai-searchInputMobile" class="search-input" placeholder="Искать в эфире и материалах…" autocomplete="off" spellcheck="false">
     <div class="search-results" id="searchResultsMobile" hidden></div>
   </div>
   <nav class="mobile-nav" id="mobileNav">
@@ -2689,7 +2693,7 @@
                 <label class="nc-field"><span>Группа</span><input type="text" id="ghOwner" placeholder="intelligence"></label>
                 <label class="nc-field"><span>Проект</span><input type="text" id="ghRepo" placeholder="voice-ai"></label>
                 <label class="nc-field"><span>Ветка</span><input type="text" id="ghBranch" placeholder="develop" value="main"></label>
-                <label class="nc-field"><span>Токен (github_pat_…)</span><input type="password" id="ghToken" autocomplete="off" placeholder="вставьте токен"></label>
+                <label class="nc-field"><span>Токен (github_pat_…)</span><input type="text" id="ghToken" class="secret-input" autocomplete="off" spellcheck="false" placeholder="вставьте токен"></label>
               </div>
               <div class="nc-actions">
                 <button type="button" class="btn-add" id="ghSaveBtn">Проверить и сохранить</button>
@@ -2922,7 +2926,7 @@
           а выпускающего узнают по личному токену GitHub: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="nofollow noopener">GitHub → Edit profile → Access tokens</a> →
           Add new token, отметьте только <b>api</b>, срок до года → Create token. Токен (<code>github_pat_…</code>) сохранится только в этом браузере.</p>
         <label class="acc-f">Ваш личный токен GitHub
-          <span class="acc-row"><input type="password" id="accChiefToken" placeholder="github_pat_…" autocomplete="off"><button type="button" class="btn-add" id="accConnectBtn">Подключить</button></span></label>
+          <span class="acc-row"><input type="text" id="accChiefToken" class="secret-input" placeholder="github_pat_…" autocomplete="off" spellcheck="false"><button type="button" class="btn-add" id="accConnectBtn">Подключить</button></span></label>
       </div>
       <p class="acc-help">Каждому редактору — своя <b>личная ссылка</b> на форму новостей. Редактор открывает её, раскладывает новости и нажимает
         «Отправить на проверку»: новости приходят к вам в блок «на согласовании» с его именем. Ни токенов, ни учётной записи в GitHub
