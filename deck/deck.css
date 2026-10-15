@@ -1,0 +1,147 @@
+/* Презентация поверх сайта (deck/deck.js). Всегда тёмная, как эфир: цвета — из тёмной темы сайта.
+   Сцена 16:9 вписывается в окно, размеры внутри — в долях её ширины (cqw), поэтому на проекторе,
+   ноутбуке и телефоне слайд выглядит одинаково. */
+.dk-ov{
+  --dk-bg:#0d0d13; --dk-surface:#1c1a24; --dk-surface-2:#262432; --dk-border:#34313f;
+  --dk-text:#f3f1ec; --dk-dim:#a19cae; --dk-accent:#0048f4; --dk-blue:#92b6fd; --dk-sky:#5fd0ff;
+  --dk-done:#3fbf7f; --dk-next:#fc9744; --dk-new:#92b6fd;
+  position:fixed;inset:0;z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 70% 60% at 100% 0%,rgba(0,72,244,.28) 0,transparent 70%),
+             radial-gradient(ellipse 70% 60% at 0% 100%,rgba(0,15,155,.5) 0,transparent 70%),var(--dk-bg);
+  color:var(--dk-text);font-family:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  opacity:0;transition:opacity .35s ease;user-select:none;-webkit-user-select:none;
+}
+.dk-ov.is-on{opacity:1;}
+.dk-stage{
+  position:relative;width:min(100vw,calc((100vh - 64px) * 16 / 9));aspect-ratio:16/9;
+  container-type:size;overflow:hidden;
+}
+.dk-ov.is-full .dk-stage{width:min(100vw,calc(100vh * 16 / 9));}
+.dk-slide{position:absolute;inset:0;padding:5.2cqw 5.6cqw 4cqw;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transform:translateX(3cqw);transition:opacity .55s ease,transform .7s cubic-bezier(.2,.8,.2,1),visibility 0s .7s;}
+.dk-slide.is-prev{transform:translateX(-3cqw);}
+.dk-slide.is-cur{opacity:1;visibility:visible;transform:none;transition:opacity .55s ease .1s,transform .7s cubic-bezier(.2,.8,.2,1) .1s,visibility 0s;}
+
+/* появление элементов по очереди: --i — номер элемента */
+.dk-in{opacity:0;transform:translateY(2.2cqw);}
+.dk-slide.is-cur .dk-in{animation:dkIn .7s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(.25s + var(--i,0) * .11s);}
+@keyframes dkIn{to{opacity:1;transform:none;}}
+
+.dk-h{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:4cqw;line-height:1.1;margin:0 0 1.1cqw;letter-spacing:-.01em;}
+.dk-sub{color:var(--dk-dim);font-size:1.45cqw;margin:0 0 2.4cqw;}
+.dk-card{background:var(--dk-surface);border:1px solid var(--dk-border);border-radius:1cqw;padding:1.6cqw 1.7cqw;}
+.dk-card h3{margin:0 0 .6cqw;font-size:1.6cqw;line-height:1.2;font-weight:600;}
+.dk-card p{margin:0;color:var(--dk-dim);font-size:1.18cqw;line-height:1.45;}
+
+/* ---------- логотип: как в шапке сайта, только крупно и со свечением ---------- */
+.dk-logo{font-family:'Big Shoulders Display','Arial Narrow',Impact,sans-serif;font-weight:800;letter-spacing:.01em;line-height:.9;
+  color:#fff;text-shadow:0 0 1.2cqw rgba(146,182,253,.35),0 0 4cqw rgba(0,72,244,.35);}
+.dk-logo .ai{margin-left:.22em;background:linear-gradient(180deg,#d6e4ff 0%,var(--dk-blue) 45%,var(--dk-sky) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 1.4cqw rgba(95,208,255,.55));}
+.dk-freq{font-family:'IBM Plex Mono',ui-monospace,monospace;color:var(--dk-blue);letter-spacing:.18em;font-size:1.35cqw;}
+
+.dk-center{align-items:center;justify-content:center;text-align:center;}
+.dk-orb{position:relative;width:34cqw;height:34cqw;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.dk-orb .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(146,182,253,.35);
+  animation:dkRing 4.5s ease-out infinite;opacity:0;}
+.dk-orb .ring:nth-child(2){animation-delay:1.5s;}
+.dk-orb .ring:nth-child(3){animation-delay:3s;}
+@keyframes dkRing{0%{transform:scale(.55);opacity:0;}20%{opacity:.9;}100%{transform:scale(1.35);opacity:0;}}
+.dk-orb .core{position:absolute;inset:12%;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,rgba(0,72,244,.38) 0,rgba(0,72,244,.12) 45%,transparent 70%);
+  border:1px solid rgba(146,182,253,.22);box-shadow:inset 0 0 4cqw rgba(0,72,244,.25);}
+.dk-orb .dk-logo{position:relative;font-size:9cqw;}
+.dk-orb .line{position:relative;width:15cqw;height:1px;margin:1.6cqw 0 1.2cqw;
+  background:linear-gradient(90deg,transparent,var(--dk-blue),transparent);}
+.dk-orb .dk-freq{position:relative;}
+.dk-eq{display:flex;gap:.45cqw;align-items:flex-end;height:3cqw;margin-top:2.6cqw;}
+.dk-eq i{display:block;width:.5cqw;border-radius:.3cqw;background:linear-gradient(180deg,var(--dk-sky),var(--dk-accent));
+  height:30%;animation:dkEq 1.1s ease-in-out infinite alternate;}
+@keyframes dkEq{to{height:100%;}}
+.dk-tagline{font-size:2cqw;color:var(--dk-text);margin-top:2.6cqw;font-weight:500;}
+.dk-tedo{position:absolute;top:4cqw;right:5cqw;height:3cqw;color:#fff;opacity:.92;}
+.dk-tedo svg{height:100%;width:auto;display:block;}
+.dk-final .dk-logo{font-size:12cqw;}
+
+/* ---------- слайд «корпоративное радио» ---------- */
+.dk-shot{position:relative;border-radius:1cqw;overflow:hidden;border:1px solid var(--dk-border);
+  box-shadow:0 2cqw 5cqw -2cqw rgba(0,0,0,.8),0 0 0 1px rgba(146,182,253,.08);}
+.dk-shot img{display:block;width:100%;height:24cqw;object-fit:cover;object-position:50% 0;}
+.dk-shot::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.08) 50%,transparent 60%);
+  transform:translateX(-100%);}
+.dk-slide.is-cur .dk-shot::after{animation:dkShine 2.4s ease 1s;}
+@keyframes dkShine{to{transform:translateX(100%);}}
+.dk-feat{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.4cqw;margin-top:2.2cqw;}
+.dk-feat .dk-card{padding:1.3cqw 1.4cqw;}
+.dk-feat h3{color:var(--dk-blue);}
+.dk-ico{width:2.3cqw;height:2.3cqw;margin-bottom:.8cqw;color:var(--dk-blue);}
+.dk-ico svg{width:100%;height:100%;display:block;}
+
+/* ---------- слайд «аудио: от записи до эфира» ---------- */
+.dk-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.4cqw;position:relative;}
+.dk-steps .dk-card{position:relative;padding-top:1.4cqw;}
+.dk-num{font-family:'Big Shoulders Display','Arial Narrow',sans-serif;font-weight:800;font-size:4.6cqw;line-height:1;color:var(--dk-next);margin-bottom:.6cqw;}
+.dk-flow{position:absolute;left:0;right:0;top:-1.3cqw;height:2px;background:var(--dk-border);overflow:hidden;border-radius:2px;}
+.dk-flow i{position:absolute;inset:0;background:linear-gradient(90deg,var(--dk-next),var(--dk-blue));transform:scaleX(0);transform-origin:left;}
+.dk-slide.is-cur .dk-flow i{animation:dkFlow 1.6s cubic-bezier(.4,0,.2,1) .5s forwards;}
+@keyframes dkFlow{to{transform:scaleX(1);}}
+.dk-studio{margin-top:1.6cqw;display:flex;gap:2.4cqw;align-items:center;}
+.dk-studio .txt{flex:1;}
+.dk-studio h3{color:var(--dk-blue);font-size:1.9cqw;}
+.dk-wave{display:flex;gap:.35cqw;align-items:center;height:5cqw;flex:none;width:26cqw;}
+.dk-wave i{flex:1;border-radius:.3cqw;background:linear-gradient(180deg,var(--dk-sky),var(--dk-accent));height:20%;
+  animation:dkWave 1.3s ease-in-out infinite alternate;}
+.dk-wave i.b{background:linear-gradient(180deg,#ffc58f,var(--dk-next));}
+@keyframes dkWave{0%{height:12%;}100%{height:100%;}}
+
+/* ---------- слайд «что дальше» ---------- */
+.dk-plan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.1cqw;}
+.dk-plan .dk-card{padding:1.15cqw 1.3cqw;}
+.dk-plan h3{font-size:1.38cqw;margin-bottom:.35cqw;}
+.dk-plan p{font-size:1.02cqw;line-height:1.4;}
+.dk-st{display:inline-flex;align-items:center;gap:.45cqw;font-family:'IBM Plex Mono',monospace;font-size:.88cqw;letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:.6cqw;color:var(--dk-dim);}
+.dk-st::before{content:"";width:.6cqw;height:.6cqw;border-radius:50%;background:currentColor;}
+.dk-st.done{color:var(--dk-done);}
+.dk-st.next{color:var(--dk-next);}
+.dk-st.next::before{animation:dkPulse 1.6s ease-in-out infinite;}
+.dk-st.new{color:var(--dk-new);}
+@keyframes dkPulse{50%{box-shadow:0 0 0 .5cqw rgba(252,151,68,.18);}}
+.dk-plan .is-voice{border-color:rgba(146,182,253,.45);
+  background:linear-gradient(160deg,rgba(0,72,244,.22),rgba(0,72,244,.04) 60%),var(--dk-surface);}
+.dk-plan .is-voice h3{display:flex;align-items:center;gap:.6cqw;}
+.dk-mic{width:1.5cqw;height:1.5cqw;flex:none;color:var(--dk-sky);}
+.dk-slide.is-cur .is-voice .dk-mic{animation:dkMic 2s ease-in-out infinite;}
+@keyframes dkMic{50%{filter:drop-shadow(0 0 .5cqw rgba(95,208,255,.9));}}
+
+/* ---------- слайд «команда» ---------- */
+.dk-team{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2cqw;flex:1;align-content:center;padding-bottom:3cqw;}
+.dk-person{display:flex;align-items:center;gap:2cqw;padding:2.2cqw;}
+.dk-person img{width:10.5cqw;height:10.5cqw;border-radius:50%;object-fit:cover;flex:none;
+  box-shadow:0 0 0 .25cqw var(--dk-bg),0 0 0 .4cqw rgba(146,182,253,.55);}
+.dk-person b{font-size:2.1cqw;line-height:1.2;font-weight:600;}
+
+/* ---------- управление ---------- */
+.dk-bar{display:flex;align-items:center;gap:10px;height:56px;padding:0 12px;opacity:.85;transition:opacity .3s;}
+.dk-ov.is-full .dk-bar{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);opacity:0;
+  background:rgba(20,19,27,.85);border:1px solid var(--dk-border);border-radius:999px;height:46px;}
+.dk-ov.is-full .dk-bar:hover,.dk-ov.is-full.show-bar .dk-bar{opacity:1;}
+.dk-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--dk-border);background:transparent;color:var(--dk-text);
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:border-color .2s,color .2s;}
+.dk-btn:hover{border-color:var(--dk-blue);color:var(--dk-blue);}
+.dk-btn:disabled{opacity:.3;cursor:default;border-color:var(--dk-border);color:var(--dk-text);}
+.dk-btn svg{width:16px;height:16px;}
+.dk-dots{display:flex;gap:7px;margin:0 6px;}
+.dk-dots button{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:var(--dk-border);cursor:pointer;transition:background .2s,transform .2s;}
+.dk-dots button.on{background:var(--dk-blue);transform:scale(1.3);}
+.dk-count{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--dk-dim);min-width:44px;text-align:center;}
+.dk-close{position:absolute;top:14px;right:16px;z-index:2;}
+.dk-ov.is-full .dk-close{opacity:0;transition:opacity .3s;}
+.dk-ov.is-full .dk-close:hover,.dk-ov.is-full.show-bar .dk-close{opacity:1;}
+
+@media (prefers-reduced-motion: reduce){
+  .dk-slide,.dk-slide.is-cur{transition:opacity .2s;transform:none;}
+  .dk-in{opacity:1;transform:none;}
+  .dk-slide.is-cur .dk-in{animation:none;}
+  .dk-orb .ring,.dk-eq i,.dk-wave i{animation:none;}
+}
