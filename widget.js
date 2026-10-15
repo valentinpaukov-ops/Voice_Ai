@@ -2,7 +2,7 @@
    Voice Ai — виджет корпоративного радио для встраивания на другие сайты.
 
    Ставится одной строкой:
-     <script src="https://voice-ai.dev.tedo.ru/widget.js" async></script>
+     <script src="https://valentinpaukov-ops.github.io/Voice_Ai/widget.js" async></script>
 
    Готовый код для портала (угол, отступы, название) — в README, раздел
    «Виджет на портале».

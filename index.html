@@ -2300,6 +2300,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 
+<script src="store-github.js"></script>
 </head>
 <body>
 <header class="topbar">
@@ -2675,20 +2676,20 @@
           <div class="gh-panel" id="ghPanel">
             <div class="gh-row">
               <span class="gh-state" id="ghState">Публикация не подключена</span>
-              <button type="button" class="nc-ghost" id="ghSetupBtn">Подключить GitLab</button>
+              <button type="button" class="nc-ghost" id="ghSetupBtn">Подключить GitHub</button>
               <button type="button" class="nc-ghost" id="ghForgetBtn" hidden>Отключить</button>
             </div>
             <div class="gh-setup" id="ghSetup" hidden>
               <p class="nc-hint">
-                Нужен персональный токен GitLab с областью <b>api</b>: от вашего имени он записывает файлы в проект сайта.
-                Он сохранится в этом браузере и никуда, кроме GitLab, не отправляется.
+                Нужен личный токен GitHub с правом записи в репозиторий сайта: от вашего имени он записывает файлы.
+                Он сохранится в этом браузере и никуда, кроме GitHub, не отправляется.
                 Как его создать — написано под формой.
               </p>
               <div class="nc-grid">
                 <label class="nc-field"><span>Группа</span><input type="text" id="ghOwner" placeholder="intelligence"></label>
                 <label class="nc-field"><span>Проект</span><input type="text" id="ghRepo" placeholder="voice-ai"></label>
-                <label class="nc-field"><span>Ветка</span><input type="text" id="ghBranch" placeholder="develop" value="develop"></label>
-                <label class="nc-field"><span>Токен (glpat-…)</span><input type="password" id="ghToken" autocomplete="off" placeholder="вставьте токен"></label>
+                <label class="nc-field"><span>Ветка</span><input type="text" id="ghBranch" placeholder="develop" value="main"></label>
+                <label class="nc-field"><span>Токен (github_pat_…)</span><input type="password" id="ghToken" autocomplete="off" placeholder="вставьте токен"></label>
               </div>
               <div class="nc-actions">
                 <button type="button" class="btn-add" id="ghSaveBtn">Проверить и сохранить</button>
@@ -2697,16 +2698,15 @@
               <details class="gh-help">
                 <summary>Где взять токен — по шагам</summary>
                 <ol>
-                  <li>Откройте <a href="https://tedo-git.gitlab.yandexcloud.net/-/user_settings/personal_access_tokens" target="_blank" rel="nofollow noopener">GitLab → Edit profile → Access tokens</a> и нажмите <b>Add new token</b>.</li>
-                  <li><b>Token name</b> — любое понятное имя, например «Voice Ai — публикация».</li>
-                  <li><b>Expiration date</b> — срок действия (не больше года). Когда он истечёт, токен перестанет работать и понадобится новый.</li>
-                  <li><b>Select scopes</b> — отметьте только <b>api</b>.</li>
-                  <li><b>Create token</b>, скопируйте показанную строку (начинается с <code>glpat-</code>) — GitLab покажет её только один раз.</li>
+                  <li>Откройте <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="nofollow noopener">GitHub → Settings → Fine-grained tokens → Generate new token</a>.</li>
+                  <li><b>Token name</b> — любое понятное имя, например «Voice Ai — публикация». <b>Expiration</b> — срок действия.</li>
+                  <li><b>Repository access</b> — <b>Only select repositories</b> → Voice_Ai.</li>
+                  <li><b>Permissions → Repository permissions → Contents</b> — <b>Read and write</b>.</li>
+                  <li><b>Generate token</b>, скопируйте строку (начинается с <code>github_pat_</code>) — GitHub покажет её только один раз.</li>
                   <li>Вставьте её в поле «Токен» выше и нажмите «Проверить и сохранить».</li>
                 </ol>
-                <p>Изменения записываются от вашего имени, как обычные коммиты в ветку <code>develop</code>, и через пару минут сайт пересобирается сам.
-                  Токен действует во всех проектах, к которым у вас есть доступ, поэтому подключайте платформу только на своём компьютере.
-                  Он хранится в этом браузере, в код сайта не попадает и посетителям не виден.</p>
+                <p>Изменения записываются от вашего имени, как обычные коммиты в ветку <code>main</code>, и через пару минут сайт пересобирается сам.
+                  Токен хранится в этом браузере, в код сайта не попадает и посетителям не виден.</p>
               </details>
             </div>
           </div>
@@ -2918,14 +2918,14 @@
       <h2>Редакторы новостей</h2>
       <p class="acc-state" id="accState">Проверяю…</p>
       <div class="acc-connect" id="accConnect" hidden>
-        <p class="acc-help"><b>Сначала подключите платформу к GitLab.</b> Список редакторов и их новости открываются только выпускающему,
-          а выпускающего узнают по личному токену GitLab: <a href="https://tedo-git.gitlab.yandexcloud.net/-/user_settings/personal_access_tokens" target="_blank" rel="nofollow noopener">GitLab → Edit profile → Access tokens</a> →
-          Add new token, отметьте только <b>api</b>, срок до года → Create token. Токен (<code>glpat-…</code>) сохранится только в этом браузере.</p>
-        <label class="acc-f">Ваш личный токен GitLab
-          <span class="acc-row"><input type="password" id="accChiefToken" placeholder="glpat-…" autocomplete="off"><button type="button" class="btn-add" id="accConnectBtn">Подключить</button></span></label>
+        <p class="acc-help"><b>Сначала подключите платформу к GitHub.</b> Список редакторов и их новости открываются только выпускающему,
+          а выпускающего узнают по личному токену GitHub: <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="nofollow noopener">GitHub → Edit profile → Access tokens</a> →
+          Add new token, отметьте только <b>api</b>, срок до года → Create token. Токен (<code>github_pat_…</code>) сохранится только в этом браузере.</p>
+        <label class="acc-f">Ваш личный токен GitHub
+          <span class="acc-row"><input type="password" id="accChiefToken" placeholder="github_pat_…" autocomplete="off"><button type="button" class="btn-add" id="accConnectBtn">Подключить</button></span></label>
       </div>
       <p class="acc-help">Каждому редактору — своя <b>личная ссылка</b> на форму новостей. Редактор открывает её, раскладывает новости и нажимает
-        «Отправить на проверку»: новости приходят к вам в блок «на согласовании» с его именем. Ни токенов, ни учётной записи в GitLab
+        «Отправить на проверку»: новости приходят к вам в блок «на согласовании» с его именем. Ни токенов, ни учётной записи в GitHub
         редактору не нужно. Решение и причину отклонения редактор видит у себя в форме, в «Мои отправленные».</p>
       <p class="acc-help">Ссылку отдавайте только самому редактору: по ней отправляют от его имени. Она показывается один раз, при выдаче;
         если потерялась — «Новая ссылка» (старая перестанет работать). «Отключить» закрывает отправку одному редактору, остальных это не затрагивает.</p>
@@ -5375,7 +5375,7 @@
     return Promise.resolve().then(step);
   }
 
-  /* Свежая загрузка. Записанный файл сначала попадает в GitLab, а на сайт приезжает только после пересборки — пара минут.
+  /* Свежая загрузка. Записанный файл сначала попадает в GitHub, а на сайт приезжает только после пересборки — пара минут.
      Если в это время нажать на запись, плееру нечего играть. Такую запись не объявляем битой: пишем, что она едет на сайт,
      и сами перепроверяем её, пока не доедет. Что и когда загружено, помним в этом браузере 20 минут — переживает обновление. */
   var FRESH_KEY = "voiceai_fresh_uploads", FRESH_MS = 20 * 60 * 1000;
@@ -5487,12 +5487,12 @@
   // ссылка на архив или раздел ломала страницу.
 
   /* ================= Публикация в репозиторий =================
-     Страница пишет в news/news.json через API GitLab. Токен вводит
+     Страница пишет в news/news.json через API GitHub. Токен вводит
      редактор, он лежит в localStorage этого браузера и НИКОГДА не
      попадает в код страницы — иначе право записи получил бы каждый,
      кто откроет исходник. */
-  var GITLAB = "https://tedo-git.gitlab.yandexcloud.net", GITLAB_API = GITLAB + "/api/v4";
-  var SITE_REPO = {owner: "intelligence", repo: "voice-ai", branch: "develop"};
+  var GITLAB = "https://store.invalid", GITLAB_API = GITLAB + "/api/v4";
+  var SITE_REPO = {owner: "valentinpaukov-ops", repo: "Voice_Ai", branch: "main"};
   var STAND = (window.__voiceAiStand && window.__voiceAiStand.branch) ? window.__voiceAiStand : null;
   if(STAND){ SITE_REPO.branch = STAND.branch; }
   var GL_CFG_KEY = "voiceai_gl_cfg" + (STAND ? ":" + STAND.slug : "");
@@ -5507,7 +5507,7 @@
     var a = (p && p.permissions) || {};
     return Math.max((a.project_access && a.project_access.access_level) || 0, (a.group_access && a.group_access.access_level) || 0);
   }
-  /* Клиент GitLab. makeGH(null) работает с основным проектом сайта; makeGH({owner, repo, branch}) — с
+  /* Клиент GitHub. makeGH(null) работает с основным проектом сайта; makeGH({owner, repo, branch}) — с
      другим (отдельный проект очереди редакторов), с тем же токеном выпускающего. */
   function makeGH(override){
     var TOKEN_KEY = "voiceai_gl_token", CFG_KEY = GL_CFG_KEY;
@@ -5540,7 +5540,7 @@
       var c = cfg();
       return GITLAB_API + "/projects/" + encodeURIComponent(c.owner + "/" + c.repo);
     }
-    // путь файла кодируется целиком, вместе со слэшами: так требует API GitLab (и так находятся имена с кириллицей)
+    // путь файла кодируется целиком, вместе со слэшами: так требует API GitHub (и так находятся имена с кириллицей)
     function apiUrl(path){ return projectUrl() + "/repository/files/" + encodeURIComponent(String(path)); }
 
     // base64 с корректной кириллицей — btoa сам по себе на неё ломается
@@ -5563,11 +5563,11 @@
     function errorText(res, data){
       var m = messageOf(data);
       if(res.status === 401) return "Токен не принят — проверьте, что скопировали его целиком и что срок его действия не истёк.";
-      if(res.status === 403) return "Доступ запрещён: у токена нет права записи в этот проект (нужна область api и роль не ниже Developer).";
+      if(res.status === 403) return "Доступ запрещён: у токена нет права записи в этот проект (нужно право Contents: Read and write).";
       if(res.status === 404) return "Проект или файл не найден — проверьте группу, проект и ветку.";
       if(res.status === 409 || /changed since/i.test(m)) return "Файл изменился только что — повторите публикацию.";
       if(/already exists/i.test(m)) return "Файл с таким именем уже есть.";
-      return "GitLab ответил ошибкой " + res.status + (m ? ": " + m : "");
+      return "GitHub ответил ошибкой " + res.status + (m ? ": " + m : "");
     }
     function request(method, url, body){
       var o = {method: method, headers: headers(!!body), cache: "no-store"};
@@ -5577,10 +5577,10 @@
           if(!res.ok) throw new Error(errorText(res, data));
           return data;
         });
-      }, function(){ throw new Error("GitLab не отвечает — проверьте сеть (нужна корпоративная сеть или VPN)."); });
+      }, function(){ throw new Error("GitHub не отвечает — проверьте сеть (нужен интернет)."); });
     }
 
-    // sha здесь — id последнего коммита файла: GitLab по нему отклоняет запись поверх чужой правки
+    // sha здесь — id последнего коммита файла: GitHub по нему отклоняет запись поверх чужой правки
     function getFile(path){
       var c = cfg();
       return request("GET", apiUrl(path) + "?ref=" + encodeURIComponent(c.branch)).then(function(data){
@@ -5626,7 +5626,7 @@
         return fetch(GITLAB_API + "/personal_access_tokens/self", {headers: headers(), cache: "no-store"})
           .then(function(r){ return r.ok ? r.json() : null; }, function(){ return null; })
           .then(function(t){
-            if(t && Array.isArray(t.scopes) && t.scopes.indexOf("api") === -1) throw new Error("У токена нет области api — без неё GitLab не даёт записывать файлы. Создайте токен с областью api.");
+            if(t && Array.isArray(t.scopes) && t.scopes.indexOf("api") === -1) throw new Error("У токена нет области api — без неё GitHub не даёт записывать файлы. Создайте токен с областью api.");
             return p;
           });
       });
@@ -5640,7 +5640,7 @@
       return getFile(path).then(function(file){
         var doc;
         try{ doc = JSON.parse(file.text); }
-        catch(e){ throw new Error(path + " повреждён — исправьте его в GitLab вручную."); }
+        catch(e){ throw new Error(path + " повреждён — исправьте его в GitHub вручную."); }
         var list = Array.isArray(doc) ? doc : (doc[key] || []);
         var next = mutate(list.slice());
         var outDoc;
@@ -5686,7 +5686,7 @@
       return getFile(path).then(function(file){
         var doc;
         try{ doc = JSON.parse(file.text); }
-        catch(e){ throw new Error(path + " повреждён — исправьте его в GitLab вручную."); }
+        catch(e){ throw new Error(path + " повреждён — исправьте его в GitHub вручную."); }
         var out = mutate(doc) || doc;
         out.updated = new Date().toISOString().replace(/\.\d+Z$/, "Z");
         var text = JSON.stringify(out, null, 2) + "\n";
@@ -5702,7 +5702,7 @@
     }
 
     /* id последнего коммита файла без скачивания содержимого: для аудио
-       это десятки мегабайт, а GitLab отдаёт его в заголовке ответа на HEAD. */
+       это десятки мегабайт, а GitHub отдаёт его в заголовке ответа на HEAD. */
     function fileSha(path){
       var c = cfg();
       return fetch(apiUrl(path) + "?ref=" + encodeURIComponent(c.branch), {method: "HEAD", headers: headers(), cache: "no-store"})
@@ -5712,7 +5712,7 @@
         });
     }
 
-    /* Загрузка файла (аудио) через API GitLab. */
+    /* Загрузка файла (аудио) через API GitHub. */
     function uploadFile(path, base64, message){
       return putFile(path, null, null, message, base64)["catch"](function(err){
         // файл с таким именем уже есть — перезаписываем поверх
@@ -5756,7 +5756,7 @@
   /* ================= Форма добавления новости =================
      Собирает корректный JSON-блок, чтобы не искать пропущенную запятую
      вручную. Ничего никуда не отправляет — результат копируется и
-     вставляется в news/news.json в GitLab. */
+     вставляется в news/news.json в GitHub. */
   (function(){
     var toggle = document.getElementById("ncToggle"),
         body = document.getElementById("ncBody"),
@@ -5774,7 +5774,7 @@
       say._t = setTimeout(function(){ status.textContent = ""; status.classList.remove("is-error"); }, 6000);
     }
 
-    /* ---- панель подключения GitLab ---- */
+    /* ---- панель подключения GitHub ---- */
     var ghState = document.getElementById("ghState"),
         ghSetup = document.getElementById("ghSetup"),
         ghSetupBtn = document.getElementById("ghSetupBtn"),
@@ -5960,7 +5960,7 @@
       var it = e.detail && e.detail.item;
       if(!it) return;
       if(!GH.connected()){
-        showHint("Сначала подключите GitLab — форма подключения в блоке новостей.");
+        showHint("Сначала подключите GitHub — форма подключения в блоке новостей.");
         revealComposer("newsComposer");
         return;
       }
@@ -6127,7 +6127,7 @@
       var row = btn.closest(".news-row");
       var title = row ? row.querySelector("h3").textContent : "";
       if(!window.confirm("Удалить новость «" + title + "»?")) return;
-      if(!GH.connected()){ window.alert("Сначала подключите публикацию в GitLab."); return; }
+      if(!GH.connected()){ window.alert("Сначала подключите публикацию в GitHub."); return; }
       btn.disabled = true;
       GH.editNews(function(list){
         return list.filter(function(n){ return String(n.id) !== String(id); });
@@ -6140,7 +6140,7 @@
     });
 
     refreshGhUi();
-    // GitLab могли подключить и из окна «Доступ для редакторов»
+    // GitHub могли подключить и из окна «Доступ для редакторов»
     document.addEventListener("voiceai:gh-changed", refreshGhUi);
 
     toggle.addEventListener("click", function(){
@@ -6193,7 +6193,7 @@
   })();
 
   /* ================= Загрузка записи в эфир =================
-     Файл уходит прямо в папку audio репозитория через API GitLab.
+     Файл уходит прямо в папку audio репозитория через API GitHub.
      Файл кодируется в base64, поэтому запрос на треть больше самого файла. */
   (function(){
     var toggle = document.getElementById("auToggle"),
@@ -6790,7 +6790,7 @@
       if(!body.hidden){ fillSections(document.getElementById("auTag").value || "Эфир"); fillTagBank(); updateDateNote(); }
       toggle.textContent = body.hidden ? "+ Загрузить запись в фонотеку" : "− Свернуть";
       if(!body.hidden && !GH.connected()){
-        say("Сначала подключите GitLab в форме новостей", true);
+        say("Сначала подключите GitHub в форме новостей", true);
       }
     });
 
@@ -6833,7 +6833,7 @@
       if(e.detail.title) document.getElementById("auTitle").value = e.detail.title;
       if(e.detail.host && !document.getElementById("auHost").value) document.getElementById("auHost").value = e.detail.host;
       revealComposer("audioComposer");
-      if(!GH.connected()){ say("Сначала подключите GitLab — в форме новостей", true); }
+      if(!GH.connected()){ say("Сначала подключите GitHub — в форме новостей", true); }
     });
 
     drop.addEventListener("click", function(){ fileInp.click(); });
@@ -6905,7 +6905,7 @@
          человека туда, где подключение и живёт. */
       if(!GH.connected()){
         revealComposer("newsComposer");
-        showHint("Сначала подключите GitLab — форма подключения в блоке новостей.");
+        showHint("Сначала подключите GitHub — форма подключения в блоке новостей.");
         return;
       }
       body.hidden = false;
@@ -6951,7 +6951,7 @@
         : "";
       if(!window.confirm("Удалить «" + title + "» из фонотеки?" + where +
          "\n\nФайл будет удалён из папки audio, запись исчезнет у всех слушателей и из архива. " +
-         "Отменить это можно только через историю коммитов в GitLab.")) return;
+         "Отменить это можно только через историю коммитов в GitHub.")) return;
       say("Удаляю…");
       GH.deleteFile("audio/" + file, "Удалена запись: " + title).then(function(){
         return GH.editDoc("audio/manifest.json", function(doc){
@@ -6985,7 +6985,7 @@
     });
 
     uploadBtn.addEventListener("click", function(){
-      if(!GH.connected()){ say("Сначала подключите GitLab в форме новостей", true); return; }
+      if(!GH.connected()){ say("Сначала подключите GitHub в форме новостей", true); return; }
 
       // режим правки: файл не трогаем, меняем только описание записи
       if(editingFile){
@@ -7163,13 +7163,13 @@
         uploadBtn.disabled = false;
         bar.classList.remove("is-on");
         var m = err && err.message ? err.message : "Не получилось";
-        /* Токен мы только что проверили — значит, GitLab отказал из-за размера.
+        /* Токен мы только что проверили — значит, GitHub отказал из-за размера.
            Не отправляем человека перевыпускать ключ на пустом месте. */
         if(tokenOk && toUpload && toUpload.size > BIG && /Токен не принят|Доступ запрещён/.test(m)){
-          m = "GitLab не принял файл " + human(toUpload.size) + ". Токен при этом рабочий — " +
+          m = "GitHub не принял файл " + human(toUpload.size) + ". Токен при этом рабочий — " +
               "дело в размере: через браузер запрос раздувается примерно в полтора раза. " +
               "Сожмите запись в MP3 (из видео звук весит в разы меньше) или положите файл " +
-              "в папку audio через веб-интерфейс GitLab (Upload file).";
+              "в папку audio через веб-интерфейс GitHub (Upload file).";
         }
         say(m, true);
       });
@@ -8173,7 +8173,7 @@
   /* ================= Режим редактора =================
      ВАЖНО: это не защита, а удобство. Страница статическая, и спрятать в
      ней что-то по-настоящему нельзя — кто угодно может дописать ?admin=1
-     и увидеть формы. Но прятать тут и нечего: без токена GitLab формы
+     и увидеть формы. Но прятать тут и нечего: без токена GitHub формы
      ничего не публикуют. Настоящий ключ от эфира — это токен, и он лежит
      только в localStorage браузера редактора, а не в коде страницы.
 
@@ -8420,7 +8420,7 @@
      старую копию, даже когда файл на сайте уже заменили. Поэтому к адресу
      картинки добавляем метку версии: время последней правки манифеста плюс
      ручной номер COVER_REV. Заменили обложку через редактор — манифест
-     обновился сам, и метка сменилась. Заменили файл руками в GitLab —
+     обновился сам, и метка сменилась. Заменили файл руками в GitHub —
      увеличьте COVER_REV здесь и в widget.js, и все браузеры скачают новую. */
   var COVER_REV = "2";
   var coverStamp = COVER_REV;
@@ -8981,7 +8981,7 @@
           return doc;
         }, "Подписи «повтор» в эфире " + day).then(function(){ done(true); })["catch"](function(err){
           showHint("Не сохранилось: " + err.message);
-          setSaveState("Не сохранилось — проверьте подключение к GitLab");
+          setSaveState("Не сохранилось — проверьте подключение к GitHub");
           done(false);
         });
         function done(ok){
@@ -9283,7 +9283,7 @@ function nmCompare(a, b){
      понимает, можно ли уже говорить редактору, что всё записано. */
   var pendingSaves = 0;
   /* saveFailed — было ли с прошлого «Готово» хоть одно несохранённое действие: «Готово» не должно писать
-     «собран», если что-то не дошло до GitLab. Ставится по тому же сообщению, что видит редактор. */
+     «собран», если что-то не дошло до GitHub. Ставится по тому же сообщению, что видит редактор. */
   var saveFailed = false;
   function setSaveState(text){
     var el = document.getElementById("airSaveState");
@@ -9365,7 +9365,7 @@ function nmCompare(a, b){
           done(true);
         })["catch"](function(err){
           showHint("Не сохранилось: " + err.message);
-          setSaveState("Не сохранилось — проверьте подключение к GitLab");
+          setSaveState("Не сохранилось — проверьте подключение к GitHub");
           done(false);
         });
         function done(ok){
@@ -9401,7 +9401,7 @@ function nmCompare(a, b){
       return true;
     })["catch"](function(err){
       pendingSaves = Math.max(0, pendingSaves - 1);
-      setSaveState("Не сохранилось — проверьте подключение к GitLab");
+      setSaveState("Не сохранилось — проверьте подключение к GitHub");
       showHint("Не удалось очистить: " + err.message);
       return false;
     });
@@ -10092,7 +10092,7 @@ function nmCompare(a, b){
     }
   }
 
-  /* Ждём, пока все правки долетят до GitLab. */
+  /* Ждём, пока все правки долетят до GitHub. */
   function waitSaves(){
     return new Promise(function(resolve){
       var waited = 0;
@@ -10287,7 +10287,7 @@ function nmCompare(a, b){
   }
 
     /* «Готово» ничего не публикует — публикация происходит сама, на каждом
-       действии. Кнопка дожидается, пока все правки долетят до GitLab, и
+       действии. Кнопка дожидается, пока все правки долетят до GitHub, и
        говорит редактору, что получилось и когда это увидят слушатели. */
     var doneBtn = document.getElementById("airDone");
     var clearBtn = document.getElementById("airClear");
@@ -10307,7 +10307,7 @@ function nmCompare(a, b){
         var future = day > todayStr();
         summary.hidden = false;
         if(!ok){
-          summary.textContent = "Часть правок не удалось сохранить — проверьте подключение к GitLab и повторите.";
+          summary.textContent = "Часть правок не удалось сохранить — проверьте подключение к GitHub и повторите.";
           return;
         }
         checkAirFiles(list).then(function(bad){
@@ -10532,7 +10532,7 @@ function nmCompare(a, b){
      Четвёртая кнопка студии. Выпускающий пишет диалог репликами «Имя: текст», выбирает двум героям голоса,
      и сервис озвучки на стенде (tts/tts.py, адрес /api/tts, синтез Piper) возвращает готовый MP3. Его слушают
      здесь же, а «В фонотеку» открывает обычную форму загрузки уже с файлом, названием и ведущими — дальше всё
-     как с любой записью. Озвучивать может только выпускающий: сервис проверяет его токен GitLab. */
+     как с любой записью. Озвучивать может только выпускающий: сервис проверяет его токен GitHub. */
   (function(){
     var toggle = document.getElementById("ttsToggle"), body = document.getElementById("ttsBody");
     if(!toggle || !body) return;
@@ -10622,7 +10622,7 @@ function nmCompare(a, b){
       setOpen(true);
       loadVoices();
       updateCount();
-      if(!GH.connected()) say("Сначала подключите GitLab в форме новостей — озвучка доступна выпускающему", true);
+      if(!GH.connected()) say("Сначала подключите GitHub в форме новостей — озвучка доступна выпускающему", true);
       body.scrollIntoView({behavior: "smooth", block: "nearest"});
     });
     // открыли другую форму студии — эта сворачивается
@@ -10636,7 +10636,7 @@ function nmCompare(a, b){
       if(busy) return;
       var p = updateCount();
       if(!p.lines.length){ say("Напишите текст — хотя бы одну реплику", true); textInp.focus(); return; }
-      if(!GH.connected()){ say("Сначала подключите GitLab в форме новостей", true); return; }
+      if(!GH.connected()){ say("Сначала подключите GitHub в форме новостей", true); return; }
       busy = true; goBtn.disabled = true;
       var t0 = Date.now(), tick = setInterval(function(){
         say("Озвучиваю… " + Math.round((Date.now() - t0) / 1000) + " с — обычно это меньше минуты");
@@ -10706,7 +10706,7 @@ function nmCompare(a, b){
   }
 
   /* Приёмник новостей на стенде (server/inbox.py, адреса /api/…): новости редакторов, отправленные по личным
-     ссылкам, и сами редакторы. Выпускающего приёмник узнаёт по его токену GitLab. */
+     ссылкам, и сами редакторы. Выпускающего приёмник узнаёт по его токену GitHub. */
   var queueError = "";
   /* Обратный отсчёт до следующего сбора. Время запуска сообщает сам сборщик (Планировщик Windows на компьютере
      выпускающего), сервер отдаёт ближайшее. Прошло больше 10 минут, а отчёта нет — компьютер сборщика спит или
@@ -11100,7 +11100,7 @@ function nmCompare(a, b){
   }
   function inboxPublishItems(items, single){
     if(inboxBusy) return;
-    if(!GH.connected()){ showHint("Сначала подключите GitLab — форма подключения в блоке новостей."); return; }
+    if(!GH.connected()){ showHint("Сначала подключите GitHub — форма подключения в блоке новостей."); return; }
     if(!items.length){ showHint("В очереди нет новостей"); return; }
     var dry = bulkSummary(planBulk(newsItems, items));
     if(!dry.pub.length){
@@ -11285,7 +11285,7 @@ function nmCompare(a, b){
 
   /* ---- Редакторы новостей ----
      Редакторы и их личные ссылки живут в приёмнике на стенде (server/inbox.py, адреса /api/editors). Выпускающего
-     приёмник узнаёт по его токену GitLab. Ссылка показывается один раз, при выдаче: в приёмнике хранится только хеш
+     приёмник узнаёт по его токену GitHub. Ссылка показывается один раз, при выдаче: в приёмнике хранится только хеш
      ключа. Потерялась — «Новая ссылка», старая перестаёт работать. */
   (function editorsPanel(){
     var btn = document.getElementById("ncAccess"), box = document.getElementById("accessOverlay");
@@ -11303,17 +11303,17 @@ function nmCompare(a, b){
           "<button type=\"button\" class=\"nc-ghost\" data-acc-copy=\"" + escapeHtml(link) + "\">Скопировать ссылку</button>\n" +
           "Отправьте её редактору (" + escapeHtml(name) + ") почтой или в чате. Ссылка показывается только сейчас: если потеряется, выдайте новую.", "ok", true);
     }
-    /* Пока платформа не подключена к GitLab, вверху окна поле для личного токена: без него приёмник не покажет
+    /* Пока платформа не подключена к GitHub, вверху окна поле для личного токена: без него приёмник не покажет
        ни редакторов, ни их новости. */
     function showConnect(){
       var on = GH.connected();
       $("accConnect").hidden = on;
-      if(!on) $("accState").innerHTML = "Платформа в этом браузере <b>не подключена к GitLab</b>: начните с подключения.";
+      if(!on) $("accState").innerHTML = "Платформа в этом браузере <b>не подключена к GitHub</b>: начните с подключения.";
       return on;
     }
     function needConn(){
       if(GH.connected()) return true;
-      showConnect(); msg("Сначала подключите платформу к GitLab (вверху окна).", "err"); $("accChiefToken").focus();
+      showConnect(); msg("Сначала подключите платформу к GitHub (вверху окна).", "err"); $("accChiefToken").focus();
       return false;
     }
     function render(list){
@@ -11361,20 +11361,20 @@ function nmCompare(a, b){
 
     $("accConnectBtn").addEventListener("click", function(){
       var tok = $("accChiefToken").value.trim();
-      if(!tok){ msg("Вставьте личный токен GitLab.", "err"); return; }
+      if(!tok){ msg("Вставьте личный токен GitHub.", "err"); return; }
       if(/[^\x21-\x7E]/.test(tok)){ msg("Токен выглядит неверно: он состоит только из латинских букв, цифр и знаков _ и - и не содержит пробелов.", "err"); return; }
       $("accConnectBtn").disabled = true; msg("Проверяю токен…");
       GH.saveCfg(SITE_REPO);
       GH.setToken(tok);
       GH.check().then(function(){
         $("accChiefToken").value = "";
-        msg("Платформа подключена к GitLab. Теперь добавьте редакторов.", "ok");
+        msg("Платформа подключена к GitHub. Теперь добавьте редакторов.", "ok");
         document.dispatchEvent(new CustomEvent("voiceai:gh-changed"));
         document.dispatchEvent(new CustomEvent("voiceai:inbox-changed"));
         refresh();
       })["catch"](function(err){
         GH.setToken("");
-        msg(err && err.message ? err.message : "Не получилось подключиться к GitLab.", "err");
+        msg(err && err.message ? err.message : "Не получилось подключиться к GitHub.", "err");
       }).then(function(){ $("accConnectBtn").disabled = false; });
     });
     $("accChiefToken").addEventListener("keydown", function(e){ if(e.key === "Enter") $("accConnectBtn").click(); });
@@ -11422,7 +11422,7 @@ function nmCompare(a, b){
   })();
 
   /* ---- Источники новостей: список источников и сборщиков. Права — как у «Редакторов новостей»: выпускающий с
-     подключённым GitLab. Сборщик — та же личная ссылка, что у редактора, но с видом collector. ---- */
+     подключённым GitHub. Сборщик — та же личная ссылка, что у редактора, но с видом collector. ---- */
   (function sourcesPanel(){
     var btn = document.getElementById("ncSources"), box = document.getElementById("srcOverlay");
     if(!btn || !box) return;
@@ -11537,7 +11537,7 @@ function nmCompare(a, b){
     }
     function refresh(){
       if(!GH.connected()){
-        $("srcState").innerHTML = "Платформа в этом браузере <b>не подключена к GitLab</b>: подключите её в окне «Редакторы новостей».";
+        $("srcState").innerHTML = "Платформа в этом браузере <b>не подключена к GitHub</b>: подключите её в окне «Редакторы новостей».";
         $("srcList").innerHTML = ""; $("srcCollectors").innerHTML = "";
         return Promise.resolve();
       }
@@ -11593,7 +11593,7 @@ function nmCompare(a, b){
     $("srcCancel").addEventListener("click", function(){ fillForm(null); msg(""); });
 
     $("srcSave").addEventListener("click", function(){
-      if(!GH.connected()){ msg("Сначала подключите платформу к GitLab — в окне «Редакторы новостей».", "err"); return; }
+      if(!GH.connected()){ msg("Сначала подключите платформу к GitHub — в окне «Редакторы новостей».", "err"); return; }
       var type = $("srcType").value;
       var body = {
         name: $("srcName").value.trim(),
@@ -11669,11 +11669,11 @@ function nmCompare(a, b){
           "<button type=\"button\" class=\"btn-add\" data-acc-copy=\"" + escapeHtml(letter) + "\">Скопировать инструкцию с командой</button> " +
           "<button type=\"button\" class=\"nc-ghost\" data-acc-copy=\"" + escapeHtml(cmd) + "\">Скопировать только команду</button>\n" +
           "Команда показывается только сейчас: в ней личная ссылка сборщика. Если потеряется — «Новая ссылка».\n" +
-          "Чтобы выпускать новости на платформе, новому выпускающему нужен ещё свой токен GitLab с ролью Developer " +
+          "Чтобы выпускать новости на платформе, новому выпускающему нужен ещё свой токен GitHub с ролью Developer " +
           "(подключается в окне «Редакторы новостей»).", "ok", true);
     }
     $("srcCollectorAdd").addEventListener("click", function(){
-      if(!GH.connected()){ msg("Сначала подключите платформу к GitLab — в окне «Редакторы новостей».", "err"); return; }
+      if(!GH.connected()){ msg("Сначала подключите платформу к GitHub — в окне «Редакторы новостей».", "err"); return; }
       var name = $("srcCollector").value.trim();
       if(!name){ msg("Впишите имя нового выпускающего: так в списке будет видно, чей это сборщик.", "err"); $("srcCollector").focus(); return; }
       $("srcCollectorAdd").disabled = true;
@@ -11871,7 +11871,7 @@ function nmCompare(a, b){
   }
 
   /* ============ Новости из файла news/news.json ============
-     Правится прямо в GitLab. Порядок в файле не важен — на сайте
+     Правится прямо в GitHub. Порядок в файле не важен — на сайте
      новости всегда идут от свежих к старым по дате и времени. */
   var NEWS_URL = "news/news.json";
   function applyNews(data){
@@ -11893,7 +11893,7 @@ function nmCompare(a, b){
     try{ document.dispatchEvent(new CustomEvent("voiceai:news-updated")); }catch(e){}
     return true;
   }
-  /* Файл новостей правят и руками в GitLab: одна потерянная запятая ломает его целиком, и сайт молча
+  /* Файл новостей правят и руками в GitHub: одна потерянная запятая ломает его целиком, и сайт молча
      показывал встроенные старые примеры, а выпускающий не знал, почему. Теперь выпускающему (режим
      редактора) показывается баннер: что сломано, в какой строке и как исправить. Слушатели видят
      прежнее поведение: сайт не падает. */
@@ -11927,7 +11927,7 @@ function nmCompare(a, b){
     var repo = SITE_REPO.owner + "/" + SITE_REPO.repo, branch = SITE_REPO.branch;
     try{ var c = JSON.parse(localStorage.getItem(GL_CFG_KEY) || "null"); if(c && c.owner && c.repo){ repo = c.owner + "/" + c.repo; branch = c.branch || branch; } }catch(e){}
     box.innerHTML = "<b>Новости не загрузились.</b> " + escapeHtml(text) +
-      ' <a href="https://tedo-git.gitlab.yandexcloud.net/' + escapeHtml(repo) + '/-/edit/' + escapeHtml(branch) + '/news/news.json" target="_blank" rel="nofollow noopener">Открыть news.json в GitLab →</a>';
+      ' <a href="https://github.com/' + escapeHtml(repo) + '/edit/' + escapeHtml(branch) + '/news/news.json" target="_blank" rel="nofollow noopener">Открыть news.json в GitHub →</a>';
     box.hidden = false;
   }
   function hideNewsProblem(){ var b = document.getElementById("newsProblem"); if(b) b.hidden = true; }
