@@ -2336,6 +2336,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><rect x="3" y="6.5" width="12.5" height="11" rx="2.2"/><path d="M15.5 10.5l5-3v9l-5-3z"/></svg>
       <span>Промо</span>
     </button>
+    <button type="button" id="talkBtn" class="theme-btn promo-btn admin-only" aria-label="Ролик к выступлению" title="Ролик к выступлению">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>
+      <span>Ролик</span>
+    </button>
     <button type="button" id="deckBtn" class="theme-btn promo-btn" hidden aria-label="Открыть презентацию" title="Открыть презентацию">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M12 16.5V20M8.5 20h7M7.5 12.5l3-3 2.5 2 3.5-3.5"/></svg>
       <span>Презентация</span>
@@ -11998,6 +12002,19 @@ function nmCompare(a, b){
       showIntro(introCfg, true).then(function(){ if(airWasPlaying) audioEl.play()["catch"](function(){}); });
     });
   })();
+  /* Ролик к выступлению: кнопка «Ролик» рядом с «Промо», только в режиме редактора. Играет в том же окне, что и
+     промо, сразу со звуком на полную громкость; эфир на это время встаёт на паузу. Временный — уберём после показа. */
+  (function(){
+    var btn = document.getElementById("talkBtn");
+    if(!btn) return;
+    btn.addEventListener("click", function(){
+      if(document.querySelector(".intro-ov")) return;
+      var airWasPlaying = !audioEl.paused;
+      if(airWasPlaying) audioEl.pause();
+      showIntro({file: "Voice_AI_RC1.mp4", title: "Voice AI", label: "ролик к выступлению", volume: 1}, true)
+        .then(function(){ if(airWasPlaying) audioEl.play()["catch"](function(){}); });
+    });
+  })();
   /* Презентация (deck/deck.js и deck/deck.css): слайды о проекте поверх сайта, грузятся только по нажатию.
      Кнопка видна выпускающему, а слушателю — если сайт открыт с ?deck=1 (запоминается до закрытия вкладки):
      так её показывают на встрече, не добавляя в шапку всем. Эфир на время презентации встаёт на паузу. */
@@ -12047,7 +12064,7 @@ function nmCompare(a, b){
           '</div>' +
           '<div class="intro-bar">' +
             '<button type="button" class="intro-sound">Включить звук</button>' +
-            '<span class="intro-title">' + escapeHtml(cfg.title || "VOiCE Ai") + ' · промо</span>' +
+            '<span class="intro-title">' + escapeHtml(cfg.title || "VOiCE Ai") + ' · ' + escapeHtml(cfg.label || "промо") + '</span>' +
             '<button type="button" class="intro-skip">' + (byClick ? "Закрыть" : "Пропустить") + '</button>' +
           '</div>' +
         '</div>';
@@ -12096,7 +12113,7 @@ function nmCompare(a, b){
       }
       // по кнопке «Промо» — сразу со звуком: это нажатие человека, браузер разрешает
       v.muted = !byClick;
-      if(byClick) v.volume = 0.7;
+      if(byClick) v.volume = cfg.volume || 0.7;
       syncSound();
       v.src = src;
       v.addEventListener("ended", close);
