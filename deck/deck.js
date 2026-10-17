@@ -37,10 +37,10 @@
       "</section>";
     out.push(title);
     /* Сценарий выступления (только режим редактора): заставка → ролик к выступлению → заставка, пока выходит
-       спикер → промо-ролик → слайды. Всё в одном окне во весь экран, листается кликером. */
+       спикер → промо-ролик → заставка → слайды. Всё в одном окне во весь экран, листается кликером. */
     if(opts.talk || opts.promo){
       if(opts.talk) out.push(videoSlide(opts.talk), title);
-      if(opts.promo) out.push(videoSlide(opts.promo));
+      if(opts.promo) out.push(videoSlide(opts.promo), title);
     }
 
     // 2. Корпоративное радио

@@ -12030,10 +12030,10 @@ function nmCompare(a, b){
       if(loading) return loading;
       loading = new Promise(function(ok, fail){
         var css = document.createElement("link");
-        css.rel = "stylesheet"; css.href = "deck/deck.css?v=2";
+        css.rel = "stylesheet"; css.href = "deck/deck.css?v=3";
         document.head.appendChild(css);
         var s = document.createElement("script");
-        s.src = "deck/deck.js?v=2"; s.onload = ok; s.onerror = function(){ loading = null; fail(); };
+        s.src = "deck/deck.js?v=3"; s.onload = ok; s.onerror = function(){ loading = null; fail(); };
         document.head.appendChild(s);
       });
       return loading;
