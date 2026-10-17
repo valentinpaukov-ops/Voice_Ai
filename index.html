@@ -12030,10 +12030,10 @@ function nmCompare(a, b){
       if(loading) return loading;
       loading = new Promise(function(ok, fail){
         var css = document.createElement("link");
-        css.rel = "stylesheet"; css.href = "deck/deck.css?v=1";
+        css.rel = "stylesheet"; css.href = "deck/deck.css?v=2";
         document.head.appendChild(css);
         var s = document.createElement("script");
-        s.src = "deck/deck.js?v=1"; s.onload = ok; s.onerror = function(){ loading = null; fail(); };
+        s.src = "deck/deck.js?v=2"; s.onload = ok; s.onerror = function(){ loading = null; fail(); };
         document.head.appendChild(s);
       });
       return loading;
@@ -12043,7 +12043,9 @@ function nmCompare(a, b){
       var airWasPlaying = !audioEl.paused;
       load().then(function(){
         if(airWasPlaying) audioEl.pause();
-        return window.VoiceAiDeck.open();
+        /* в режиме редактора — сценарий выступления: заставка, ролик к выступлению, заставка, промо, слайды */
+        return window.VoiceAiDeck.open(isAdmin ? {talk: "intro/Voice_AI_RC1.mp4",
+          promo: introCfg && introCfg.file ? "intro/" + encodeURIComponent(introCfg.file) : ""} : null);
       }).then(function(){ if(airWasPlaying) audioEl.play()["catch"](function(){}); }, function(){});
     });
   })();

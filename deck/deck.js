@@ -21,15 +21,27 @@
   function eq(n){ var s = ""; for(var i=0;i<n;i++){ s += '<i style="animation-delay:' + (-(i * 0.37) % 1.1).toFixed(2) + "s;animation-duration:" + (0.8 + (i * 7 % 5) / 10).toFixed(1) + 's"></i>'; } return '<div class="dk-eq">' + s + "</div>"; }
   function wave(n){ var s = ""; for(var i=0;i<n;i++){ s += '<i class="' + (i % 9 < 4 ? "" : "b") + '" style="animation-delay:' + (-(i * 0.21) % 1.3).toFixed(2) + 's"></i>'; } return '<div class="dk-wave dk-in" style="--i:6">' + s + "</div>"; }
 
-  function slides(tedo){
+  // слайд-ролик: играет со звуком, пока слайд открыт, и сам листает дальше, когда закончится
+  function videoSlide(src){
+    return '<section class="dk-slide dk-video"><video playsinline preload="auto" src="' + esc(src) + '"></video></section>';
+  }
+
+  function slides(tedo, opts){
     var out = [];
 
     // 1. Титул — в стиле логотипа
-    out.push('<section class="dk-slide dk-center">' +
+    var title = '<section class="dk-slide dk-center">' +
       (tedo ? '<div class="dk-tedo dk-in" style="--i:4">' + tedo + "</div>" : "") +
       inn(0, orb(logo() + '<span class="line"></span><span class="dk-freq">202.6 tedointernal.fm</span>' + eq(9))) +
       inn(2, "корпоративное радио «Технологий Доверия»", "div", "dk-tagline") +
-      "</section>");
+      "</section>";
+    out.push(title);
+    /* Сценарий выступления (только режим редактора): заставка → ролик к выступлению → заставка, пока выходит
+       спикер → промо-ролик → слайды. Всё в одном окне во весь экран, листается кликером. */
+    if(opts.talk || opts.promo){
+      if(opts.talk) out.push(videoSlide(opts.talk), title);
+      if(opts.promo) out.push(videoSlide(opts.promo));
+    }
 
     // 2. Корпоративное радио
     var feats = [
@@ -102,7 +114,8 @@
     return out.join("");
   }
 
-  function open(){
+  function open(opts){
+    opts = opts || {};
     return new Promise(function(done){
       var tedoEl = document.querySelector(".tedo-logo-svg");
       var ov = document.createElement("div");
@@ -113,7 +126,7 @@
       ov.innerHTML =
         '<button type="button" class="dk-btn dk-close" aria-label="Закрыть презентацию" title="Закрыть (Esc)">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
-        '<div class="dk-stage">' + slides(tedoEl ? tedoEl.outerHTML : "") + "</div>" +
+        '<div class="dk-stage">' + slides(tedoEl ? tedoEl.outerHTML : "", opts) + "</div>" +
         '<div class="dk-bar">' +
           '<button type="button" class="dk-btn dk-prev" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>' +
           '<div class="dk-dots"></div>' +
@@ -128,6 +141,12 @@
       var list = ov.querySelectorAll(".dk-slide"), dots = ov.querySelector(".dk-dots");
       var prevBtn = ov.querySelector(".dk-prev"), nextBtn = ov.querySelector(".dk-next"), count = ov.querySelector(".dk-count");
       var cur = -1;
+      var vids = ov.querySelectorAll(".dk-video video");
+      Array.prototype.forEach.call(vids, function(v){
+        v.addEventListener("ended", function(){ if(v.parentNode === list[cur]) go(cur + 1); });
+        v.addEventListener("click", function(){ if(v.paused) v.play()["catch"](function(){}); else v.pause(); });
+      });
+      function curVideo(){ return list[cur] && list[cur].querySelector("video"); }
       for(var i=0;i<list.length;i++){
         var d = document.createElement("button");
         d.type = "button"; d.setAttribute("aria-label", "Слайд " + (i + 1));
@@ -140,6 +159,12 @@
           list[k].classList.toggle("is-cur", k === n);
           list[k].classList.toggle("is-prev", k < n);
           dots.children[k].classList.toggle("on", k === n);
+        }
+        // ролик на слайде: ушли — пауза, пришли — с начала и со звуком (листание — нажатие человека, браузер разрешает)
+        for(var j=0;j<vids.length;j++){
+          var v = vids[j];
+          if(v.parentNode === list[n]){ try{ v.currentTime = 0; }catch(e){} v.muted = false; v.volume = 1; v.play()["catch"](function(){}); }
+          else if(!v.paused) v.pause();
         }
         cur = n;
         prevBtn.disabled = n === 0;
@@ -154,6 +179,7 @@
       }
       function onFull(){ ov.classList.toggle("is-full", isFull()); }
       function close(){
+        Array.prototype.forEach.call(vids, function(v){ try{ v.pause(); }catch(e){} });
         document.removeEventListener("keydown", onKey, true);
         document.removeEventListener("fullscreenchange", onFull);
         document.removeEventListener("webkitfullscreenchange", onFull);
@@ -163,7 +189,9 @@
       }
       function onKey(e){
         var k = e.key;
-        if(k === "ArrowRight" || k === "PageDown" || k === " " || k === "Enter"){ go(cur + 1); }
+        var cv = curVideo();
+        if(k === " " && cv){ if(cv.paused) cv.play()["catch"](function(){}); else cv.pause(); }   // на ролике пробел — пауза
+        else if(k === "ArrowRight" || k === "PageDown" || k === " " || k === "Enter"){ go(cur + 1); }
         else if(k === "ArrowLeft" || k === "PageUp" || k === "Backspace"){ go(cur - 1); }
         else if(k === "Home"){ go(0); }
         else if(k === "End"){ go(list.length - 1); }
